@@ -1466,7 +1466,7 @@ async function runIntelCheck() {
   const btn=document.querySelector('[onclick="runIntelCheck()"]');
   if(btn){btn.textContent='⟳ Checking…';btn.disabled=true;}
   try {
-    const result = await jsonpFetch(GS_URL+'?action=intelCheck');
+    const result = await jsonpFetch(GS_URL+'?action=intelCheck', 90000);
     if(!result.ok) throw new Error(result.error||'Check failed');
     const {alerts:newAlerts, checked, timestamp} = result;
     if(newAlerts && newAlerts.length > 0) {
