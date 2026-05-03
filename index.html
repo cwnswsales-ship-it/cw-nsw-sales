@@ -1401,7 +1401,7 @@ function renderNewListings() {
     </div>
   </div>`).join('');
 }
-function scrapeNewListings(){toast('Open Claude.ai and say "scrape new Eastern Suburbs listings" for this week's results','info');}
+function scrapeNewListings(){toast('Open Claude.ai to scrape new listings','info');}
 async function decideListing(id,track) {
   const l=newListings.find(x=>x.id===id);if(!l)return;
   l.decided=true;l.track=track;
