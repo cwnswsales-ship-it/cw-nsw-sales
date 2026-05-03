@@ -747,15 +747,44 @@ function autoSettle() {
 // GOOGLE SHEETS SYNC
 // ═══════════════════════════════════════════════════════════════════
 function jsonpFetch(url, ms=15000) {
-  return new Promise((resolve,reject) => {
-    const cb='cb_'+Math.random().toString(36).substr(2,9);
-    const sc=document.createElement('script');
-    let done=false;
-    const tm=setTimeout(()=>{ if(!done){done=true;cleanup();reject(new Error('Timeout'));} },ms);
-    window[cb]=(d)=>{ if(!done){done=true;clearTimeout(tm);cleanup();resolve(d);} };
-    function cleanup(){ delete window[cb]; if(sc.parentNode)sc.remove(); }
-    sc.onerror=()=>{ setTimeout(()=>{ if(!done){done=true;cleanup();reject(new Error('Script error'));} },2000); };
-    sc.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+  // Strategy 1: fetch() with no callback — GAS GET returns JSON directly after redirect
+  // Strategy 2: JSONP script tag with callback for fallback
+  return new Promise(async (resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Timeout')), ms);
+    
+    // Try fetch first — works when GAS redirect is followed
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        cache: 'no-cache',
+      });
+      if (res.ok) {
+        const text = await res.text();
+        // Strip JSONP wrapper if present: cb123({...}) -> {...}
+        const match = text.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+        const json = JSON.parse(match ? match[1] : text);
+        clearTimeout(timer);
+        return resolve(json);
+      }
+    } catch(e) {
+      // fetch failed — fall through to JSONP
+    }
+
+    // Fallback: JSONP script tag
+    const cb = 'cb_' + Math.random().toString(36).substr(2, 9);
+    const sc = document.createElement('script');
+    let done = false;
+    window[cb] = (d) => {
+      if (!done) { done=true; clearTimeout(timer); delete window[cb]; sc.remove(); resolve(d); }
+    };
+    sc.onerror = () => {
+      setTimeout(() => {
+        if (!done) { done=true; clearTimeout(timer); delete window[cb]; sc.remove(); reject(new Error('JSONP failed')); }
+      }, 2000);
+    };
+    const sep = url.includes('?') ? '&' : '?';
+    sc.src = url + sep + 'callback=' + cb;
     document.head.appendChild(sc);
   });
 }
@@ -820,9 +849,21 @@ async function gsLoad() {
     }
     gsReady=true;
   } catch(e) {
-    showBanner('✓ '+sales.length+' records loaded (offline mode)','#6D6E71',5000);
+    showBanner('✓ '+sales.length+' records loaded — retrying sync…','#B45309',3000);
     gsReady=true;
-    console.warn('GS:',e.message);
+    console.warn('GS sync error:',e.message);
+    // Retry after 5 seconds
+    setTimeout(async function(){
+      try{
+        const r=await jsonpFetch(GS_URL+'?action=readSales');
+        if(r.ok&&r.data&&r.data.length>1){
+          const loaded=rowsToRecords(r.data,SC);
+          if(loaded&&loaded.length>0){sales=loaded;render();populateFilters();populateBench();}
+          showBanner('✓ '+sales.length+' records — database connected','#15803D',4000);
+          gsReady=true;
+        }
+      }catch(e2){console.warn('Retry failed:',e2.message);}
+    },5000);
   }
 }
 
