@@ -1462,32 +1462,30 @@ function markRead(id){const a=alerts.find(x=>x.id===id);if(a)a.read=true;updateB
 function clearAlerts(){alerts=[];renderIntel();updateBadges();}
 async function runIntelCheck() {
   nav_go('intelligence');
-  showBanner('⟳ Running intelligence check on all active campaigns…','#1565C0',0);
-  const btn=document.querySelector('[onclick="runIntelCheck()"]');
-  if(btn){btn.textContent='⟳ Checking…';btn.disabled=true;}
+  showBanner('⟳ Running intelligence check — takes about 15 seconds…','#1565C0',0);
+  const btns=document.querySelectorAll('button');
+  const runBtns=[...btns].filter(b=>b.textContent.includes('Run Check')||b.textContent.includes('Intel'));
+  runBtns.forEach(b=>{b.textContent='⟳ Checking…';b.disabled=true;});
   try {
-    const result = await jsonpFetch(GS_URL+'?action=intelCheck', 90000);
+    const result = await jsonpFetch(GS_URL+'?action=intelCheck', 120000);
     if(!result.ok) throw new Error(result.error||'Check failed');
-    const {alerts:newAlerts, checked, timestamp} = result;
-    if(newAlerts && newAlerts.length > 0) {
-      newAlerts.forEach(a => {
-        addAlert(a.type, a.title, a.meta, a.campId||null);
-      });
+    const newAlerts=result.alerts||[];
+    const checked=result.checked||0;
+    if(newAlerts.length > 0) {
+      newAlerts.forEach(a => addAlert(a.type, a.title, a.meta, a.campId||null));
+      showBanner('✓ Intelligence check complete — '+newAlerts.length+' alert'+(newAlerts.length>1?'s':''),'#15803D',6000);
     } else {
-      addAlert('info',
-        '✓ Intelligence check complete — '+checked+' campaigns checked',
-        'No status changes detected. All campaigns appear unchanged.'
-      );
+      addAlert('info','✓ Intelligence check complete — '+checked+' campaigns checked','No status changes detected via web search.');
+      showBanner('✓ Intelligence check complete — no changes detected','#15803D',5000);
     }
-    meta.lastCheck = timestamp || new Date().toISOString();
-    showBanner('✓ Intelligence check complete — '+checked+' campaigns checked','#15803D',5000);
+    meta.lastCheck = result.timestamp || new Date().toISOString();
     renderIntel(); updateStats();
   } catch(e) {
-    addAlert('warn','Intelligence check error',e.message);
-    showBanner('Intel check failed: '+e.message,'#B45309',5000);
+    addAlert('warn','Intelligence check timed out','The check runs in the background — results are emailed Mon-Fri 7am. Try again in a minute.');
+    showBanner('Check timed out — results emailed automatically Mon-Fri 7am','#B45309',8000);
     renderIntel();
   }
-  if(btn){btn.textContent='⚡ Run Check';btn.disabled=false;}
+  runBtns.forEach(b=>{b.textContent='⚡ Run Check';b.disabled=false;});
 }
 
 // ═══════════════════════════════════════════════════════════════════
