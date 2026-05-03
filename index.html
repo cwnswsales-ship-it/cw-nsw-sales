@@ -493,13 +493,13 @@ function nav_go(name){
   <div class="view" id="view-duplicates">
     <div class="tb">
       <span class="tb-t">🔍 Duplicate Detector</span>
-      <div class="tb-r"><button class="btn btn-red btn-sm" onclick="runDupCheck(false)">↻ Scan</button></div>
+      <div class="tb-r"><button class="btn btn-red btn-sm" onclick="runDupCheck(false)">↻ Scan Now</button></div>
     </div>
     <div class="duw" id="dupWrap">
-      <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:1.4rem;text-align:center;color:var(--mid);cursor:pointer" onclick="runDupCheck(false)">
-        <div style="font-size:1.6rem;margin-bottom:.35rem">🔍</div>
-        <strong style="font-size:.84rem">Click to scan for duplicates</strong>
-        <p style="font-size:.76rem;margin-top:.2rem">Matches on address + suburb similarity</p>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:2rem;text-align:center;color:#6D6E71;cursor:pointer" onclick="runDupCheck(false)">
+        <div style="font-size:2rem;margin-bottom:.5rem">🔍</div>
+        <strong style="font-size:.9rem;display:block;margin-bottom:.3rem;color:#231F20">Click Scan to check for duplicates</strong>
+        <p style="font-size:.76rem">Matches records on address and suburb similarity</p>
       </div>
     </div>
   </div>
@@ -834,7 +834,7 @@ async function syncAfterEdit() {
 // ═══════════════════════════════════════════════════════════════════
 // NAV & DB SELECTOR
 // ═══════════════════════════════════════════════════════════════════
-const VIEW_FNS = { database:renderDB, campaigns:renderCamps, settlement:renderSettlement, benchmark:renderBench, agents:renderAgents, map:initMap, analytics:renderAnalytics, intelligence:renderIntel, newlistings:renderNewListings, vg:renderVG, duplicates:()=>runDupCheck(false), pulse:genPulse };
+const VIEW_FNS = { database:renderDB, campaigns:renderCamps, settlement:renderSettlement, benchmark:renderBench, agents:renderAgents, map:initMap, analytics:renderAnalytics, intelligence:renderIntel, newlistings:renderNewListings, vg:renderVG, duplicates:showDupPrompt, pulse:genPulse };
 
 function nav_go(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
@@ -1500,6 +1500,20 @@ function handleVGUpload(event) {
 // DUPLICATES
 // ═══════════════════════════════════════════════════════════════════
 function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
+
+function showDupPrompt() {
+  var wrap = document.getElementById('dupWrap');
+  if(!wrap) return;
+  // Only reset if not showing results
+  if(!wrap.querySelector('.dup-g')) {
+    wrap.innerHTML = '<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:2rem;text-align:center;color:#6D6E71;cursor:pointer" onclick="runDupCheck(false)">'
+      + '<div style="font-size:2rem;margin-bottom:.5rem">&#128269;</div>'
+      + '<strong style="font-size:.9rem;display:block;margin-bottom:.3rem;color:#231F20">Click Scan to check for duplicates</strong>'
+      + '<p style="font-size:.76rem">Matches records on address and suburb similarity</p>'
+      + '</div>';
+  }
+}
+
 function runDupCheck(silent) {
   var groups=[], seen=new Set();
   for(var i=0;i<sales.length;i++){
@@ -1935,7 +1949,7 @@ async function init(){
   try{render();}catch(e){console.warn('render:',e);}
   try{populateFilters();}catch(e){console.warn('filters:',e);}
   try{populateBench();}catch(e){}
-  try{runDupCheck(true);}catch(e){}
+  // Duplicates scanned on demand only
   await gsLoad();
 }
 document.addEventListener('DOMContentLoaded',init);
