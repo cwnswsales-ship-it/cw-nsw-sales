@@ -1501,53 +1501,61 @@ function handleVGUpload(event) {
 // ═══════════════════════════════════════════════════════════════════
 function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
 function runDupCheck(silent) {
-  var groups=[]; var seen=new Set();
-  for(var i=0;i<sales.length;i++) {
-    if(seen.has(i)) continue;
-    var s=sales[i]; var matches=[s];
-    for(var j=0;j<sales.length;j++) {
-      if(i===j||seen.has(j)) continue;
+  var groups=[], seen=new Set();
+  for(var i=0;i<sales.length;i++){
+    if(seen.has(i))continue;
+    var s=sales[i], matches=[s];
+    for(var j=i+1;j<sales.length;j++){
+      if(seen.has(j))continue;
       var t=sales[j];
       var na=(s.address||'').toLowerCase().replace(/[^a-z0-9]/g,'');
       var nb=(t.address||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-      var addrSim=na&&nb&&na.length>4&&nb.length>4&&(na===nb||lev(na,nb)<=2);
-      var subMatch=s.suburb&&t.suburb&&s.suburb.toLowerCase()===t.suburb.toLowerCase();
-      if(addrSim&&subMatch){matches.push(t);seen.add(j);}
+      var same=na.length>4&&nb.length>4&&(na===nb||lev(na,nb)<=2);
+      var sameSub=s.suburb&&t.suburb&&s.suburb.toLowerCase()===t.suburb.toLowerCase();
+      if(same&&sameSub){matches.push(t);seen.add(j);}
     }
     if(matches.length>1){groups.push(matches);seen.add(i);}
   }
-  var nb=document.getElementById('nb-dup');
-  nb.textContent=groups.length;
-  nb.style.display=groups.length?'':'none';
-  if(silent) return;
+  var nbEl=document.getElementById('nb-dup');
+  if(nbEl){nbEl.textContent=groups.length;nbEl.style.display=groups.length?'':'none';}
+  if(silent)return;
   var wrap=document.getElementById('dupWrap');
-  if(!wrap) return;
+  if(!wrap)return;
   if(!groups.length){
-    wrap.innerHTML='<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:1.4rem;text-align:center;color:var(--mid)"><div style="font-size:1.6rem;margin-bottom:.35rem">No duplicates</div><strong>All '+sales.length+' records appear unique</strong></div>';
+    wrap.innerHTML='<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:1.4rem;text-align:center;color:#6D6E71"><strong>No duplicates found</strong><p style="font-size:.77rem;margin-top:.3rem">All '+sales.length+' records appear unique</p></div>';
     return;
   }
-  var html='';
+  var parts=[];
   for(var gi=0;gi<groups.length;gi++){
     var g=groups[gi];
-    var delBtns='';
-    for(var di=1;di<g.length;di++){
-      delBtns+='<button class="btn btn-xs" style="color:var(--red);border-color:var(--red)" data-id="'+g[di].id+'" onclick="delById(this.getAttribute('data-id'))">Delete</button> ';
-    }
     var rows='';
     for(var ri=0;ri<g.length;ri++){
       var sr=g[ri];
       var addr=(sr.address||'')+(sr.suburb?', '+sr.suburb:'');
-      var cls=sr.classification||'Unknown';
-      var dt=fD(sr.saleDate);
-      var px=f$(sr.price);
-      var ag=sr.agent1||'No agent';
-      var st=(sr.status||'active').toLowerCase();
-      var stl=sr.status||'Active';
-      rows+='<div class="dup-row"><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+addr+'</div><div style="font-size:.69rem;color:var(--mid)">'+cls+' / '+dt+' / '+px+' / '+ag+'</div></div><span class="badge b-'+st+'">'+stl+'</span></div>';
+      var info=(sr.classification||'—')+' &middot; '+fD(sr.saleDate)+' &middot; '+f$(sr.price)+' &middot; '+(sr.agent1||'—');
+      var st=(sr.status||'Active').toLowerCase();
+      rows+='<div class="dup-row">'
+        +'<div style="flex:1">'
+        +'<div style="font-weight:600;font-size:.78rem">'+addr+'</div>'
+        +'<div style="font-size:.69rem;color:#6D6E71">'+info+'</div>'
+        +'</div>'
+        +'<span class="badge b-'+st+'">'+sr.status+'</span>'
+        +'</div>';
     }
-    html+='<div class="dup-g"><div class="dup-gh"><h3>Possible duplicate ('+g.length+' records)</h3><div>'+delBtns+'</div></div>'+rows+'</div>';
+    var delBtns='';
+    for(var di=1;di<g.length;di++){
+      delBtns+='<button class="btn btn-xs dup-del-btn" style="color:#E1251B;border-color:#E1251B;margin-right:4px" data-del-id="'+g[di].id+'">Delete</button>';
+    }
+    parts.push('<div class="dup-g">'
+      +'<div class="dup-gh"><h3>Possible duplicate ('+g.length+' records)</h3><div>'+delBtns+'</div></div>'
+      +rows
+      +'</div>');
   }
-  wrap.innerHTML=html;
+  wrap.innerHTML=parts.join('');
+  // Attach delete handlers
+  wrap.querySelectorAll('.dup-del-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){delById(this.getAttribute('data-del-id'));});
+  });
   toast(groups.length+' duplicate group'+(groups.length>1?'s':'')+' found','info');
 }
 async function delById(id){if(!confirm('Delete?'))return;sales=sales.filter(s=>s.id!==id);await syncAfterEdit();runDupCheck(false);renderDB();updateStats();}
