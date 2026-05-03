@@ -1499,23 +1499,35 @@ function runDupCheck(silent=false){
       if(i===j||seen.has(j))return;
       const na=(s.address||'').toLowerCase().replace(/[^a-z0-9]/g,'');
       const nb=(t.address||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-      const addrSim=na&&nb&&(na===nb||lev(na,nb)<4);
+      const addrSim=na&&nb&&na.length>3&&nb.length>3&&(na===nb||lev(na,nb)<=2);
       const subMatch=s.suburb&&t.suburb&&s.suburb.toLowerCase()===t.suburb.toLowerCase();
-      const priceMatch=s.price&&t.price&&Math.abs(s.price-t.price)<5000;
-      if((addrSim&&subMatch)||(addrSim&&priceMatch)||(subMatch&&priceMatch&&s.saleDate&&t.saleDate&&s.saleDate.substring(0,7)===t.saleDate.substring(0,7))){matches.push(t);seen.add(j);}
+      const priceMatch=s.price&&t.price&&Math.abs(s.price-t.price)<1000;
+      // Only flag as duplicate if address AND suburb both match
+      if(addrSim&&subMatch){matches.push(t);seen.add(j);}
+      else if(addrSim&&priceMatch&&subMatch){matches.push(t);seen.add(j);}
     });
     if(matches.length>1){groups.push(matches);seen.add(i);}
   });
   const nb=document.getElementById('nb-dup');nb.textContent=groups.length;nb.style.display=groups.length?'':'none';
   if(!silent){
+    const wrap=document.getElementById('dupWrap');
     if(!groups.length){
-      document.getElementById('dupWrap').innerHTML=`<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:1.4rem;text-align:center;color:var(--mid)"><div style="font-size:1.6rem;margin-bottom:.35rem">✅</div><strong>No duplicates found</strong><p style="font-size:.77rem;margin-top:.2rem">All ${sales.length} records appear unique</p></div>`;
+      wrap.innerHTML='<div style="background:#fff;border:1px solid var(--border);border-radius:2px;padding:1.4rem;text-align:center;color:var(--mid)"><div style="font-size:1.6rem;margin-bottom:.35rem">✅</div><strong>No duplicates found</strong><p style="font-size:.77rem;margin-top:.2rem">All '+sales.length+' records appear unique</p></div>';
     }else{
-      document.getElementById('dupWrap').innerHTML=groups.map(g=>`<div class="dup-g">
-        <div class="dup-gh"><h3>Possible duplicate — ${g.length} records</h3>
-        <div style="display:flex;gap:.28rem">${g.slice(1).map(s=>`<button class="btn btn-xs" style="color:var(--red);border-color:var(--red)" onclick="delById('${s.id}')">Delete</button>`).join('')}</div></div>
-        ${g.map(s=>`<div class="dup-row"><div style="flex:1"><div style="font-weight:600;font-size:.78rem">${s.address}, ${s.suburb}</div><div style="font-size:.69rem;color:var(--mid)">${s.classification||'—'} · ${fD(s.saleDate)} · ${f$(s.price)} · ${s.agent1||'—'}</div></div><span class="badge b-${s.status.toLowerCase()}">${s.status}</span></div>`).join('')}
-      </div>`).join('');
+      let html='';
+      groups.forEach(function(g){
+        let delBtns='';
+        g.slice(1).forEach(function(s){ delBtns+='<button class="btn btn-xs" style="color:var(--red);border-color:var(--red);margin-right:.2rem" onclick="delById(''+s.id+'')">Delete</button>'; });
+        let rows='';
+        g.forEach(function(s){
+          const addr=(s.address||'')+(s.suburb?', '+s.suburb:'');
+          const meta=(s.classification||'—')+' · '+fD(s.saleDate)+' · '+f$(s.price)+' · '+(s.agent1||'—');
+          const stat=s.status?s.status.toLowerCase():'active';
+          rows+='<div class="dup-row"><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+addr+'</div><div style="font-size:.69rem;color:var(--mid)">'+meta+'</div></div><span class="badge b-'+stat+'">'+s.status+'</span></div>';
+        });
+        html+='<div class="dup-g"><div class="dup-gh"><h3>Possible duplicate — '+g.length+' records</h3><div>'+delBtns+'</div></div>'+rows+'</div>';
+      });
+      wrap.innerHTML=html;
       toast(groups.length+' duplicate group'+(groups.length>1?'s':'')+' found','info');
     }
   }
