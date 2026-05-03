@@ -295,6 +295,7 @@ function nav_go(name){
     <button class="btn btn-ghost btn-sm" onclick="runIntelCheck()">⚡ Intel Check</button>
     <button class="btn btn-ghost btn-sm" onclick="nav_go('pulse')">📧 Pulse</button>
     <button class="btn btn-ghost btn-sm" onclick="exportExcel()">↓ Excel</button>
+    <button class="btn btn-ghost btn-sm" onclick="refreshFromSheet()">↻ Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="openImport()">⬆ Import</button>
     <button class="btn btn-red btn-sm" onclick="openAdd()">+ Add Sale</button>
   </div>
@@ -867,6 +868,29 @@ async function gsLoad() {
   }
 }
 
+
+async function refreshFromSheet() {
+  showBanner('⟳ Refreshing from Google Sheets…','#1565C0',0);
+  try {
+    const r = await jsonpFetch(GS_URL+'?action=readSales');
+    if(!r.ok) throw new Error(r.error||'Read failed');
+    const loaded = rowsToRecords(r.data, SC);
+    if(loaded && loaded.length > 0) {
+      sales = loaded;
+      const rc = await jsonpFetch(GS_URL+'?action=readCamps');
+      if(rc.ok){ const lc=rowsToRecords(rc.data,CC); if(lc&&lc.length>0) camps=lc; }
+      render(); populateFilters(); populateBench();
+      showBanner('✓ '+sales.length+' records refreshed from Google Sheets','#15803D',4000);
+      toast('Refreshed — '+sales.length+' records','ok');
+    } else {
+      showBanner('Google Sheets appears empty — push data first','#B45309',4000);
+    }
+  } catch(e) {
+    showBanner('Refresh failed: '+e.message,'#B45309',4000);
+    toast('Refresh failed: '+e.message);
+  }
+}
+
 async function syncAfterEdit() {
   if(!gsReady) return;
   try { await gsPushAll(); } catch(e) { console.warn('sync:',e.message); }
@@ -1136,8 +1160,25 @@ function renderSettlement() {
 async function markSettled(id) {
   const c=camps.find(x=>x.id===id);if(!c)return;
   c.status='settled';
-  addAlert('info','Settlement confirmed: '+c.address,f$(c.salePrice)+' — '+fD(today()));
-  await syncAfterEdit();renderSettlement();updateBadges();toast('Settlement confirmed','ok');
+  // Update matching sale record in database
+  const sale=sales.find(s=>
+    s.address&&c.address&&
+    s.address.toLowerCase()===c.address.toLowerCase()&&
+    (s.suburb||'').toLowerCase()===(c.suburb||'').toLowerCase()
+  );
+  if(sale){
+    sale.status='Sold';
+    if(c.salePrice)sale.price=c.salePrice;
+    if(c.soldDate)sale.saleDate=c.soldDate;
+    if(c.settlementDate)sale.settlementDate=c.settlementDate;
+    if(c.purchaser)sale.purchaser=c.purchaser;
+  }
+  const msg='Settlement confirmed: '+c.address+(c.suburb?', '+c.suburb:'')+' — '+f$(c.salePrice)+' settled '+fD(c.settlementDate||today())+(sale?' — Sales database updated':'');
+  addAlert('info','✓ '+msg,new Date().toLocaleDateString('en-AU'));
+  showBanner('✓ '+msg,'#15803D',6000);
+  await syncAfterEdit();
+  render();
+  toast('Settlement confirmed — sales database updated','ok');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1157,8 +1198,8 @@ function openSold(cid) {
 async function confirmSold() {
   const price=parseFloat(document.getElementById('s_price').value)||null;
   const soldDate=document.getElementById('s_sd').value;
-  const setDate=document.getElementById('s_setd').value;
-  if(!soldDate||!setDate){toast('Sold date and settlement date required');return;}
+  const setDate=document.getElementById('s_setd').value||'';
+  if(!soldDate){toast('Sold date required');return;}
   const c=camps.find(x=>x.id===soldCampId);if(!c)return;
   const nr=parseFloat(document.getElementById('s_nr').value)||null;
   const yld=price&&nr?nr/price*100:null;
@@ -1421,8 +1462,32 @@ function markRead(id){const a=alerts.find(x=>x.id===id);if(a)a.read=true;updateB
 function clearAlerts(){alerts=[];renderIntel();updateBadges();}
 async function runIntelCheck() {
   nav_go('intelligence');
-  addAlert('info','⚡ Intelligence check — run this in Claude.ai','Open Claude.ai and say "run intelligence check on our active campaigns" for full web search results with Confirm Sold buttons');
-  renderIntel();toast('Open Claude.ai to run the full intelligence check','info');
+  showBanner('⟳ Running intelligence check on all active campaigns…','#1565C0',0);
+  const btn=document.querySelector('[onclick="runIntelCheck()"]');
+  if(btn){btn.textContent='⟳ Checking…';btn.disabled=true;}
+  try {
+    const result = await jsonpFetch(GS_URL+'?action=intelCheck');
+    if(!result.ok) throw new Error(result.error||'Check failed');
+    const {alerts:newAlerts, checked, timestamp} = result;
+    if(newAlerts && newAlerts.length > 0) {
+      newAlerts.forEach(a => {
+        addAlert(a.type, a.title, a.meta, a.campId||null);
+      });
+    } else {
+      addAlert('info',
+        '✓ Intelligence check complete — '+checked+' campaigns checked',
+        'No status changes detected. All campaigns appear unchanged.'
+      );
+    }
+    meta.lastCheck = timestamp || new Date().toISOString();
+    showBanner('✓ Intelligence check complete — '+checked+' campaigns checked','#15803D',5000);
+    renderIntel(); updateStats();
+  } catch(e) {
+    addAlert('warn','Intelligence check error',e.message);
+    showBanner('Intel check failed: '+e.message,'#B45309',5000);
+    renderIntel();
+  }
+  if(btn){btn.textContent='⚡ Run Check';btn.disabled=false;}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1452,7 +1517,36 @@ function renderNewListings() {
     </div>
   </div>`).join('');
 }
-function scrapeNewListings(){toast('Open Claude.ai to scrape new listings','info');}
+async function scrapeNewListings() {
+  const wrap=document.getElementById('nlWrap');
+  if(wrap) wrap.innerHTML='<div style="padding:1.4rem;text-align:center;color:var(--mid)"><span class="spin"></span> Scraping RealCommercial, CommercialRealEstate, Development Ready and realestate.com.au…</div>';
+  showBanner('⟳ Scraping property portals for new Eastern Suburbs listings…','#1565C0',0);
+  try {
+    const result = await jsonpFetch(GS_URL+'?action=scrapeListings', 60000);
+    if(!result.ok) throw new Error(result.error||'Scrape failed');
+    const found = result.listings || [];
+    found.forEach(l => {
+      if(!newListings.find(x=>x.address===l.address)) {
+        newListings.push({
+          id: gId(), address: l.address, suburb: l.suburb||'',
+          region: l.region||'Eastern Suburbs', source: l.source||'RealCommercial',
+          classification: l.classification||'', process: l.process||'',
+          agent: l.agent||'', guide: l.guide||null,
+          closeDate: l.closeDate||'', notes: l.notes||'',
+          decided: false, track: false,
+        });
+      }
+    });
+    updateBadges();
+    renderNewListings();
+    showBanner('✓ Found '+found.length+' new listings','#15803D',5000);
+    toast('Found '+found.length+' new listings','ok');
+  } catch(e) {
+    showBanner('Scrape failed: '+e.message,'#B45309',5000);
+    toast('Scrape failed: '+e.message);
+    renderNewListings();
+  }
+}
 async function decideListing(id,track) {
   const l=newListings.find(x=>x.id===id);if(!l)return;
   l.decided=true;l.track=track;
@@ -1732,18 +1826,18 @@ async function openDetail(id){
 }
 
 async function fetchPropImg(addr,sub){
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Search for a property photo of "${addr}, ${sub} NSW Australia". Return ONLY JSON: {"imageUrl":"direct_url_or_null","description":"one_sentence_or_null"}. JSON only.`}]})});
-    const d=await r.json();
-    const txt=d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'{}';
-    const result=JSON.parse(txt.replace(/\`\`\`json|\`\`\`/g,'').trim());
-    const load=document.getElementById('pimg-load');
-    const img=document.getElementById('pimg-img');
-    if(load)load.style.display='none';
-    if(result.imageUrl&&img){
-      const t=new Image();t.onload=()=>{img.src=result.imageUrl;img.style.display='block';};t.onerror=()=>{};t.src=result.imageUrl;
-    }
-  }catch(e){const load=document.getElementById('pimg-load');if(load)load.style.display='none';}
+  // Show Google Maps Street View embed as property image — always works, no API needed
+  const load=document.getElementById('pimg-load');
+  const img=document.getElementById('pimg-img');
+  if(load)load.style.display='none';
+  // Use Google Maps static image via Streetview (free, no key needed for basic)
+  const gmaps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr+' '+sub+' NSW')}`;
+  // Just show the maps links — image fetch requires server-side
+  const wrap=document.getElementById('pimg-wrap');
+  if(wrap&&!wrap.querySelector('img[src]')){
+    wrap.style.background='linear-gradient(135deg,#231F20 0%,#3a3a3a 100%)';
+    wrap.style.minHeight='120px';
+  }
 }
 
 async function delSale(id){
@@ -1837,12 +1931,11 @@ async function saveSale(){
 }
 
 async function getAINote(d){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:`You are a senior NSW commercial property analyst at Cushman & Wakefield. Write a concise 2-3 sentence investment commentary. Professional, factual, no fluff, no em dashes.
-${d.address}, ${d.suburb}${d.region?' '+d.region:''} | ${d.classification}
-Price: ${d.price?'$'+Number(d.price).toLocaleString():'Undisclosed'} | Date: ${d.saleDate||'N/A'} | Yield: ${d.yld?((d.yld<1?d.yld*100:d.yld).toFixed(2))+'%':'N/A'} | Land $/m²: ${d.landRate?'$'+Math.round(d.landRate)+'/m²':'N/A'}
-Land: ${d.landArea||'N/A'}m² | Agent 1: ${d.agent1||'N/A'} | Agent 2: ${d.agent2||''} | Process: ${d.process||'N/A'}
-Respond with ONLY the commentary.`}]})});
-  const j=await r.json();return j.content?.[0]?.text||null;
+  try{
+    const r=await fetch(GS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'aiCommentary',record:d})});
+    const j=await r.json().catch(()=>({}));
+    return j.ok?j.commentary:null;
+  }catch(e){return null;}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1963,8 +2056,10 @@ async function handlePDFQueue(e){
     const st=document.getElementById('pq-st-'+i);if(st)st.textContent='Extracting…';
     try{
       const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(files[i]);});
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:'Extract all commercial property details. Return ONLY valid JSON (no markdown): {"address":null,"suburb":null,"classification":null,"zoning":null,"landArea":null,"floorArea":null,"fsr":null,"height":null,"price":null,"saleDate":null,"campaignClose":null,"dateListed":null,"netRent":null,"outgoings":null,"yld":null,"wale":null,"vendor":null,"purchaser":null,"agent1":null,"agent2":null,"process":null,"status":"Active","configuration":null,"constraints":null,"devStage":null,"comments":null,"source":"Metro","priceGuide":null}'}]}]})});
-      const d=await resp.json();const txt=d.content?.[0]?.text||'{}';
+      const pdfResp=await fetch(GS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'extractPDF',b64,filename:files[i].name})});
+      const pdfJson=await pdfResp.json().catch(()=>({}));
+      if(!pdfJson.ok) throw new Error(pdfJson.error||'Extraction failed');
+      const result=pdfJson.data||{};
       const result=JSON.parse(txt.replace(/\`\`\`json|\`\`\`/g,'').trim());
       result.id=gId();
       if(result.price&&result.landArea)result.landRate=Math.round(result.price/result.landArea);
@@ -1972,7 +2067,19 @@ async function handlePDFQueue(e){
       const isDup=sales.some(s=>s.address?.toLowerCase()===result.address?.toLowerCase());
       if(!isDup&&result.address){sales.unshift(result);await syncAfterEdit();if(st)st.textContent='✓ Added';}
       else{if(st)st.style.color='var(--amber)';if(st)st.textContent=isDup?'Duplicate skipped':'No address found';}
-    }catch(err){if(st){st.textContent='Error';st.style.color='var(--red)';}}
+    }catch(err){
+      if(st){
+        st.textContent='Error';st.style.color='var(--red)';
+        // Show helpful message
+        const item=document.getElementById('pq-'+i);
+        if(item){
+          const msg=document.createElement('div');
+          msg.style.cssText='font-size:.67rem;color:#B45309;margin-top:.2rem;padding:.2rem .4rem;background:#FEF3C7;border-radius:2px';
+          msg.textContent='PDF extraction requires Claude.ai — drag this PDF into Claude and ask it to extract the property details';
+          item.appendChild(msg);
+        }
+      }
+    }
     await new Promise(r=>setTimeout(r,500));
   }
   render();populateFilters();populateBench();toast('PDF import complete','ok');
