@@ -2060,7 +2060,6 @@ async function handlePDFQueue(e){
       const pdfJson=await pdfResp.json().catch(()=>({}));
       if(!pdfJson.ok) throw new Error(pdfJson.error||'Extraction failed');
       const result=pdfJson.data||{};
-      const result=JSON.parse(txt.replace(/\`\`\`json|\`\`\`/g,'').trim());
       result.id=gId();
       if(result.price&&result.landArea)result.landRate=Math.round(result.price/result.landArea);
       if(result.price&&result.netRent)result.yld=result.netRent/result.price;
