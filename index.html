@@ -264,6 +264,16 @@ td{padding:.5rem .6rem;vertical-align:middle}
 @keyframes toastin{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(max-width:820px){nav{display:none}.anw,.bgrid,.ag-grid{grid-template-columns:1fr}.fg2,.fg3,.dg{grid-template-columns:1fr}}
 </style>
+<script>
+// Define nav_go early so HTML onclick attributes work before main script loads
+function nav_go(name){
+  // Will be overridden by full definition below, but prevents ReferenceError on click
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on');});
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on');});
+  var v=document.getElementById('view-'+name);if(v)v.classList.add('on');
+  var n=document.getElementById('ni-'+name);if(n)n.classList.add('on');
+}
+</script>
 </head>
 <body>
 
@@ -1517,7 +1527,7 @@ function runDupCheck(silent=false){
       let html='';
       groups.forEach(function(g){
         let delBtns='';
-        g.slice(1).forEach(function(s){ delBtns+='<button class="btn btn-xs" style="color:var(--red);border-color:var(--red);margin-right:.2rem" onclick="delById(''+s.id+'')">Delete</button>'; });
+        g.slice(1).forEach(function(s){ var sid=s.id; delBtns+='<button class="btn btn-xs" style="color:var(--red);border-color:var(--red)" onclick="delById(this.dataset.id)" data-id="'+sid+'">Delete</button> '; });
         let rows='';
         g.forEach(function(s){
           const addr=(s.address||'')+(s.suburb?', '+s.suburb:'');
