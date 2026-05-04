@@ -20,6 +20,7 @@
   --metro:#1565C0;--metro-p:#EFF6FF;--metro-pb:#DBEAFE;--metro-t:#1E3A8A;
   --land:#15803D;--land-p:#F0FDF4;--land-pb:#DCFCE7;--land-t:#14532D;
   --prem:#B45309;--prem-p:#FFFBEB;--prem-pb:#FEF3C7;--prem-t:#78350F;
+  --cc:#7B2D8B;--cc-p:#F5EDF8;--cc-pb:#EBD7F2;--cc-t:#4A1060;
 }
 body{font-family:'Barlow',sans-serif;background:var(--pale);color:var(--ink);font-size:14px;overflow:hidden;height:100vh}
 /* ── HEADER ── */
@@ -67,6 +68,7 @@ nav{width:188px;min-width:188px;background:var(--ink);display:flex;flex-directio
 .dbb.metro.on{background:var(--metro);border-color:var(--metro)}
 .dbb.land.on{background:var(--land);border-color:var(--land)}
 .dbb.prem.on{background:var(--prem);border-color:var(--prem)}
+.dbb.cc.on{background:var(--cc);border-color:var(--cc)}
 .db-ct{margin-left:auto;font-size:.67rem;color:rgba(255,255,255,.32);font-family:'Barlow Condensed',sans-serif}
 /* ── VIEWS ── */
 .view{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
@@ -107,6 +109,7 @@ td{padding:.5rem .6rem;vertical-align:middle}
 .src-metro{background:var(--metro-pb);color:var(--metro-t)}
 .src-land{background:var(--land-pb);color:var(--land-t)}
 .src-prem{background:var(--prem-pb);color:var(--prem-t)}
+.src-cc{background:var(--cc-pb);color:var(--cc-t)}
 .guide-tag{display:inline-flex;align-items:center;gap:.2rem;background:var(--amber-p);border:1px solid rgba(180,83,9,.18);border-radius:2px;padding:.1rem .38rem;font-size:.62rem;font-weight:700;color:var(--amber)}
 /* ── EMPTY ── */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;color:var(--mid);text-align:center;gap:.35rem}
@@ -333,6 +336,10 @@ function nav_go(name){
     <div class="sk"><div class="sk-l">Due This Week</div><div class="sk-v r" id="st-dw">0</div></div><div class="sdiv"></div>
     <div class="sk"><div class="sk-l">In Settlement</div><div class="sk-v b" id="st-is">0</div></div><div class="sdiv"></div>
     <div class="sk"><div class="sk-l">Stale 90d+</div><div class="sk-v a" id="st-stale">0</div></div>
+    <div class="sdiv" id="sdiv-cc" style="display:none"></div>
+    <div class="sk" id="sk-pplace" style="display:none"><div class="sk-l">Avg $/Place</div><div class="sk-v" style="color:var(--cc)" id="st-pplace">—</div></div>
+    <div class="sdiv" id="sdiv-cc2" style="display:none"></div>
+    <div class="sk" id="sk-rplace" style="display:none"><div class="sk-l">Avg Rent/Place</div><div class="sk-v" style="color:var(--cc)" id="st-rplace">—</div></div>
   </div>
 
   <!-- DB SELECTOR -->
@@ -341,6 +348,7 @@ function nav_go(name){
     <button class="dbb metro" id="dbs-Metro" onclick="setDB('Metro')">Metro</button>
     <button class="dbb land" id="dbs-NSWLand" onclick="setDB('NSW Land')">NSW Land</button>
     <button class="dbb prem" id="dbs-PremiumInvestment" onclick="setDB('Premium Investment')">Premium Investment</button>
+    <button class="dbb cc" id="dbs-Childcare" onclick="setDB('Childcare')">Childcare</button>
     <span class="db-ct" id="dbs-ct"></span>
   </div>
 
@@ -362,6 +370,8 @@ function nav_go(name){
       <th>Yield</th><th>Land $/m²</th>
       <th id="th-ha" style="display:none">$/Ha</th>
       <th id="th-wale" style="display:none">WALE</th>
+      <th id="th-places" style="display:none"># Places</th>
+      <th id="th-pplace" style="display:none">$/Place</th>
       <th>Agent 1</th><th>Agent 2</th><th>Status</th><th>RC</th><th></th>
     </tr></thead><tbody id="dbBody"></tbody></table>
     <div class="empty" id="dbEmpty" style="display:none"><div class="ico">🏢</div><strong>No records</strong><p>Adjust filters</p></div></div>
@@ -531,8 +541,8 @@ function nav_go(name){
         <div class="fg fc"><label>Address *</label><input id="f_addr"></div>
         <div class="fg"><label>Suburb *</label><input id="f_sub"></div>
         <div class="fg"><label>Region</label><select id="f_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option><option>Southern Tablelands</option></select></div>
-        <div class="fg"><label>Source Database</label><select id="f_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="f_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Source Database</label><select id="f_src" onchange="toggleCCFields(this.value,'f')"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option><option>Childcare</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="f_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="f_land" oninput="calcF()"></div>
         <div class="fg"><label>Floor Area (m²)</label><input type="number" id="f_floor"></div>
         <div class="fg"><label>Primary Zoning</label><input id="f_zon"></div>
@@ -543,6 +553,11 @@ function nav_go(name){
         <div class="fg"><label>Constraints</label><input id="f_con"></div>
         <div class="fg"><label>Dev Stage</label><select id="f_ds"><option value="">—</option><option>Raw</option><option>DA Lodged</option><option>DA Approved</option><option>HDA Lodged</option><option>HDA Approved</option><option>SSD Lodged</option><option>SSD Approved</option><option>Civils Completed</option></select></div>
         <div class="fg"><label>No. Lots / Units</label><input type="number" id="f_lots"></div>
+      </div>
+      <div class="fsec" id="f-cc-sec" style="display:none">Childcare Details</div>
+      <div class="fg2" id="f-cc-flds" style="display:none">
+        <div class="fg"><label>Operator / Brand</label><input id="f_operator" placeholder="e.g. Goodstart, G8, Young Academics"></div>
+        <div class="fg"><label>Licensed Places</label><input type="number" id="f_places" min="1"></div>
       </div>
       <div class="fsec">Transaction</div>
       <div class="fg3">
@@ -622,8 +637,8 @@ function nav_go(name){
         <div class="fg fc"><label>Address *</label><input id="ca_addr"></div>
         <div class="fg"><label>Suburb *</label><input id="ca_sub"></div>
         <div class="fg"><label>Region</label><select id="ca_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option></select></div>
-        <div class="fg"><label>Source Database</label><select id="ca_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Source Database</label><select id="ca_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option><option>Childcare</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Primary Zoning</label><input id="ca_zon"></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="ca_land"></div>
       </div>
@@ -688,7 +703,44 @@ const SEED_CAMPS   = [{"id":"2RYKLEGV","address":"16-18 McKeon Street","suburb":
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
-let sales = SEED_RECORDS.map(x=>({...x}));
+const CC_SEED = [
+  {"id":"CC01MRSM","source":"Childcare","address":"42 Morris Street","suburb":"St Marys","region":"Metro","classification":"Childcare Centre","status":"Sold","price":10288000,"priceGuide":null,"netRent":540000,"outgoings":null,"yld":0.0525,"dateListed":"","saleDate":"2026-03-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Montessori","places":104,"pricePerPlace":98923,"rentPerPlace":5192},
+  {"id":"CC02CAMW","source":"Childcare","address":"1 Cameron Avenue","suburb":"West Pennant Hills","region":"Metro","classification":"Childcare Centre","status":"Sold","price":3400000,"priceGuide":null,"netRent":164500,"outgoings":null,"yld":0.0484,"dateListed":"","saleDate":"2026-03-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Wonderland Academy ELC","places":30,"pricePerPlace":113333,"rentPerPlace":5483},
+  {"id":"CC03COMC","source":"Childcare","address":"51 Comerford Street","suburb":"Cowra","region":"Regional","classification":"Childcare Centre","status":"Sold","price":3900000,"priceGuide":null,"netRent":210883,"outgoings":null,"yld":0.0541,"dateListed":"","saleDate":"2026-02-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":20,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"North Cowra Children's Centre","places":75,"pricePerPlace":52000,"rentPerPlace":2812},
+  {"id":"CC04HINP","source":"Childcare","address":"120 Hindman Street","suburb":"Port Macquarie","region":"Metro","classification":"Childcare Centre","status":"Sold","price":1551000,"priceGuide":null,"netRent":80583,"outgoings":null,"yld":0.0520,"dateListed":"","saleDate":"2026-02-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":3,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Playtime","places":24,"pricePerPlace":64625,"rentPerPlace":3358},
+  {"id":"CC05HUML","source":"Childcare","address":"401 Hume Highway","suburb":"Liverpool","region":"Metro","classification":"Childcare Centre","status":"Sold","price":4000000,"priceGuide":null,"netRent":203686,"outgoings":null,"yld":0.0509,"dateListed":"","saleDate":"2026-02-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Rainbow Hut","places":48,"pricePerPlace":83333,"rentPerPlace":4243},
+  {"id":"CC06PREB","source":"Childcare","address":"12-14 Preddys Rd","suburb":"Bexley","region":"Metro","classification":"Childcare Centre","status":"Sold","price":9850000,"priceGuide":null,"netRent":465000,"outgoings":null,"yld":0.0472,"dateListed":"","saleDate":"2026-02-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Bluebird","places":91,"pricePerPlace":108242,"rentPerPlace":5110},
+  {"id":"CC07KILS","source":"Childcare","address":"36 Killeaton St","suburb":"St Ives","region":"Metro","classification":"Childcare Centre","status":"Sold","price":9875000,"priceGuide":null,"netRent":496800,"outgoings":null,"yld":0.0503,"dateListed":"","saleDate":"2026-01-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":13,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Simba","places":96,"pricePerPlace":102865,"rentPerPlace":5175},
+  {"id":"CC08JARW","source":"Childcare","address":"97 Jarrett Street","suburb":"Wyoming","region":"Regional","classification":"Childcare Centre","status":"Sold","price":2901000,"priceGuide":null,"netRent":143983,"outgoings":null,"yld":0.0496,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":6,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Cheeky Cherubs","places":48,"pricePerPlace":60438,"rentPerPlace":3000},
+  {"id":"CC09COLW","source":"Childcare","address":"5 Collungra Street","suburb":"Wyee","region":"Regional","classification":"Childcare Centre","status":"Sold","price":2710000,"priceGuide":null,"netRent":150000,"outgoings":null,"yld":0.0554,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Little Seedlings","places":50,"pricePerPlace":54200,"rentPerPlace":3000},
+  {"id":"CC10LODE","source":"Childcare","address":"120 Lodges Road","suburb":"Elderslie","region":"Regional","classification":"Childcare Centre","status":"Sold","price":11500000,"priceGuide":null,"netRent":604500,"outgoings":null,"yld":0.0526,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":130,"pricePerPlace":88462,"rentPerPlace":4650},
+  {"id":"CC11CRAC","source":"Childcare","address":"37-39 Crane Rd","suburb":"Castle Hill","region":"Metro","classification":"Childcare Centre","status":"Sold","price":10000000,"priceGuide":null,"netRent":454500,"outgoings":null,"yld":0.0455,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":90,"pricePerPlace":111111,"rentPerPlace":5050},
+  {"id":"CC12ORLC","source":"Childcare","address":"38 Orlando Rd","suburb":"Cromer","region":"Metro","classification":"Childcare Centre","status":"Sold","price":7350000,"priceGuide":null,"netRent":412927,"outgoings":null,"yld":0.0562,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":4,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Only About Children","places":80,"pricePerPlace":91875,"rentPerPlace":5162},
+  {"id":"CC13PENT","source":"Childcare","address":"143-145 Pentecost Ave","suburb":"Turramurra","region":"Metro","classification":"Childcare Centre","status":"Sold","price":11500000,"priceGuide":null,"netRent":522086,"outgoings":null,"yld":0.0454,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":17.47,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Only About Children","places":87,"pricePerPlace":132184,"rentPerPlace":6001},
+  {"id":"CC14CHAC","source":"Childcare","address":"Lot 7 Chatswood Place","suburb":"Chatswood","region":"Metro","classification":"Childcare Centre","status":"Sold","price":12000000,"priceGuide":null,"netRent":760000,"outgoings":null,"yld":0.0633,"dateListed":"","saleDate":"2025-12-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":8,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Swan Academy","places":97,"pricePerPlace":123711,"rentPerPlace":7835},
+  {"id":"CC15DUNB","source":"Childcare","address":"22-24 Dunning Avenue","suburb":"Bateau Bay","region":"Regional","classification":"Childcare Centre","status":"Sold","price":2910000,"priceGuide":null,"netRent":163200,"outgoings":null,"yld":0.0561,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":13,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Family Tree","places":59,"pricePerPlace":49322,"rentPerPlace":2766},
+  {"id":"CC16ARGP","source":"Childcare","address":"280 Argyle St","suburb":"Picton","region":"Metro","classification":"Childcare Centre","status":"Sold","price":5600000,"priceGuide":null,"netRent":299520,"outgoings":null,"yld":0.0535,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Thrive","places":64,"pricePerPlace":87500,"rentPerPlace":4680},
+  {"id":"CC17LAWF","source":"Childcare","address":"74-76 Lawrence St","suburb":"Freshwater","region":"Metro","classification":"Childcare Centre","status":"Sold","price":6550000,"priceGuide":null,"netRent":356928,"outgoings":null,"yld":0.0545,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":2,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"G8","places":74,"pricePerPlace":88514,"rentPerPlace":4823},
+  {"id":"CC18PENP","source":"Childcare","address":"80 Pendle Way","suburb":"Pendle Hill","region":"Metro","classification":"Childcare Centre","status":"Sold","price":9800000,"priceGuide":null,"netRent":606463,"outgoings":null,"yld":0.0619,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":11,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":111,"pricePerPlace":88288,"rentPerPlace":5464},
+  {"id":"CC19BILV","source":"Childcare","address":"5 Billong Ave","suburb":"Vaucluse","region":"Metro","classification":"Childcare Centre","status":"Sold","price":6500000,"priceGuide":null,"netRent":203450,"outgoings":null,"yld":0.0313,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"G8","places":36,"pricePerPlace":180556,"rentPerPlace":5651},
+  {"id":"CC20POLK","source":"Childcare","address":"34-36 Poole Rd","suburb":"Kellyville","region":"Metro","classification":"Childcare Centre","status":"Sold","price":4000000,"priceGuide":null,"netRent":190085,"outgoings":null,"yld":0.0475,"dateListed":"","saleDate":"2025-11-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":29,"pricePerPlace":137931,"rentPerPlace":6555},
+  {"id":"CC21ELDL","source":"Childcare","address":"136 Elder Street","suburb":"Lambton","region":"Regional","classification":"Childcare Centre","status":"Sold","price":2400000,"priceGuide":null,"netRent":111000,"outgoings":null,"yld":0.0463,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":9,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Elder Street Early Childcare Centre","places":39,"pricePerPlace":61538,"rentPerPlace":2846},
+  {"id":"CC22NANN","source":"Childcare","address":"35C Nandewar Street","suburb":"Narrabri","region":"Regional","classification":"Childcare Centre","status":"Sold","price":2815000,"priceGuide":null,"netRent":150000,"outgoings":null,"yld":0.0533,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Little Kindy","places":48,"pricePerPlace":58646,"rentPerPlace":3125},
+  {"id":"CC23ALBO","source":"Childcare","address":"26-32 Albert Street","suburb":"Orange","region":"Regional","classification":"Childcare Centre","status":"Sold","price":3300000,"priceGuide":null,"netRent":223359,"outgoings":null,"yld":0.0677,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":8,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"G8","places":71,"pricePerPlace":46479,"rentPerPlace":3146},
+  {"id":"CC24JACW","source":"Childcare","address":"1 Jackson Lane","suburb":"Wilton","region":"Metro","classification":"Childcare Centre","status":"Sold","price":7900000,"priceGuide":null,"netRent":395000,"outgoings":null,"yld":0.0500,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Goodstart","places":117,"pricePerPlace":67521,"rentPerPlace":3376},
+  {"id":"CC25FARC","source":"Childcare","address":"2 Fairmile Close","suburb":"Charmhaven","region":"Regional","classification":"Childcare Centre","status":"Sold","price":8100000,"priceGuide":null,"netRent":443291,"outgoings":null,"yld":0.0547,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":23,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Rise Early Learning","places":128,"pricePerPlace":63281,"rentPerPlace":3463},
+  {"id":"CC26WARC","source":"Childcare","address":"425 Warners Bay Road","suburb":"Charlestown","region":"Regional","classification":"Childcare Centre","status":"Sold","price":5650000,"priceGuide":null,"netRent":261000,"outgoings":null,"yld":0.0462,"dateListed":"","saleDate":"2025-09-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":14,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Little Zak's","places":58,"pricePerPlace":97414,"rentPerPlace":4500},
+  {"id":"CC27BLOO","source":"Childcare","address":"205-211 Bloomfield Street","suburb":"Gunnedah","region":"Regional","classification":"Childcare Centre","status":"Sold","price":6100000,"priceGuide":null,"netRent":350012,"outgoings":null,"yld":0.0574,"dateListed":"","saleDate":"2025-08-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":19,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"OzEducation","places":127,"pricePerPlace":48031,"rentPerPlace":2756},
+  {"id":"CC28LAYC","source":"Childcare","address":"17 Laycock Street","suburb":"Carey Bay","region":"Regional","classification":"Childcare Centre","status":"Sold","price":5500000,"priceGuide":null,"netRent":362560,"outgoings":null,"yld":0.0659,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Little Zak's","places":110,"pricePerPlace":50000,"rentPerPlace":3296},
+  {"id":"CC29MONM","source":"Childcare","address":"21-33 Montrose Ave","suburb":"Merrylands","region":"Metro","classification":"Childcare Centre","status":"Sold","price":4200000,"priceGuide":null,"netRent":176619,"outgoings":null,"yld":0.0421,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":8,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Montessori Merrylands Childcare","places":53,"pricePerPlace":79245,"rentPerPlace":3332},
+  {"id":"CC30JAMB","source":"Childcare","address":"2B James Street","suburb":"Blakehurst","region":"Metro","classification":"Childcare Centre","status":"Sold","price":5225000,"priceGuide":null,"netRent":359579,"outgoings":null,"yld":0.0688,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Thrive","places":81,"pricePerPlace":64506,"rentPerPlace":4439},
+  {"id":"CC31OSBR","source":"Childcare","address":"10 Osborne Street","suburb":"Dapto","region":"Regional","classification":"Childcare Centre","status":"Sold","price":7500000,"priceGuide":null,"netRent":412800,"outgoings":null,"yld":0.0550,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":86,"pricePerPlace":87209,"rentPerPlace":4800},
+  {"id":"CC32BURL","source":"Childcare","address":"26-28 Burrinjuck St","suburb":"Leumeah","region":"Metro","classification":"Childcare Centre","status":"Sold","price":8600000,"priceGuide":null,"netRent":410000,"outgoings":null,"yld":0.0477,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":15,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Young Academics","places":74,"pricePerPlace":116216,"rentPerPlace":5541},
+  {"id":"CC33NANR","source":"Childcare","address":"6A Nancarrow Ave","suburb":"Ryde","region":"Metro","classification":"Childcare Centre","status":"Sold","price":8800000,"priceGuide":null,"netRent":602243,"outgoings":null,"yld":0.0684,"dateListed":"","saleDate":"2025-07-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":10,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Montessori","places":90,"pricePerPlace":97778,"rentPerPlace":6692},
+  {"id":"CC34BANH","source":"Childcare","address":"1-5 Bangalow Place","suburb":"Hoxton Park","region":"Metro","classification":"Childcare Centre","status":"Sold","price":4750000,"priceGuide":null,"netRent":237474,"outgoings":null,"yld":0.0500,"dateListed":"","saleDate":"2025-05-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":3,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Affinity","places":46,"pricePerPlace":103261,"rentPerPlace":5162},
+  {"id":"CC35OLFL","source":"Childcare","address":"25 Old Forest Road","suburb":"Lugarno","region":"Metro","classification":"Childcare Centre","status":"Sold","price":5900000,"priceGuide":null,"netRent":282298,"outgoings":null,"yld":0.0478,"dateListed":"","saleDate":"2025-05-01","settlementDate":"","process":"","campaignClose":"","rcStatus":"","landArea":null,"landRate":null,"floorArea":null,"capVal":null,"units":null,"unitRate":null,"wale":20,"parking":null,"configuration":"","landAreaHa":null,"landRateHa":null,"landAreaAcre":null,"landRateAcre":null,"noLots":null,"lotRate":null,"permGFA":null,"gfaSQM":null,"zoning":"","zoning2":"","fsr":null,"height":null,"approval":null,"devStage":"","constraints":"","agent1":"","agent2":"","vendor":"","purchaser":"","comments":"","analysis":"","operator":"Giggle & Learn","places":40,"pricePerPlace":147500,"rentPerPlace":7057}
+];
+let sales = [...SEED_RECORDS, ...CC_SEED].map(x=>({...x}));
 let camps = SEED_CAMPS.map(x=>({...x}));
 let alerts = [], notes = {}, vgDiscs = [], newListings = [], meta = {};
 let editId = null, soldCampId = null;
@@ -712,8 +764,8 @@ const daysTo = d => { if(!d) return null; return Math.round((new Date(d)-new Dat
 const addDays = (d,n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; };
 const avg = arr => arr.length ? arr.reduce((a,b)=>a+b)/arr.length : null;
 const med = arr => { if(!arr.length) return null; const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
-const srcTag = src => src==='NSW Land'?'src-land':src==='Premium Investment'?'src-prem':'src-metro';
-const srcLabel = src => src==='Premium Investment'?'Premium':src==='NSW Land'?'Land':'Metro';
+const srcTag = src => src==='NSW Land'?'src-land':src==='Premium Investment'?'src-prem':src==='Childcare'?'src-cc':'src-metro';
+const srcLabel = src => src==='Premium Investment'?'Premium':src==='NSW Land'?'Land':src==='Childcare'?'Childcare':'Metro';
 const isStale = s => s.status==='Active' && s.campaignClose && daysTo(s.campaignClose)<-90;
 const getYld = s => { const y=s.yld; if(!y) return null; return y<1?y*100:parseFloat(y); };
 
@@ -913,23 +965,28 @@ const CLASS_SETS={
   Metro:['Apartment Block','Car Park','Co-Living/Boarding House','Commercial','Development Site','Hotel/Pub','Industrial','Middle Markets','Retail','Shop Top','Strata Retail'],
   'NSW Land':['Brownfield Infill','Development Site','Greenfield','Masterplanned Community','Town Centre'],
   'Premium Investment':['Service Station','Childcare','Medical','Fast Food','Retail Net Lease'],
-  all:['Apartment Block','Brownfield Infill','Car Park','Co-Living/Boarding House','Commercial','Development Site','Greenfield','Hotel/Pub','Industrial','Masterplanned Community','Middle Markets','Retail','Service Station','Shop Top','Strata Retail','Town Centre'],
+  Childcare:['Childcare Centre'],
+  all:['Apartment Block','Brownfield Infill','Car Park','Childcare Centre','Co-Living/Boarding House','Commercial','Development Site','Greenfield','Hotel/Pub','Industrial','Masterplanned Community','Middle Markets','Retail','Service Station','Shop Top','Strata Retail','Town Centre'],
 };
 const REG_SETS={
   Metro:['City Fringe','Eastern Suburbs','Inner West','North Sydney','Sydney CBD','West'],
   'NSW Land':['Central Coast','Hunter','Inner West','Macarthur','Riverina','Southern Highlands','Southern Tablelands','Western Sydney'],
   'Premium Investment':['Eastern Suburbs','Inner West','North Sydney','Western Sydney','West'],
-  all:['Central Coast','City Fringe','Eastern Suburbs','Hunter','Inner West','Macarthur','North Sydney','Riverina','Southern Highlands','Southern Tablelands','Sydney CBD','West','Western Sydney'],
+  Childcare:['Metro','Regional'],
+  all:['Central Coast','City Fringe','Eastern Suburbs','Hunter','Inner West','Macarthur','Metro','North Sydney','Regional','Riverina','Southern Highlands','Southern Tablelands','Sydney CBD','West','Western Sydney'],
 };
 
 function setDB(db) {
   activeDB=db;
-  ['all','Metro','NSWLand','PremiumInvestment'].forEach(k=>{document.getElementById('dbs-'+k)?.classList.remove('on');});
-  const km={'all':'all','Metro':'Metro','NSW Land':'NSWLand','Premium Investment':'PremiumInvestment'};
+  ['all','Metro','NSWLand','PremiumInvestment','Childcare'].forEach(k=>{document.getElementById('dbs-'+k)?.classList.remove('on');});
+  const km={'all':'all','Metro':'Metro','NSW Land':'NSWLand','Premium Investment':'PremiumInvestment','Childcare':'Childcare'};
   document.getElementById('dbs-'+(km[db]||db))?.classList.add('on');
-  const isL=db==='NSW Land',isP=db==='Premium Investment';
+  const isL=db==='NSW Land',isP=db==='Premium Investment',isCC=db==='Childcare';
   document.getElementById('th-ha').style.display=isL?'':'none';
   document.getElementById('th-wale').style.display=isP?'':'none';
+  document.getElementById('th-places').style.display=isCC?'':'none';
+  document.getElementById('th-pplace').style.display=isCC?'':'none';
+  ['sdiv-cc','sk-pplace','sdiv-cc2','sk-rplace'].forEach(id=>{document.getElementById(id).style.display=isCC?'':'none';});
   populateFilters(); renderDB(); updateStats();
 }
 
@@ -994,6 +1051,10 @@ function updateStats() {
   document.getElementById('st-dw').textContent=dw.length;
   document.getElementById('st-is').textContent=camps.filter(c=>c.status==='settlement').length;
   document.getElementById('st-stale').textContent=sales.filter(isStale).length;
+  const ppVals=fs.filter(s=>s.pricePerPlace>0).map(s=>s.pricePerPlace);
+  const rpVals=fs.filter(s=>s.rentPerPlace>0).map(s=>s.rentPerPlace);
+  document.getElementById('st-pplace').textContent=avg(ppVals)?'$'+Math.round(avg(ppVals)).toLocaleString():'—';
+  document.getElementById('st-rplace').textContent=avg(rpVals)?'$'+Math.round(avg(rpVals)).toLocaleString():'—';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1009,7 +1070,7 @@ function getFilteredSales() {
   const fY=(document.getElementById('fYear')||{value:''}).value;
   const fR=(document.getElementById('fReg')||{value:''}).value;
   return getFS().filter(s=>{
-    const txt=[s.address,s.suburb,s.agent1,s.agent2,s.purchaser,s.classification,s.region,s.vendor].join(' ').toLowerCase();
+    const txt=[s.address,s.suburb,s.agent1,s.agent2,s.purchaser,s.classification,s.region,s.vendor,s.operator].join(' ').toLowerCase();
     if(srch&&!txt.includes(srch))return false;
     if(fC&&s.classification!==fC)return false;
     if(fS==='stale')return isStale(s);
@@ -1023,7 +1084,7 @@ function getFilteredSales() {
 
 function renderDB() {
   const fil=getFilteredSales();
-  const isL=activeDB==='NSW Land',isP=activeDB==='Premium Investment';
+  const isL=activeDB==='NSW Land',isP=activeDB==='Premium Investment',isCC=activeDB==='Childcare';
   document.getElementById('db-ct2').textContent=fil.length+' of '+getFS().length+' records';
   document.getElementById('dbEmpty').style.display=fil.length?'none':'flex';
   document.getElementById('dbBody').innerHTML=fil.map((s,i)=>{
@@ -1034,17 +1095,20 @@ function renderDB() {
     const wale=s.wale?s.wale+' yrs':'—';
     const rc=s.rcStatus?`<span class="badge" style="font-size:.54rem;background:var(--amber-p);color:var(--amber)">${s.rcStatus}</span>`:'<span style="color:var(--light);font-size:.67rem">—</span>';
     const pg=s.priceGuide&&s.status!=='Sold'?` <span class="guide-tag">💰 ${f$(s.priceGuide)}</span>`:'';
+    const rowCC=s.source==='Childcare';
     return `<tr class="${i%2===1?'even':''}" onclick="openDetail('${s.id}')">
       <td><input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleSel('${s.id}',this)">
         <span class="taddr" style="display:inline-block;margin-left:.4rem">${s.address}<div class="sub">${s.suburb}${s.region?' · '+s.region:''}</div></span></td>
       <td><span class="src-tag ${srcTag(s.source)}">${srcLabel(s.source)}</span></td>
-      <td style="font-size:.74rem">${s.classification||'—'}</td>
+      <td style="font-size:.74rem">${rowCC&&s.operator?s.operator:(s.classification||'—')}</td>
       <td class="mono">${f$(s.price)}</td>
       <td style="font-size:.74rem">${fD(s.saleDate)}</td>
       <td class="yv">${yld?yld.toFixed(2)+'%':'—'}</td>
-      <td style="color:var(--mid);font-size:.73rem">${fM(s.landRate)}</td>
+      <td style="color:var(--mid);font-size:.73rem">${rowCC?(s.wale?s.wale+' yrs':'—'):fM(s.landRate)}</td>
       ${isL?`<td style="font-size:.73rem;color:var(--land);font-weight:600">${ha}</td>`:''}
       ${isP?`<td style="font-size:.73rem;font-weight:600">${wale}</td>`:''}
+      ${isCC?`<td style="font-size:.73rem;font-weight:600;color:var(--cc)">${s.places||'—'}</td>`:''}
+      ${isCC?`<td style="font-size:.73rem;font-weight:600;color:var(--cc)">${s.pricePerPlace?'$'+s.pricePerPlace.toLocaleString():'—'}</td>`:''}
       <td style="font-size:.71rem;color:var(--mid)">${s.agent1||'—'}</td>
       <td style="font-size:.71rem;color:var(--mid)">${s.agent2||'—'}</td>
       <td>${stale?'<span class="badge b-stale">⚠ Stale</span> ':''}<span class="badge b-${s.status.toLowerCase()}">${s.status}</span>${pg}</td>
@@ -1785,7 +1849,18 @@ async function openDetail(id){
   const gmaps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address+' '+s.suburb+' NSW')}`;
   const sv=`https://www.google.com/maps/@?api=1&map_action=pano&query=${encodeURIComponent(s.address+' '+s.suburb+' NSW')}`;
   const yld=getYld(s);
-  const fields=[
+  const isCC=s.source==='Childcare';
+  const fields=isCC?[
+    ['Sale Price',f$(s.price),true],['Licensed Places',s.places?s.places+' places':'—',false],
+    ['$/Place',s.pricePerPlace?'$'+s.pricePerPlace.toLocaleString():'—',false],['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],
+    ['Rent/Place',s.rentPerPlace?'$'+s.rentPerPlace.toLocaleString():'—',false],['Yield',yld?yld.toFixed(2)+'%':'—',false],
+    ['WALE',s.wale?s.wale+' yrs':'—',false],['Operator',s.operator||'—',false],
+    ['Vendor',s.vendor||'—',false],['Purchaser',s.purchaser||'—',false],
+    ['Agent 1',s.agent1||'—',false],['Agent 2',s.agent2||'—',false],
+    ['Process',s.process||'—',false],['Settlement Date',fD(s.settlementDate),false],
+    ['Source',`<span class="src-tag ${srcTag(s.source)}">${srcLabel(s.source)}</span>`,false],
+    ['Status',`<span class="badge b-${s.status.toLowerCase()}">${s.status}</span>`,false],
+  ]:[
     ['Sale Price',f$(s.price),true],['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],
     ['Yield',yld?yld.toFixed(2)+'%':'—',false],['Land $/m²',fM(s.landRate),false],
     ['Land Area',s.landArea?s.landArea+'m²':'—',false],['Floor Area',s.floorArea?s.floorArea+'m²':'—',false],
@@ -1860,10 +1935,15 @@ function editSale(id){
 function clearForm(){
   ['f_addr','f_sub','f_land','f_floor','f_zon','f_zon2','f_fsr','f_ht','f_cfg','f_con',
    'f_price','f_guide','f_sd','f_setd','f_cd','f_dl','f_nr','f_og','f_yld','f_lr',
-   'f_wale','f_pur','f_ven','f_ag1','f_ag2','f_com','f_lots'].forEach(id=>{
+   'f_wale','f_pur','f_ven','f_ag1','f_ag2','f_com','f_lots','f_operator','f_places'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f_reg','f_src','f_cls','f_stat','f_proc','f_ds'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  toggleCCFields('','f');
+}
+function toggleCCFields(src,prefix){
+  const isCC=src==='Childcare';
+  ['f-cc-sec','f-cc-flds'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isCC?'':'none';});
 }
 function fillForm(s){
   const fm={f_addr:'address',f_sub:'suburb',f_reg:'region',f_src:'source',f_cls:'classification',
@@ -1872,13 +1952,15 @@ function fillForm(s){
     f_price:'price',f_guide:'priceGuide',f_sd:'saleDate',f_setd:'settlementDate',
     f_cd:'campaignClose',f_dl:'dateListed',f_nr:'netRent',f_og:'outgoings',
     f_wale:'wale',f_pur:'purchaser',f_ven:'vendor',f_ag1:'agent1',f_ag2:'agent2',
-    f_com:'comments',f_stat:'status',f_proc:'process',f_lots:'noLots'};
+    f_com:'comments',f_stat:'status',f_proc:'process',f_lots:'noLots',
+    f_operator:'operator',f_places:'places'};
   Object.entries(fm).forEach(([id,key])=>{
     const el=document.getElementById(id);if(!el)return;
     const v=s[key];if(v!==null&&v!==undefined&&v!=='')el.value=v;
   });
   const yld=getYld(s);if(yld)document.getElementById('f_yld').value=yld.toFixed(2);
   if(s.landRate)document.getElementById('f_lr').value=Math.round(s.landRate);
+  toggleCCFields(s.source,'f');
 }
 function getForm(){
   const g=id=>document.getElementById(id)?.value?.trim()||'';
@@ -1887,6 +1969,7 @@ function getForm(){
   return {
     address:g('f_addr'),suburb:g('f_sub'),region:g('f_reg'),
     source:g('f_src')||'Metro',classification:g('f_cls'),
+    operator:g('f_operator'),places:n('f_places'),
     landArea:n('f_land'),floorArea:n('f_floor'),zoning:g('f_zon'),zoning2:g('f_zon2'),
     fsr:n('f_fsr'),height:n('f_ht'),configuration:g('f_cfg'),constraints:g('f_con'),
     devStage:g('f_ds'),noLots:n('f_lots'),
@@ -1909,6 +1992,10 @@ async function saveSale(){
   const btn=document.getElementById('f_save');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Saving…';
   if(data.price&&data.landArea&&!data.landRate)data.landRate=Math.round(data.price/data.landArea);
   if(data.price&&data.netRent&&!data.yld)data.yld=data.netRent/data.price;
+  if(data.source==='Childcare'&&data.places){
+    if(data.price)data.pricePerPlace=Math.round(data.price/data.places);
+    if(data.netRent)data.rentPerPlace=Math.round(data.netRent/data.places);
+  }
   // AI commentary
   try{data.analysis=await getAINote(data);}catch(e){}
   if(editId){
