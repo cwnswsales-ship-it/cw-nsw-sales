@@ -7,7 +7,7 @@ const path    = require('path');
 require('./db');
 
 // Auto-seed sample data on first boot if database is empty
-require('./seed');
+require('./seed')();
 
 const app = express();
 app.use(cors());

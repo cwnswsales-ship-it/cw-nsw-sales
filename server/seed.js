@@ -5,14 +5,14 @@
 
 const { db, syncDeveloperTags } = require('./db');
 
-const force = process.argv.includes('--force');
-const existing = db.prepare('SELECT COUNT(*) AS n FROM developers').get().n;
-if (existing > 0 && !force) {
-  console.log(`Database already has ${existing} developers — skipping seed. Use --force to reset.`);
-  process.exit(0);
-}
+function seed(force = false) {
+  const existing = db.prepare('SELECT COUNT(*) AS n FROM developers').get().n;
+  if (existing > 0 && !force) {
+    console.log(`Database already has ${existing} developers — skipping seed.`);
+    return;
+  }
 
-console.log('Seeding database...');
+  console.log('Seeding database...');
 
 // ── Wipe existing data ─────────────────────────────────────────────────────
 db.exec(`
@@ -343,9 +343,17 @@ const insertSource = db.prepare(`
   { name: 'Ryde Council DA Tracker',url: 'https://ryde.nsw.gov.au/council/da',     enabled: 1, robots: 1, notes: '' },
 ].forEach(s => insertSource.run(s.name, s.url, s.enabled, s.robots, s.notes));
 
-console.log('✓ Seed complete.');
-console.log(`  Developers: ${db.prepare('SELECT COUNT(*) AS n FROM developers').get().n}`);
-console.log(`  Projects:   ${db.prepare('SELECT COUNT(*) AS n FROM projects').get().n}`);
-console.log(`  Contacts:   ${db.prepare('SELECT COUNT(*) AS n FROM contacts').get().n}`);
-console.log(`  Intel:      ${db.prepare('SELECT COUNT(*) AS n FROM intel').get().n}`);
-console.log(`  Leads:      ${db.prepare('SELECT COUNT(*) AS n FROM scraped_leads').get().n}`);
+  console.log('✓ Seed complete.');
+  console.log(`  Developers: ${db.prepare('SELECT COUNT(*) AS n FROM developers').get().n}`);
+  console.log(`  Projects:   ${db.prepare('SELECT COUNT(*) AS n FROM projects').get().n}`);
+  console.log(`  Contacts:   ${db.prepare('SELECT COUNT(*) AS n FROM contacts').get().n}`);
+  console.log(`  Intel:      ${db.prepare('SELECT COUNT(*) AS n FROM intel').get().n}`);
+  console.log(`  Leads:      ${db.prepare('SELECT COUNT(*) AS n FROM scraped_leads').get().n}`);
+}
+
+// Run directly: node server/seed.js [--force]
+if (require.main === module) {
+  seed(process.argv.includes('--force'));
+}
+
+module.exports = seed;
