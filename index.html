@@ -20,6 +20,7 @@
   --metro:#1565C0;--metro-p:#EFF6FF;--metro-pb:#DBEAFE;--metro-t:#1E3A8A;
   --land:#15803D;--land-p:#F0FDF4;--land-pb:#DCFCE7;--land-t:#14532D;
   --prem:#B45309;--prem-p:#FFFBEB;--prem-pb:#FEF3C7;--prem-t:#78350F;
+  --cc:#7C3AED;
 }
 body{font-family:'Barlow',sans-serif;background:var(--pale);color:var(--ink);font-size:14px;overflow:hidden;height:100vh}
 /* ── HEADER ── */
@@ -538,7 +539,7 @@ function nav_go(name){
         <div class="fg"><label>Suburb *</label><input id="f_sub"></div>
         <div class="fg"><label>Region</label><select id="f_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option><option>Southern Tablelands</option></select></div>
         <div class="fg"><label>Source Database</label><select id="f_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="f_cls" onchange="toggleCCFields()"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="f_cls" onchange="toggleCCFields()"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Retail Net Lease</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="f_land" oninput="calcF()"></div>
         <div class="fg"><label>Floor Area (m²)</label><input type="number" id="f_floor"></div>
         <div class="fg"><label>Primary Zoning</label><input id="f_zon"></div>
@@ -550,10 +551,10 @@ function nav_go(name){
         <div class="fg"><label>Dev Stage</label><select id="f_ds"><option value="">—</option><option>Raw</option><option>DA Lodged</option><option>DA Approved</option><option>HDA Lodged</option><option>HDA Approved</option><option>SSD Lodged</option><option>SSD Approved</option><option>Civils Completed</option></select></div>
         <div class="fg"><label>No. Lots / Units</label><input type="number" id="f_lots"></div>
       </div>
-      <div class="fsec" id="f-cc-sec" style="display:none">Childcare Details</div>
+      <div class="fsec" id="f-cc-sec" style="display:none">Premium Investment Details</div>
       <div class="fg2" id="f-cc-flds" style="display:none">
-        <div class="fg"><label>Operator / Brand</label><input id="f_operator" placeholder="e.g. Goodstart, G8, Young Academics"></div>
-        <div class="fg"><label>Licensed Places</label><input type="number" id="f_places" min="1"></div>
+        <div class="fg"><label>Operator / Tenant</label><input id="f_operator" placeholder="e.g. Goodstart, McDonald's, Ampol"></div>
+        <div class="fg" id="f-places-wrap" style="display:none"><label>Licensed Places</label><input type="number" id="f_places" min="1"></div>
       </div>
       <div class="fsec">Transaction</div>
       <div class="fg3">
@@ -635,7 +636,7 @@ function nav_go(name){
         <div class="fg"><label>Suburb *</label><input id="ca_sub"></div>
         <div class="fg"><label>Region</label><select id="ca_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option></select></div>
         <div class="fg"><label>Source Database</label><select id="ca_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Retail Net Lease</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Primary Zoning</label><input id="ca_zon"></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="ca_land"></div>
       </div>
@@ -1854,16 +1855,30 @@ async function openDetail(id){
   const sv=`https://www.google.com/maps/@?api=1&map_action=pano&query=${encodeURIComponent(s.address+' '+s.suburb+' NSW')}`;
   const yld=getYld(s);
   const isCC=s.classification==='Childcare Centre';
+  const isPremInv=['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'].includes(s.classification);
   const fields=isCC?[
     ['Sale Price',f$(s.price),true],['Licensed Places',s.places?s.places+' places':'—',false],
     ['$/Place',s.pricePerPlace?'$'+s.pricePerPlace.toLocaleString():'—',false],['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],
     ['Rent/Place',s.rentPerPlace?'$'+s.rentPerPlace.toLocaleString():'—',false],['Yield',yld?yld.toFixed(2)+'%':'—',false],
     ['WALE',s.wale?s.wale+' yrs':'—',false],['Operator',s.operator||'—',false],
+    ['Land Area',s.landArea?s.landArea+'m²':'—',false],['Floor Area',s.floorArea?s.floorArea+'m²':'—',false],
     ['Vendor',s.vendor||'—',false],['Purchaser',s.purchaser||'—',false],
     ['Agent 1',s.agent1||'—',false],['Agent 2',s.agent2||'—',false],
     ['Process',s.process||'—',false],['Settlement Date',fD(s.settlementDate),false],
     ['Source',`<span class="src-tag ${srcTag(s.source)}">${srcLabel(s.source)}</span>`,false],
-    ['Status',`<span class="badge b-${s.status.toLowerCase()}">${s.status}</span>`,false],
+    ['Status',`<span class="badge b-${s.status?.toLowerCase()}">${s.status}</span>`,false],
+  ]:isPremInv?[
+    ['Sale Price',f$(s.price),true],['Tenant / Operator',s.operator||'—',false],
+    ['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],['Yield',yld?yld.toFixed(2)+'%':'—',false],
+    ['WALE',s.wale?s.wale+' yrs':'—',false],['Land $/m²',fM(s.landRate),false],
+    ['Land Area',s.landArea?s.landArea+'m²':'—',false],['Floor Area',s.floorArea?s.floorArea+'m²':'—',false],
+    ['Zoning',s.zoning||'—',false],['Outgoings',s.outgoings?f$(s.outgoings)+'/yr':'—',false],
+    ['Vendor',s.vendor||'—',false],['Purchaser',s.purchaser||'—',false],
+    ['Agent 1',s.agent1||'—',false],['Agent 2',s.agent2||'—',false],
+    ['Process',s.process||'—',false],['Settlement Date',fD(s.settlementDate),false],
+    ['RC Status',s.rcStatus||'—',false],
+    ['Source',`<span class="src-tag ${srcTag(s.source)}">${srcLabel(s.source)}</span>`,false],
+    ['Status',`<span class="badge b-${s.status?.toLowerCase()}">${s.status}</span>`,false],
   ]:[
     ['Sale Price',f$(s.price),true],['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],
     ['Yield',yld?yld.toFixed(2)+'%':'—',false],['Land $/m²',fM(s.landRate),false],
@@ -1877,7 +1892,7 @@ async function openDetail(id){
     ['Process',s.process||'—',false],['Campaign Close',fD(s.campaignClose),false],
     ['Settlement Date',fD(s.settlementDate),false],['RC Status',s.rcStatus||'—',false],
     ['Source',`<span class="src-tag ${srcTag(s.source)}">${srcLabel(s.source)}</span>`,false],
-    ['Status',`<span class="badge b-${s.status.toLowerCase()}">${s.status}</span>`,false],
+    ['Status',`<span class="badge b-${s.status?.toLowerCase()}">${s.status}</span>`,false],
   ];
   document.getElementById('det-body').innerHTML=`
     <div class="pimg" id="pimg-wrap">
@@ -1946,8 +1961,11 @@ function clearForm(){
   toggleCCFields('','f');
 }
 function toggleCCFields(){
-  const isCC=document.getElementById('f_cls')?.value==='Childcare Centre';
-  ['f-cc-sec','f-cc-flds'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isCC?'':'none';});
+  const cls=document.getElementById('f_cls')?.value||'';
+  const isPremInv=['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'].includes(cls);
+  const isCC=cls==='Childcare Centre';
+  ['f-cc-sec','f-cc-flds'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isPremInv?'':'none';});
+  const pw=document.getElementById('f-places-wrap');if(pw)pw.style.display=isCC?'':'none';
 }
 function fillForm(s){
   const fm={f_addr:'address',f_sub:'suburb',f_reg:'region',f_src:'source',f_cls:'classification',
@@ -2131,11 +2149,12 @@ async function commitImport(){
   const colMap={};
   importHeaders.forEach(h=>{const sel=document.getElementById('cm-'+h.replace(/[^a-z0-9]/gi,'_'));if(sel&&sel.value)colMap[h]=sel.value;});
   let added=0,dupes=0;
+  const newRecs=[];
   importRows.forEach(row=>{
-    const rec={id:gId(),source:'Metro',status:'Active',analysis:''};
+    const rec={id:gId(),source:'Premium Investment',status:'Sold',analysis:''};
     Object.entries(colMap).forEach(([col,field])=>{
       let val=row[col];if(!val||val==='')return;
-      const numF=['price','netRent','yld','landArea','landRate','floorArea','fsr','height','wale','priceGuide'];
+      const numF=['price','netRent','yld','landArea','landRate','floorArea','fsr','height','wale','priceGuide','places','pricePerPlace','rentPerPlace'];
       if(numF.includes(field))val=parseFloat(String(val).replace(/[$,]/g,''))||null;
       rec[field]=val;
     });
@@ -2144,13 +2163,55 @@ async function commitImport(){
     if(isDup){dupes++;return;}
     if(rec.price&&rec.landArea&&!rec.landRate)rec.landRate=Math.round(rec.price/rec.landArea);
     if(rec.price&&rec.netRent&&!rec.yld)rec.yld=rec.netRent/rec.price;
-    // Ensure all fields exist
+    if(rec.classification==='Childcare Centre'&&rec.places){
+      if(rec.price&&!rec.pricePerPlace)rec.pricePerPlace=Math.round(rec.price/rec.places);
+      if(rec.netRent&&!rec.rentPerPlace)rec.rentPerPlace=Math.round(rec.netRent/rec.places);
+    }
     IMPORT_FIELDS.forEach(f=>{if(rec[f]===undefined)rec[f]=null;});
-    sales.unshift(rec);added++;
+    sales.unshift(rec);newRecs.push(rec);added++;
   });
-  await syncAfterEdit();render();populateFilters();populateBench();closeM('importModal');
-  toast(`Imported ${added} records${dupes?' · '+dupes+' dupes skipped':''}`,'ok');
+  await syncAfterEdit();render();populateFilters();populateBench();
+  const missingAgents=newRecs.filter(r=>!r.agent1);
+  if(missingAgents.length){
+    showAgentReview(missingAgents,added,dupes);
+  }else{
+    closeM('importModal');
+    toast(`Imported ${added} records${dupes?' · '+dupes+' dupes skipped':''}`,'ok');
+  }
   runDupCheck(true);
+}
+
+function showAgentReview(recs,added,dupes){
+  const prev=document.getElementById('imp-preview');
+  document.getElementById('imp-commit').style.display='none';
+  prev.innerHTML=`<div style="background:var(--green-p);border:1px solid rgba(21,128,61,.2);border-radius:2px;padding:.72rem;margin-bottom:.55rem">
+    <p style="font-weight:700;font-size:.82rem;color:var(--green);margin-bottom:.18rem">✓ Imported ${added} record${added!==1?'s':''}${dupes?' · '+dupes+' dupes skipped':''}</p>
+    <p style="font-size:.72rem;color:var(--ink)">${recs.length} record${recs.length!==1?'s are':' is'} missing agent data — search online below then edit each record to fill in.</p>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:.75rem">
+    <thead><tr style="background:var(--ink);color:#fff">
+      <th style="padding:.35rem .55rem;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em">Address</th>
+      <th style="padding:.35rem .55rem;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em">Suburb</th>
+      <th style="padding:.35rem .55rem;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em">Type</th>
+      <th style="padding:.35rem .55rem;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em">Price</th>
+      <th style="padding:.35rem .55rem;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em">Find Agent</th>
+    </tr></thead>
+    <tbody>${recs.map((r,i)=>{
+      const q=encodeURIComponent('"'+r.address+'" "'+r.suburb+'" NSW sold commercial property agent');
+      const cr=encodeURIComponent(r.address+' '+r.suburb+' NSW sold site:commercialrealestate.com.au OR site:cbre.com.au OR site:stonebridge.com.au OR site:burgesssrawson.com.au');
+      return `<tr style="${i%2?'background:var(--pale)':''}">
+        <td style="padding:.38rem .55rem;font-weight:600">${r.address}</td>
+        <td style="padding:.38rem .55rem;color:var(--mid)">${r.suburb||'—'}</td>
+        <td style="padding:.38rem .55rem">${r.classification||'—'}</td>
+        <td style="padding:.38rem .55rem;font-family:monospace">${r.price?'$'+Math.round(r.price).toLocaleString():'—'}</td>
+        <td style="padding:.38rem .55rem;display:flex;gap:.3rem">
+          <a href="https://www.google.com/search?q=${q}" target="_blank" class="btn btn-out btn-xs">🔍 Google</a>
+          <a href="https://www.google.com/search?q=${cr}" target="_blank" class="btn btn-ink btn-xs">🏢 Agents</a>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>
+  <p style="font-size:.68rem;color:var(--mid);margin-top:.55rem">Click the buttons to open agent search, then click each record in the database to edit and add the agent name.</p>`;
 }
 
 // PDF queue
