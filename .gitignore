@@ -1,1 +1,3 @@
-data/\nnode_modules/\npackage-lock.json
+data/
+node_modules/
+package-lock.json
