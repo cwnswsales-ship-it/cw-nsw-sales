@@ -9,6 +9,9 @@
     "seed": "node server/seed.js",
     "setup": "npm install && npm run seed"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",
