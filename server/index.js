@@ -3,17 +3,27 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 
-// Initialise DB (runs schema migrations on first boot)
-require('./db');
+// ── Startup ────────────────────────────────────────────────────────────────
+try {
+  require('./db');
+  console.log('✓ Database initialised');
+} catch (e) {
+  console.error('✗ Database failed to initialise:', e.message);
+  process.exit(1);
+}
 
-// Auto-seed sample data on first boot if database is empty
-require('./seed')();
+try {
+  require('./seed')();
+  console.log('✓ Seed check complete');
+} catch (e) {
+  console.error('✗ Seed failed (non-fatal):', e.message);
+}
 
+// ── Express ────────────────────────────────────────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ── API routes ─────────────────────────────────────────────────────────────
 app.use('/api/developers', require('./routes/developers'));
 app.use('/api/projects',   require('./routes/projects'));
 app.use('/api/contacts',   require('./routes/contacts'));
@@ -21,21 +31,19 @@ app.use('/api/intel',      require('./routes/intel'));
 app.use('/api/scraped',    require('./routes/scraped'));
 app.use('/api/settings',   require('./routes/settings'));
 
-// ── Serve frontend ─────────────────────────────────────────────────────────
-const PUBLIC = path.join(__dirname, '..', 'public');
-app.use(express.static(PUBLIC));
-
-// SPA fallback — all non-API GETs serve index.html
-app.get(/^(?!\/api).*/, (_req, res) => {
-  res.sendFile(path.join(PUBLIC, 'index.html'));
-});
-
-// ── Health check ───────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+const PUBLIC = path.join(__dirname, '..', 'public');
+app.use(express.static(PUBLIC));
+app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  CW Developer Intelligence CRM`);
-  console.log(`  ──────────────────────────────`);
-  console.log(`  http://localhost:${PORT}\n`);
+  console.log(`  Running on port ${PORT}\n`);
+});
+
+process.on('uncaughtException', err => {
+  console.error('Uncaught exception:', err.message);
+  process.exit(1);
 });
