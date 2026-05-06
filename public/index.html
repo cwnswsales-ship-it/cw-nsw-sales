@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CW Developer Intelligence CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1B2A4A;--navy-d:#0F1B30;--navy-m:rgba(27,42,74,.08);--navy-b:rgba(27,42,74,.14);
+  --green:#1A6B42;--green-p:rgba(26,107,66,.1);--green-d:#135230;
+  --white:#fff;--pale:#F4F6FA;--border:#E1E5EE;--mid:#6B7490;--ink:#1A2038;
+  --amber:#D97706;--amber-p:rgba(217,119,6,.1);
+  --red:#DC2626;--red-p:rgba(220,38,38,.1);
+  --blue:#1565C0;--blue-p:rgba(21,101,192,.1);
+  --sidebar:188px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--pale);color:var(--ink);font-size:14px;height:100vh;overflow:hidden}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy-d);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;border-bottom:3px solid var(--green);position:fixed;top:0;left:0;right:0;z-index:300}
+.hdr-logo{display:flex;align-items:center;gap:.7rem}
+.hdr-logo svg{width:28px;height:28px;flex-shrink:0}
+.logo-t1{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;line-height:1}
+.logo-t2{font-size:.52rem;color:rgba(255,255,255,.45);letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+.hdr-acts{display:flex;gap:.3rem;align-items:center}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:.25rem;padding:.34rem .72rem;border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;white-space:nowrap}
+.btn-primary{background:var(--green);color:#fff;border-color:var(--green)}.btn-primary:hover{background:var(--green-d)}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}.btn-navy:hover{background:var(--navy-d)}
+.btn-ghost{background:transparent;color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.18)}.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.45)}
+.btn-out{background:transparent;color:var(--ink);border-color:var(--border)}.btn-out:hover{border-color:var(--navy);color:var(--navy)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#b45309}
+.btn-sm{padding:.22rem .52rem;font-size:.67rem}
+.btn-xs{padding:.14rem .38rem;font-size:.62rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:calc(100vh - 52px);margin-top:52px;overflow:hidden}
+
+/* ── SIDEBAR ── */
+nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--navy);display:flex;flex-direction:column;overflow-y:auto;padding:.5rem 0;flex-shrink:0}
+.nav-sec{padding:.6rem .85rem .18rem;font-size:.52rem;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.16em;font-weight:600}
+.ni{display:flex;align-items:center;gap:.42rem;padding:.46rem .85rem;color:rgba(255,255,255,.45);cursor:pointer;font-size:.75rem;font-weight:500;border-left:2.5px solid transparent;transition:all .1s;user-select:none}
+.ni:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05)}
+.ni.on{color:#fff;border-left-color:var(--green);background:rgba(26,107,66,.18)}
+.ni svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
+.nb{background:var(--green);color:#fff;border-radius:10px;padding:.04rem .32rem;font-size:.55rem;font-weight:700;margin-left:auto;line-height:1.5}
+.nb.amber{background:var(--amber)}.nb.red{background:var(--red)}.nb.blue{background:var(--blue)}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.view{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.view.on{display:flex}
+
+/* ── PAGE HEADER ── */
+.ph{background:var(--white);border-bottom:1px solid var(--border);padding:.65rem 1.2rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0}
+.ph h1{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy)}
+.ph-sub{font-size:.72rem;color:var(--mid);margin-left:.15rem}
+.ph-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
+
+/* ── TOOLBAR ── */
+.tb{padding:.5rem 1.2rem;display:flex;gap:.38rem;align-items:center;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.srch{position:relative;flex:1;min-width:160px;max-width:260px}
+.srch input{width:100%;padding:.32rem .46rem .32rem 1.7rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.74rem;background:var(--pale);color:var(--ink)}
+.srch input:focus{outline:none;border-color:var(--navy)}
+.srch-ic{position:absolute;left:.46rem;top:50%;transform:translateY(-50%);color:var(--mid);width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;pointer-events:none}
+.filt{padding:.3rem .42rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;background:var(--pale);color:var(--ink);cursor:pointer}
+.filt:focus{outline:none;border-color:var(--navy)}
+.tb-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
+.cnt{font-size:.67rem;color:var(--mid);white-space:nowrap}
+
+/* ── TABLE ── */
+.tw{flex:1;overflow:auto;min-height:0}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+thead th{background:var(--navy);color:#fff;padding:.46rem .7rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;position:sticky;top:0;z-index:10}
+thead th:first-child{border-left:3px solid var(--green)}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .08s}
+tbody tr:hover{background:var(--navy-m)}
+tbody tr.even{background:#fafafa}
+tbody tr.even:hover{background:var(--navy-m)}
+td{padding:.5rem .7rem;vertical-align:middle}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:.1rem .32rem;border-radius:2px;font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.b-active{background:var(--green-p);color:var(--green)}
+.b-planning{background:var(--blue-p);color:var(--blue)}
+.b-construction{background:var(--amber-p);color:var(--amber)}
+.b-completed{background:rgba(109,110,113,.12);color:var(--mid)}
+.b-onhold{background:var(--amber-p);color:var(--amber)}
+.b-withdrawn{background:rgba(109,110,113,.12);color:var(--mid)}
+.b-high{background:var(--green-p);color:var(--green)}
+.b-medium{background:var(--amber-p);color:var(--amber)}
+.b-low{background:var(--red-p);color:var(--red)}
+.b-pending{background:var(--amber-p);color:var(--amber)}
+.b-approved{background:var(--green-p);color:var(--green)}
+.b-rejected{background:var(--red-p);color:var(--red)}
+.b-current{background:var(--green-p);color:var(--green)}
+.b-update{background:var(--amber-p);color:var(--amber)}
+.b-changed{background:var(--red-p);color:var(--red)}
+.b-unchecked{background:rgba(109,110,113,.1);color:var(--mid)}
+.tag-pill{display:inline-flex;align-items:center;padding:.08rem .28rem;border-radius:10px;font-size:.58rem;font-weight:600;margin:.05rem .05rem;color:#fff}
+
+/* ── EMPTY STATE ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;color:var(--mid);text-align:center;gap:.45rem}
+.empty-ico{font-size:2.4rem;opacity:.5}
+.empty strong{font-size:.88rem;color:var(--ink)}
+.empty span{font-size:.78rem}
+
+/* ── DASHBOARD ── */
+.db-scroll{flex:1;overflow-y:auto;padding:1.1rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.7rem;margin-bottom:1.1rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem;border-top:3px solid var(--navy)}
+.stat-card.green{border-top-color:var(--green)}
+.stat-card.amber{border-top-color:var(--amber)}
+.stat-card.red{border-top-color:var(--red)}
+.stat-card.blue{border-top-color:var(--blue)}
+.stat-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.3rem;font-weight:600}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;line-height:1;color:var(--navy)}
+.stat-val.green{color:var(--green)}.stat-val.amber{color:var(--amber)}.stat-val.red{color:var(--red)}.stat-val.blue{color:var(--blue)}
+.stat-sub{font-size:.64rem;color:var(--mid);margin-top:.2rem}
+.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.db-grid.three{grid-template-columns:1fr 1fr 1fr}
+.db-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem}
+.db-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.6rem;font-weight:700}
+.db-row{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
+.db-row:last-child{border-bottom:none}
+.db-row-l{color:var(--mid);font-size:.72rem}
+.db-row-v{font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:.88rem}
+.bar-wrap{flex:1;background:var(--pale);border-radius:1px;height:5px;overflow:hidden;margin:0 .5rem}
+.bar-fill{height:100%;background:var(--navy);border-radius:1px}
+.intel-item{padding:.45rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
+.intel-item:last-child{border-bottom:none}
+.intel-meta{font-size:.63rem;color:var(--mid);margin-top:.18rem}
+.fu-item{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
+.fu-item:last-child{border-bottom:none}
+.fu-name{font-weight:600}
+.fu-dev{font-size:.67rem;color:var(--mid)}
+.fu-date{font-size:.67rem;white-space:nowrap}
+
+/* ── CONTACT CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.75rem;padding:1rem}
+.contact-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem;position:relative}
+.contact-card.incomplete{border-left:3px solid var(--amber)}
+.contact-card.linkedin-flag{border-left:3px solid var(--red)}
+.cc-name{font-size:.92rem;font-weight:700;color:var(--navy)}
+.cc-title{font-size:.74rem;color:var(--mid);margin:.1rem 0 .5rem}
+.cc-dev{font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:.55rem}
+.cc-field{display:flex;align-items:center;gap:.35rem;font-size:.74rem;margin:.22rem 0;color:var(--ink)}
+.cc-field svg{width:12px;height:12px;stroke:var(--mid);fill:none;stroke-width:2;flex-shrink:0}
+.cc-field a{color:var(--navy);text-decoration:none}.cc-field a:hover{text-decoration:underline}
+.cc-actions{display:flex;gap:.3rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);flex-wrap:wrap}
+.cc-flag{position:absolute;top:.55rem;right:.55rem;font-size:.58rem;font-weight:700;padding:.1rem .3rem;border-radius:2px;text-transform:uppercase}
+.cc-flag.incomplete{background:var(--amber-p);color:var(--amber)}
+.cc-flag.linkedin{background:var(--red-p);color:var(--red)}
+.cc-missing{font-size:.65rem;color:var(--amber);margin-top:.25rem}
+
+/* ── INTEL FEED ── */
+.intel-feed{flex:1;overflow-y:auto;padding:1rem}
+.intel-entry{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;margin-bottom:.6rem;border-left:3px solid var(--navy)}
+.ie-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.45rem}
+.ie-project{font-weight:700;font-size:.84rem;color:var(--navy)}
+.ie-dev{font-size:.7rem;color:var(--mid)}
+.ie-content{font-size:.8rem;line-height:1.5;color:var(--ink)}
+.ie-footer{display:flex;align-items:center;gap:.5rem;margin-top:.45rem;font-size:.65rem;color:var(--mid)}
+.ie-source{background:var(--navy-m);color:var(--navy);padding:.06rem .28rem;border-radius:2px;font-weight:600;font-size:.6rem;text-transform:uppercase}
+
+/* ── SCRAPED LEADS ── */
+.lead-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;margin-bottom:.6rem}
+.lead-card.high{border-left:3px solid var(--green)}
+.lead-card.medium{border-left:3px solid var(--amber)}
+.lead-card.low{border-left:3px solid var(--mid)}
+.lc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.45rem}
+.lc-title{font-weight:700;font-size:.88rem;color:var(--navy)}
+.lc-dev{font-size:.72rem;color:var(--mid);margin-top:.1rem}
+.lc-snippet{font-size:.76rem;color:var(--ink);line-height:1.5;background:var(--pale);border-radius:2px;padding:.5rem .7rem;margin:.5rem 0;border-left:2px solid var(--border)}
+.lc-footer{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.65rem;color:var(--mid)}
+.lc-actions{display:flex;gap:.35rem;margin-top:.6rem}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,27,48,.55);z-index:500;align-items:center;justify-content:center}
+.overlay.on{display:flex}
+.modal{background:var(--white);border-radius:3px;width:600px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.modal.wide{width:760px}
+.modal-hdr{background:var(--navy);color:#fff;padding:.85rem 1.1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:3px 3px 0 0}
+.modal-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:1.2rem;line-height:1;padding:.1rem .3rem}
+.modal-close:hover{color:#fff}
+.modal-body{padding:1.1rem;overflow-y:auto;flex:1}
+.modal-footer{padding:.75rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.4rem;justify-content:flex-end;flex-shrink:0}
+
+/* ── FORM ── */
+.fg{margin-bottom:.75rem}
+.fg label{display:block;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.28rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.38rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--navy)}
+.fg textarea{resize:vertical;min-height:72px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.fg-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-hint{font-size:.65rem;color:var(--mid);margin-top:.2rem}
+
+/* ── DETAIL PANEL ── */
+.detail-wrap{display:flex;flex:1;overflow:hidden}
+.detail-list{flex:1;overflow-y:auto;min-height:0}
+.detail-panel{width:380px;min-width:380px;background:var(--white);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dp-hdr{background:var(--navy);color:#fff;padding:.85rem 1rem;flex-shrink:0}
+.dp-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.dp-hdr p{font-size:.68rem;color:rgba(255,255,255,.55);margin-top:.15rem}
+.dp-body{flex:1;overflow-y:auto;padding:.85rem 1rem}
+.dp-close{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:1.1rem;margin-left:auto;padding:.1rem}
+.dp-close:hover{color:#fff}
+.dp-section{margin-bottom:1rem}
+.dp-section h4{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.5rem;padding-bottom:.28rem;border-bottom:1px solid var(--border)}
+.dp-field{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.78rem;border-bottom:1px solid var(--pale)}
+.dp-field:last-child{border-bottom:none}
+.dp-field-l{color:var(--mid);font-size:.72rem;flex-shrink:0;margin-right:.5rem}
+.dp-field-v{font-weight:500;text-align:right;word-break:break-word}
+.dp-actions{padding:.65rem 1rem;border-top:1px solid var(--border);display:flex;gap:.35rem;flex-wrap:wrap;flex-shrink:0}
+.intel-mini{font-size:.75rem;padding:.38rem .5rem;background:var(--pale);border-radius:2px;margin-bottom:.38rem;border-left:2px solid var(--navy)}
+.intel-mini .im-date{font-size:.62rem;color:var(--mid);margin-top:.12rem}
+
+/* ── SETTINGS ── */
+.settings-wrap{flex:1;overflow-y:auto;padding:1.1rem}
+.settings-section{background:var(--white);border:1px solid var(--border);border-radius:3px;margin-bottom:1rem;overflow:hidden}
+.ss-hdr{background:var(--navy);color:#fff;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between}
+.ss-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.ss-body{padding:.85rem 1rem}
+.source-row{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
+.source-row:last-child{border-bottom:none}
+.source-name{font-weight:600;flex:1}
+.source-url{font-size:.68rem;color:var(--mid);flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toggle{position:relative;width:32px;height:17px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-sl{position:absolute;inset:0;background:var(--border);border-radius:9px;cursor:pointer;transition:.2s}
+.toggle input:checked+.toggle-sl{background:var(--green)}
+.toggle-sl:before{content:'';position:absolute;width:13px;height:13px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-sl:before{transform:translateX(15px)}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:1.2rem;right:1.2rem;z-index:900;display:flex;flex-direction:column;gap:.4rem}
+.toast{background:var(--navy-d);color:#fff;padding:.55rem .9rem;border-radius:3px;font-size:.78rem;border-left:3px solid var(--green);animation:toast-in .2s ease;max-width:320px}
+.toast.err{border-left-color:var(--red)}
+@keyframes toast-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── MISC ── */
+.sep{width:1px;background:rgba(255,255,255,.12);height:20px;flex-shrink:0}
+.copy-btn{background:none;border:none;cursor:pointer;color:var(--mid);padding:.1rem;line-height:1}
+.copy-btn:hover{color:var(--navy)}
+.copy-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+a{color:var(--navy);text-decoration:none}a:hover{text-decoration:underline}
+.loading{text-align:center;padding:2rem;color:var(--mid);font-size:.82rem}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <svg viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="2" fill="#1A6B42"/>
+      <path d="M6 14 L14 6 L22 14 L14 22 Z" fill="none" stroke="#fff" stroke-width="1.8"/>
+      <circle cx="14" cy="14" r="3" fill="#fff"/>
+    </svg>
+    <div>
+      <div class="logo-t1">Cushman &amp; Wakefield</div>
+      <div class="logo-t2">Developer Intelligence CRM</div>
+    </div>
+  </div>
+  <div class="hdr-acts">
+    <button class="btn btn-ghost btn-sm" onclick="runLinkedInCheck()">⚡ LinkedIn Check</button>
+    <div class="sep"></div>
+    <button class="btn btn-ghost btn-sm" onclick="nav('scraped')">🔍 Scraped Leads <span id="hdr-leads-count" style="display:none" class="nb amber">0</span></button>
+  </div>
+</header>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav>
+    <div class="nav-sec">Main</div>
+    <div class="ni on" id="ni-dashboard" onclick="nav('dashboard')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="ni" id="ni-developers" onclick="nav('developers')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Developers
+    </div>
+    <div class="ni" id="ni-projects" onclick="nav('projects')">
+      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Projects
+    </div>
+    <div class="ni" id="ni-contacts" onclick="nav('contacts')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Contacts
+    </div>
+    <div class="nav-sec">Intelligence</div>
+    <div class="ni" id="ni-intel" onclick="nav('intel')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Intel
+    </div>
+    <div class="ni" id="ni-scraped" onclick="nav('scraped')">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Scraped Leads
+      <span class="nb amber" id="nb-scraped">0</span>
+    </div>
+    <div class="nav-sec">Admin</div>
+    <div class="ni" id="ni-settings" onclick="nav('settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="view on" id="view-dashboard">
+      <div class="ph"><h1>Dashboard</h1><span class="ph-sub">NSW Investment Sales Team</span>
+        <div class="ph-r"><button class="btn btn-out btn-sm" onclick="loadDashboard()">↻ Refresh</button></div>
+      </div>
+      <div class="db-scroll" id="db-content"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- ── DEVELOPERS ── -->
+    <div class="view" id="view-developers">
+      <div class="ph"><h1>Developers</h1>
+        <div class="ph-r">
+          <button class="btn btn-out btn-sm" onclick="exportCSV('developers')">↓ Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openDevModal()">+ Add Developer</button>
+        </div>
+      </div>
+      <div class="tb">
+        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="dev-q" placeholder="Search developers…" oninput="loadDevelopers()">
+        </div>
+        <select class="filt" id="dev-type" onchange="loadDevelopers()"><option value="">All Types</option><option>Residential</option><option>Commercial</option><option>Mixed</option><option>Industrial</option><option>Childcare</option><option>Other</option></select>
+        <select class="filt" id="dev-owner" onchange="loadDevelopers()"><option value="">All Owners</option></select>
+        <span class="cnt" id="dev-cnt"></span>
+        <div class="tb-r"></div>
+      </div>
+      <div class="detail-wrap">
+        <div class="tw detail-list" id="dev-list"></div>
+        <div class="detail-panel" id="dev-panel" style="display:none">
+          <div class="dp-hdr">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div><h2 id="dp-dev-name">–</h2><p id="dp-dev-sub">–</p></div>
+              <button class="dp-close" onclick="closePanel('dev-panel')">✕</button>
+            </div>
+          </div>
+          <div class="dp-body" id="dp-dev-body"></div>
+          <div class="dp-actions" id="dp-dev-actions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROJECTS ── -->
+    <div class="view" id="view-projects">
+      <div class="ph"><h1>Projects</h1>
+        <div class="ph-r">
+          <button class="btn btn-out btn-sm" onclick="exportCSV('projects')">↓ Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openProjectModal()">+ Add Project</button>
+        </div>
+      </div>
+      <div class="tb">
+        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="proj-q" placeholder="Search projects…" oninput="loadProjects()">
+        </div>
+        <select class="filt" id="proj-type" onchange="loadProjects()"><option value="">All Types</option><option>Residential</option><option>Commercial</option><option>Mixed Use</option><option>Industrial</option><option>Childcare</option><option>Land</option></select>
+        <select class="filt" id="proj-status" onchange="loadProjects()"><option value="">All Status</option><option>Active</option><option>Planning</option><option>Under Construction</option><option>Completed</option><option>On Hold</option><option>Withdrawn</option></select>
+        <select class="filt" id="proj-dev" onchange="loadProjects()"><option value="">All Developers</option></select>
+        <span class="cnt" id="proj-cnt"></span>
+      </div>
+      <div class="detail-wrap">
+        <div class="tw detail-list" id="proj-list"></div>
+        <div class="detail-panel" id="proj-panel" style="display:none">
+          <div class="dp-hdr">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div><h2 id="dp-proj-name">–</h2><p id="dp-proj-sub">–</p></div>
+              <button class="dp-close" onclick="closePanel('proj-panel')">✕</button>
+            </div>
+          </div>
+          <div class="dp-body" id="dp-proj-body"></div>
+          <div class="dp-actions" id="dp-proj-actions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONTACTS ── -->
+    <div class="view" id="view-contacts">
+      <div class="ph"><h1>Contacts</h1>
+        <div class="ph-r">
+          <button class="btn btn-out btn-sm" onclick="exportCSV('contacts')">↓ Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openContactModal()">+ Add Contact</button>
+        </div>
+      </div>
+      <div class="tb">
+        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="con-q" placeholder="Search contacts…" oninput="loadContacts()">
+        </div>
+        <select class="filt" id="con-dev" onchange="loadContacts()"><option value="">All Developers</option></select>
+        <select class="filt" id="con-li" onchange="loadContacts()"><option value="">All LinkedIn Status</option><option value="Potential Update">Needs Review</option><option value="Confirmed Changed">Changed</option><option value="Current">Current</option><option value="Unchecked">Unchecked</option></select>
+        <label style="font-size:.72rem;display:flex;align-items:center;gap:.3rem;cursor:pointer">
+          <input type="checkbox" id="con-incomplete" onchange="loadContacts()"> Incomplete only
+        </label>
+        <span class="cnt" id="con-cnt"></span>
+      </div>
+      <div class="cards-grid" id="con-list" style="flex:1;overflow-y:auto"></div>
+    </div>
+
+    <!-- ── INTEL ── -->
+    <div class="view" id="view-intel">
+      <div class="ph"><h1>Intel</h1>
+        <div class="ph-r"><button class="btn btn-primary btn-sm" onclick="openIntelModal()">+ Add Intel</button></div>
+      </div>
+      <div class="tb">
+        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="intel-q" placeholder="Search intel…" oninput="loadIntel()">
+        </div>
+        <select class="filt" id="intel-source" onchange="loadIntel()"><option value="">All Sources</option><option>Internal</option><option>Press</option><option>DA Portal</option><option>Agent</option><option>LinkedIn</option><option>Other</option></select>
+        <span class="cnt" id="intel-cnt"></span>
+      </div>
+      <div class="intel-feed" id="intel-list"></div>
+    </div>
+
+    <!-- ── SCRAPED LEADS ── -->
+    <div class="view" id="view-scraped">
+      <div class="ph"><h1>Scraped Leads</h1><span class="ph-sub">Review before adding to database</span>
+        <div class="ph-r">
+          <select class="filt" id="lead-status" onchange="loadScraped()"><option value="Pending">Pending Review</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="all">All</option></select>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:1rem" id="scraped-list"></div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div class="view" id="view-settings">
+      <div class="ph"><h1>Settings</h1></div>
+      <div class="settings-wrap" id="settings-body"><div class="loading">Loading…</div></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- ── MODALS ── -->
+
+<!-- Developer Modal -->
+<div class="overlay" id="modal-dev">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="modal-dev-title">Add Developer</h2><button class="modal-close" onclick="closeModal('modal-dev')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="dev-id">
+      <div class="fg-row">
+        <div class="fg"><label>Company Name *</label><input id="dev-name" placeholder="e.g. Meriton Group"></div>
+        <div class="fg"><label>ABN</label><input id="dev-abn" placeholder="12 345 678 901"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Type</label>
+          <select id="dev-type-f"><option value="">– Select –</option><option>Residential</option><option>Commercial</option><option>Mixed</option><option>Industrial</option><option>Childcare</option><option>Other</option></select>
+        </div>
+        <div class="fg"><label>Suburb</label><input id="dev-suburb" placeholder="e.g. Mascot"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Website</label><input id="dev-website" placeholder="https://…"></div>
+        <div class="fg"><label>Relationship Owner</label><select id="dev-owner-f"><option value="">– Select –</option></select></div>
+      </div>
+      <div class="fg"><label>Tags <span style="font-weight:400;text-transform:none">(comma-separated)</span></label><input id="dev-tags" placeholder="e.g. Active Pipeline, High Value"></div>
+      <div class="fg"><label>Notes</label><textarea id="dev-notes" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-dev')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDeveloper()">Save Developer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div class="overlay" id="modal-proj">
+  <div class="modal wide">
+    <div class="modal-hdr"><h2 id="modal-proj-title">Add Project</h2><button class="modal-close" onclick="closeModal('modal-proj')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="proj-id">
+      <div class="fg-row">
+        <div class="fg"><label>Developer *</label><select id="proj-dev-f"><option value="">– Select Developer –</option></select></div>
+        <div class="fg"><label>Project Name *</label><input id="proj-name" placeholder="e.g. World Tower Stage 3"></div>
+      </div>
+      <div class="fg"><label>Address</label><input id="proj-address" placeholder="Street address"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Suburb</label><input id="proj-suburb-f" placeholder="e.g. Sydney CBD"></div>
+        <div class="fg"><label>Project Type</label>
+          <select id="proj-type-f"><option value="">– Select –</option><option>Residential</option><option>Commercial</option><option>Mixed Use</option><option>Industrial</option><option>Childcare</option><option>Land</option></select>
+        </div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Status</label>
+          <select id="proj-status-f"><option>Active</option><option>Planning</option><option>Under Construction</option><option>Completed</option><option>On Hold</option><option>Withdrawn</option></select>
+        </div>
+        <div class="fg"><label>Planning Status</label>
+          <select id="proj-planning"><option value="">–</option><option>DA Pending</option><option>DA Approved</option><option>CDC</option><option>Construction Certificate</option><option>Completed</option></select>
+        </div>
+      </div>
+      <div class="fg-row three">
+        <div class="fg"><label>Est. Value (AUD)</label><input id="proj-value" type="number" placeholder="0"></div>
+        <div class="fg"><label>Lot / Unit Count</label><input id="proj-lots" type="number" placeholder="0"></div>
+        <div class="fg"><label>Sales Agent</label><input id="proj-agent" placeholder="Agent name"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Funder</label><input id="proj-funder-f" placeholder="e.g. Westpac"></div>
+        <div class="fg"><label>Valuer</label><input id="proj-valuer-f" placeholder="e.g. JLL"></div>
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="proj-notes" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-proj')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="overlay" id="modal-con">
+  <div class="modal wide">
+    <div class="modal-hdr"><h2 id="modal-con-title">Add Contact</h2><button class="modal-close" onclick="closeModal('modal-con')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="con-id">
+      <div class="fg-row">
+        <div class="fg"><label>First Name *</label><input id="con-fn" placeholder="First name"></div>
+        <div class="fg"><label>Last Name *</label><input id="con-ln" placeholder="Last name"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Title / Role</label><input id="con-title" placeholder="e.g. Development Director"></div>
+        <div class="fg"><label>Developer</label><select id="con-dev-f"><option value="">– No Developer –</option></select></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Phone</label><input id="con-phone" placeholder="+61 2 …"></div>
+        <div class="fg"><label>Email</label><input id="con-email" type="email" placeholder="name@company.com"></div>
+      </div>
+      <div class="fg"><label>LinkedIn URL</label><input id="con-li" placeholder="https://linkedin.com/in/…"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Last Contact Date</label><input id="con-lc" type="date"></div>
+        <div class="fg"><label>Follow-up Date</label><input id="con-fu" type="date"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Source</label><input id="con-src" placeholder="e.g. Direct, Referral, Event"></div>
+        <div class="fg"><label>Relationship Owner</label><select id="con-owner-f"><option value="">– Select –</option></select></div>
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="con-notes" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-con')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Intel Modal -->
+<div class="overlay" id="modal-intel">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Add Intel Update</h2><button class="modal-close" onclick="closeModal('modal-intel')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Developer</label><select id="intel-dev-f"><option value="">– Select Developer –</option></select></div>
+      <div class="fg"><label>Project (optional)</label><select id="intel-proj-f"><option value="">– No specific project –</option></select></div>
+      <div class="fg"><label>Intel / Notes *</label><textarea id="intel-content" rows="5" placeholder="What did you hear, see or find?"></textarea></div>
+      <div class="fg-row">
+        <div class="fg"><label>Source</label>
+          <select id="intel-src-f"><option>Internal</option><option>Press</option><option>DA Portal</option><option>Agent</option><option>LinkedIn</option><option>Other</option></select>
+        </div>
+        <div class="fg"><label>Date</label><input id="intel-date" type="date"></div>
+      </div>
+      <div class="fg"><label>Source URL (optional)</label><input id="intel-url" placeholder="https://…"></div>
+      <div class="fg"><label>Added By</label><input id="intel-by" placeholder="Your name"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-intel')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIntel()">Save Intel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Promote Lead Modal -->
+<div class="overlay" id="modal-promote">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Approve &amp; Promote Lead</h2><button class="modal-close" onclick="closeModal('modal-promote')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:.8rem;color:var(--mid);margin-bottom:.85rem">Approve this scraped lead and optionally create database records from it.</p>
+      <input type="hidden" id="promote-lead-id">
+      <div class="fg">
+        <label>Existing Developer (leave blank to create new)</label>
+        <select id="promote-dev"><option value="">– Create new developer –</option></select>
+      </div>
+      <div class="fg" style="display:flex;align-items:center;gap:.5rem">
+        <input type="checkbox" id="promote-create-dev" checked>
+        <label style="font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--ink)">Create new Developer record if no existing match</label>
+      </div>
+      <div class="fg" style="display:flex;align-items:center;gap:.5rem">
+        <input type="checkbox" id="promote-create-proj" checked>
+        <label style="font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--ink)">Create new Project record</label>
+      </div>
+      <div class="fg"><label>Reviewer Notes</label><textarea id="promote-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-promote')">Cancel</button>
+      <button class="btn btn-primary" onclick="promoteLead()">Approve &amp; Promote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="overlay" id="modal-confirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr" style="background:var(--red)"><h2>Confirm Delete</h2><button class="modal-close" onclick="closeModal('modal-confirm')">✕</button></div>
+    <div class="modal-body">
+      <p id="confirm-msg" style="font-size:.84rem;line-height:1.5"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-confirm')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── API ────────────────────────────────────────────────────────────────────
+const API = {
+  async get(path) {
+    const r = await fetch('/api' + path);
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async post(path, body) {
+    const r = await fetch('/api' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async put(path, body) {
+    const r = await fetch('/api' + path, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async patch(path, body) {
+    const r = await fetch('/api' + path, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async del(path) {
+    const r = await fetch('/api' + path, { method:'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+};
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+let currentView = 'dashboard';
+function nav(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  const v = document.getElementById('view-' + name);
+  const n = document.getElementById('ni-' + name);
+  if (v) v.classList.add('on');
+  if (n) n.classList.add('on');
+  currentView = name;
+  if (name === 'dashboard')  loadDashboard();
+  if (name === 'developers') loadDevelopers();
+  if (name === 'projects')   loadProjects();
+  if (name === 'contacts')   loadContacts();
+  if (name === 'intel')      loadIntel();
+  if (name === 'scraped')    loadScraped();
+  if (name === 'settings')   loadSettings();
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg, err = false) {
+  const w = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast' + (err ? ' err' : '');
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function fmtMoney(v) {
+  if (!v) return '–';
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  return '$' + v.toLocaleString();
+}
+function fmtDate(s) {
+  if (!s) return '–';
+  const d = new Date(s);
+  return d.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+}
+function daysFromNow(s) {
+  if (!s) return null;
+  return Math.round((new Date(s) - new Date()) / 864e5);
+}
+function statusBadge(s) {
+  const map = { 'Active':'active','Planning':'planning','Under Construction':'construction','Completed':'completed','On Hold':'onhold','Withdrawn':'withdrawn' };
+  return `<span class="badge b-${map[s]||'active'}">${s||'–'}</span>`;
+}
+function linkedInBadge(s) {
+  const map = { 'Current':'current','Potential Update':'update','Confirmed Changed':'changed','Unchecked':'unchecked' };
+  const labels = { 'Current':'Current','Potential Update':'Review','Confirmed Changed':'Changed','Unchecked':'Unchecked' };
+  return `<span class="badge b-${map[s]||'unchecked'}">${labels[s]||s||'–'}</span>`;
+}
+function confidenceBadge(s) {
+  const map = { 'High':'high','Medium':'medium','Low':'low' };
+  return `<span class="badge b-${map[s]||'low'}">${s||'–'}</span>`;
+}
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
+}
+
+function closePanel(id) {
+  document.getElementById(id).style.display = 'none';
+}
+function openModal(id) {
+  document.getElementById(id).classList.add('on');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('on');
+}
+
+// ── CONFIRM DELETE ─────────────────────────────────────────────────────────
+function confirmDelete(msg, onOk) {
+  document.getElementById('confirm-msg').textContent = msg;
+  const btn = document.getElementById('confirm-ok');
+  btn.onclick = () => { closeModal('modal-confirm'); onOk(); };
+  openModal('modal-confirm');
+}
+
+// ── POPULATE DEVELOPER DROPDOWNS ──────────────────────────────────────────
+async function populateDevDropdowns() {
+  const devs = await API.get('/developers');
+  ['proj-dev-f','intel-dev-f','con-dev-f','promote-dev'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const first = sel.options[0];
+    sel.innerHTML = '';
+    sel.appendChild(first);
+    devs.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.id; o.textContent = d.name;
+      sel.appendChild(o);
+    });
+  });
+  // Filter dropdowns
+  ['dev-owner','proj-dev','con-dev'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const first = sel.options[0];
+  });
+  // Owner dropdowns
+  const users = await API.get('/settings/users');
+  ['dev-owner-f','con-owner-f'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const first = sel.options[0];
+    sel.innerHTML = '';
+    sel.appendChild(first);
+    users.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.name; o.textContent = u.name;
+      sel.appendChild(o);
+    });
+  });
+  const devOwnerFilt = document.getElementById('dev-owner');
+  if (devOwnerFilt) {
+    const first = devOwnerFilt.options[0];
+    devOwnerFilt.innerHTML = '';
+    devOwnerFilt.appendChild(first);
+    users.forEach(u => { const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; devOwnerFilt.appendChild(o); });
+  }
+  const projDevFilt = document.getElementById('proj-dev');
+  if (projDevFilt) {
+    const first = projDevFilt.options[0];
+    projDevFilt.innerHTML = '';
+    projDevFilt.appendChild(first);
+    devs.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; projDevFilt.appendChild(o); });
+  }
+  const conDevFilt = document.getElementById('con-dev');
+  if (conDevFilt) {
+    const first = conDevFilt.options[0];
+    conDevFilt.innerHTML = '';
+    conDevFilt.appendChild(first);
+    devs.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; conDevFilt.appendChild(o); });
+  }
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const el = document.getElementById('db-content');
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const s = await API.get('/settings/stats');
+    document.getElementById('nb-scraped').textContent = s.pending_scraped;
+    const hc = document.getElementById('hdr-leads-count');
+    if (s.pending_scraped > 0) { hc.textContent = s.pending_scraped; hc.style.display=''; } else { hc.style.display='none'; }
+
+    const maxFunder = s.top_funders[0]?.count || 1;
+    const maxValuer = s.top_valuers[0]?.count || 1;
+
+    el.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Developers</div><div class="stat-val">${s.total_developers}</div></div>
+        <div class="stat-card green"><div class="stat-label">Active Projects</div><div class="stat-val green">${s.active_projects}</div><div class="stat-sub">${s.total_projects} total</div></div>
+        <div class="stat-card"><div class="stat-label">Contacts</div><div class="stat-val">${s.total_contacts}</div><div class="stat-sub">${s.incomplete_contacts} incomplete</div></div>
+        <div class="stat-card amber"><div class="stat-label">Scraped Leads</div><div class="stat-val amber">${s.pending_scraped}</div><div class="stat-sub">awaiting review</div></div>
+        <div class="stat-card red"><div class="stat-label">Follow-ups Due</div><div class="stat-val red">${s.followups_due}</div></div>
+        <div class="stat-card amber"><div class="stat-label">LinkedIn Flags</div><div class="stat-val amber">${s.linkedin_flags}</div><div class="stat-sub">needs review</div></div>
+      </div>
+      <div class="db-grid" style="margin-bottom:.7rem">
+        <div class="db-card">
+          <h3>Follow-ups This Week</h3>
+          ${s.followup_contacts.length === 0 ? '<div style="color:var(--mid);font-size:.78rem">No follow-ups due</div>' :
+            s.followup_contacts.map(c => {
+              const d = daysFromNow(c.follow_up_date);
+              const label = d < 0 ? `<span style="color:var(--red);font-weight:700">${Math.abs(d)}d overdue</span>` : d === 0 ? `<span style="color:var(--amber);font-weight:700">Today</span>` : `<span style="color:var(--mid)">${d}d</span>`;
+              return `<div class="fu-item"><div><div class="fu-name" style="cursor:pointer" onclick="nav('contacts')">${esc(c.first_name)} ${esc(c.last_name)}</div><div class="fu-dev">${esc(c.developer_name||'–')} · ${esc(c.title||'–')}</div></div><div class="fu-date">${label}</div></div>`;
+            }).join('')}
+        </div>
+        <div class="db-card">
+          <h3>Recent Intel</h3>
+          ${s.recent_intel.length === 0 ? '<div style="color:var(--mid);font-size:.78rem">No intel yet</div>' :
+            s.recent_intel.map(i => `
+              <div class="intel-item">
+                <div style="font-weight:600;font-size:.78rem">${esc(i.project_name||i.developer_name||'General')}</div>
+                <div>${esc(i.content.slice(0,100))}${i.content.length>100?'…':''}</div>
+                <div class="intel-meta">${esc(i.source||'–')} · ${fmtDate(i.intel_date)}</div>
+              </div>`).join('')}
+        </div>
+      </div>
+      <div class="db-grid three">
+        <div class="db-card">
+          <h3>Top Funders</h3>
+          ${s.top_funders.map(f => `
+            <div class="db-row">
+              <span class="db-row-l">${esc(f.name)}</span>
+              <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(f.count/maxFunder*100)}%"></div></div>
+              <span class="db-row-v">${f.count}</span>
+            </div>`).join('') || '<div style="color:var(--mid);font-size:.78rem">No data</div>'}
+        </div>
+        <div class="db-card">
+          <h3>Top Valuers</h3>
+          ${s.top_valuers.map(v => `
+            <div class="db-row">
+              <span class="db-row-l">${esc(v.name)}</span>
+              <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(v.count/maxValuer*100)}%"></div></div>
+              <span class="db-row-v">${v.count}</span>
+            </div>`).join('') || '<div style="color:var(--mid);font-size:.78rem">No data</div>'}
+        </div>
+        <div class="db-card">
+          <h3>Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.2rem">
+            <button class="btn btn-primary btn-sm" onclick="openDevModal()">+ Add Developer</button>
+            <button class="btn btn-navy btn-sm" onclick="openProjectModal()">+ Add Project</button>
+            <button class="btn btn-out btn-sm" onclick="openContactModal()">+ Add Contact</button>
+            <button class="btn btn-out btn-sm" onclick="openIntelModal()">+ Add Intel</button>
+            <button class="btn btn-amber btn-sm" onclick="nav('scraped')">Review Scraped Leads (${s.pending_scraped})</button>
+          </div>
+        </div>
+      </div>`;
+  } catch(e) { el.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><strong>Error loading dashboard</strong><span>${e.message}</span></div>`; }
+}
+
+// ── DEVELOPERS ─────────────────────────────────────────────────────────────
+async function loadDevelopers() {
+  const q = document.getElementById('dev-q').value;
+  const type = document.getElementById('dev-type').value;
+  const owner = document.getElementById('dev-owner').value;
+  const params = new URLSearchParams({ q, type, owner });
+  try {
+    const devs = await API.get('/developers?' + params);
+    document.getElementById('dev-cnt').textContent = devs.length + ' developer' + (devs.length !== 1 ? 's' : '');
+    const el = document.getElementById('dev-list');
+    if (!devs.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">🏢</div><strong>No developers found</strong><span>Try adjusting your filters or add a new developer.</span></div>`; return; }
+    el.innerHTML = `<table>
+      <thead><tr>
+        <th>Developer</th><th>Type</th><th>Suburb</th><th>Projects</th><th>Contacts</th><th>Owner</th><th>Tags</th><th>Updated</th><th></th>
+      </tr></thead>
+      <tbody>${devs.map((d,i) => `
+        <tr class="${i%2?'even':''}" onclick="showDevPanel(${d.id})">
+          <td><div style="font-weight:600">${esc(d.name)}</div><div style="font-size:.65rem;color:var(--mid)">${esc(d.abn||'–')}</div></td>
+          <td><span class="badge b-active">${esc(d.type||'–')}</span></td>
+          <td>${esc(d.suburb||'–')}</td>
+          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700">${d.project_count}</td>
+          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700">${d.contact_count}</td>
+          <td style="font-size:.72rem">${esc(d.relationship_owner||'–')}</td>
+          <td>${(d.tags||[]).map(t=>`<span class="tag-pill" style="background:${t.colour}">${esc(t.name)}</span>`).join('')}</td>
+          <td style="font-size:.7rem;color:var(--mid)">${fmtDate(d.updated_at)}</td>
+          <td onclick="event.stopPropagation()">
+            <button class="btn btn-out btn-xs" onclick="openDevModal(${d.id})">Edit</button>
+          </td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { toast(e.message, true); }
+}
+
+async function showDevPanel(id) {
+  try {
+    const d = await API.get('/developers/' + id);
+    document.getElementById('dp-dev-name').textContent = d.name;
+    document.getElementById('dp-dev-sub').textContent = (d.type||'–') + (d.suburb ? ' · ' + d.suburb : '');
+    const body = document.getElementById('dp-dev-body');
+    body.innerHTML = `
+      <div class="dp-section">
+        <h4>Details</h4>
+        <div class="dp-field"><span class="dp-field-l">ABN</span><span class="dp-field-v">${esc(d.abn||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Website</span><span class="dp-field-v">${d.website ? `<a href="${esc(d.website)}" target="_blank">${esc(d.website)}</a>` : '–'}</span></div>
+        <div class="dp-field"><span class="dp-field-l">State</span><span class="dp-field-v">${esc(d.state||'NSW')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Owner</span><span class="dp-field-v">${esc(d.relationship_owner||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Tags</span><span class="dp-field-v">${(d.tags||[]).map(t=>`<span class="tag-pill" style="background:${t.colour}">${esc(t.name)}</span>`).join(' ')||'–'}</span></div>
+      </div>
+      ${d.notes ? `<div class="dp-section"><h4>Notes</h4><p style="font-size:.78rem;line-height:1.5;color:var(--ink)">${esc(d.notes)}</p></div>` : ''}
+      <div class="dp-section">
+        <h4>Projects (${d.projects.length})</h4>
+        ${d.projects.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No projects yet</div>' :
+          d.projects.map(p => `<div class="intel-mini" onclick="showProjPanel(${p.id})" style="cursor:pointer"><div style="font-weight:600">${esc(p.name)}</div><div class="im-date">${statusBadge(p.status)} · ${esc(p.suburb||'–')}</div></div>`).join('')}
+      </div>
+      <div class="dp-section">
+        <h4>Contacts (${d.contacts.length})</h4>
+        ${d.contacts.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No contacts yet</div>' :
+          d.contacts.map(c => `<div class="intel-mini"><div style="font-weight:600">${esc(c.first_name)} ${esc(c.last_name)}</div><div class="im-date">${esc(c.title||'–')}</div></div>`).join('')}
+      </div>
+      <div class="dp-section">
+        <h4>Recent Intel</h4>
+        ${d.intel.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No intel yet</div>' :
+          d.intel.slice(0,3).map(i => `<div class="intel-mini"><div>${esc(i.content.slice(0,120))}${i.content.length>120?'…':''}</div><div class="im-date">${esc(i.source||'–')} · ${fmtDate(i.intel_date)}</div></div>`).join('')}
+      </div>`;
+    document.getElementById('dp-dev-actions').innerHTML = `
+      <button class="btn btn-primary btn-sm" onclick="openProjectModal(null,${d.id})">+ Project</button>
+      <button class="btn btn-navy btn-sm" onclick="openContactModal(null,${d.id})">+ Contact</button>
+      <button class="btn btn-out btn-sm" onclick="openDevModal(${d.id})">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteDev(${d.id},'${esc(d.name)}')">Delete</button>`;
+    document.getElementById('dev-panel').style.display = 'flex';
+  } catch(e) { toast(e.message, true); }
+}
+
+async function openDevModal(id) {
+  document.getElementById('dev-id').value = id || '';
+  document.getElementById('modal-dev-title').textContent = id ? 'Edit Developer' : 'Add Developer';
+  ['dev-name','dev-abn','dev-suburb','dev-website','dev-notes','dev-tags'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('dev-type-f').value = '';
+  document.getElementById('dev-owner-f').value = '';
+  if (id) {
+    try {
+      const d = await API.get('/developers/' + id);
+      document.getElementById('dev-name').value = d.name || '';
+      document.getElementById('dev-abn').value = d.abn || '';
+      document.getElementById('dev-suburb').value = d.suburb || '';
+      document.getElementById('dev-website').value = d.website || '';
+      document.getElementById('dev-notes').value = d.notes || '';
+      document.getElementById('dev-type-f').value = d.type || '';
+      document.getElementById('dev-owner-f').value = d.relationship_owner || '';
+      document.getElementById('dev-tags').value = (d.tags||[]).map(t=>t.name).join(', ');
+    } catch(e) { toast(e.message, true); return; }
+  }
+  openModal('modal-dev');
+}
+
+async function saveDeveloper() {
+  const id = document.getElementById('dev-id').value;
+  const body = {
+    name: document.getElementById('dev-name').value.trim(),
+    abn: document.getElementById('dev-abn').value.trim(),
+    type: document.getElementById('dev-type-f').value,
+    suburb: document.getElementById('dev-suburb').value.trim(),
+    website: document.getElementById('dev-website').value.trim(),
+    relationship_owner: document.getElementById('dev-owner-f').value,
+    notes: document.getElementById('dev-notes').value.trim(),
+    tags: document.getElementById('dev-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+  };
+  if (!body.name) { toast('Company name is required', true); return; }
+  try {
+    if (id) { await API.put('/developers/' + id, body); toast('Developer updated'); }
+    else    { await API.post('/developers', body); toast('Developer added'); }
+    closeModal('modal-dev');
+    loadDevelopers();
+    populateDevDropdowns();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteDev(id, name) {
+  confirmDelete(`Delete developer "${name}" and all linked projects, contacts and intel?`, async () => {
+    try { await API.del('/developers/' + id); toast('Developer deleted'); closePanel('dev-panel'); loadDevelopers(); populateDevDropdowns(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+// ── PROJECTS ───────────────────────────────────────────────────────────────
+async function loadProjects() {
+  const q = document.getElementById('proj-q').value;
+  const type = document.getElementById('proj-type').value;
+  const status = document.getElementById('proj-status').value;
+  const developer_id = document.getElementById('proj-dev').value;
+  const params = new URLSearchParams({ q, type, status, developer_id });
+  try {
+    const rows = await API.get('/projects?' + params);
+    document.getElementById('proj-cnt').textContent = rows.length + ' project' + (rows.length !== 1 ? 's' : '');
+    const el = document.getElementById('proj-list');
+    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">📁</div><strong>No projects found</strong></div>`; return; }
+    el.innerHTML = `<table>
+      <thead><tr>
+        <th>Project</th><th>Developer</th><th>Type</th><th>Status</th><th>Planning</th><th>Est. Value</th><th>Funder</th><th>Valuer</th><th>Updated</th><th></th>
+      </tr></thead>
+      <tbody>${rows.map((p,i) => `
+        <tr class="${i%2?'even':''}" onclick="showProjPanel(${p.id})">
+          <td><div style="font-weight:600">${esc(p.name)}</div><div style="font-size:.65rem;color:var(--mid)">${esc(p.suburb||'–')}</div></td>
+          <td style="font-size:.75rem">${esc(p.developer_name||'–')}</td>
+          <td><span class="badge b-planning">${esc(p.project_type||'–')}</span></td>
+          <td>${statusBadge(p.status)}</td>
+          <td style="font-size:.7rem">${esc(p.planning_status||'–')}</td>
+          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.88rem;font-weight:600">${fmtMoney(p.estimated_value)}</td>
+          <td style="font-size:.72rem">${esc(p.funder||'–')}</td>
+          <td style="font-size:.72rem">${esc(p.valuer||'–')}</td>
+          <td style="font-size:.7rem;color:var(--mid)">${fmtDate(p.updated_at)}</td>
+          <td onclick="event.stopPropagation()"><button class="btn btn-out btn-xs" onclick="openProjectModal(${p.id})">Edit</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { toast(e.message, true); }
+}
+
+async function showProjPanel(id) {
+  try {
+    const p = await API.get('/projects/' + id);
+    document.getElementById('dp-proj-name').textContent = p.name;
+    document.getElementById('dp-proj-sub').textContent = (p.developer_name||'–') + (p.suburb ? ' · ' + p.suburb : '');
+    const body = document.getElementById('dp-proj-body');
+    body.innerHTML = `
+      <div class="dp-section">
+        <h4>Details</h4>
+        <div class="dp-field"><span class="dp-field-l">Address</span><span class="dp-field-v">${esc(p.address||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Type</span><span class="dp-field-v">${esc(p.project_type||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Status</span><span class="dp-field-v">${statusBadge(p.status)}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Planning</span><span class="dp-field-v">${esc(p.planning_status||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Est. Value</span><span class="dp-field-v" style="font-weight:700;color:var(--navy)">${fmtMoney(p.estimated_value)}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Lots / Units</span><span class="dp-field-v">${p.lot_count||'–'}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Funder</span><span class="dp-field-v">${esc(p.funder||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Valuer</span><span class="dp-field-v">${esc(p.valuer||'–')}</span></div>
+        <div class="dp-field"><span class="dp-field-l">Sales Agent</span><span class="dp-field-v">${esc(p.sales_agent||'–')}</span></div>
+      </div>
+      ${p.notes ? `<div class="dp-section"><h4>Notes</h4><p style="font-size:.78rem;line-height:1.5">${esc(p.notes)}</p></div>` : ''}
+      <div class="dp-section">
+        <h4>Intel History (${p.intel.length})</h4>
+        ${p.intel.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No intel yet</div>' :
+          p.intel.map(i => `<div class="intel-mini"><div>${esc(i.content)}</div><div class="im-date">${esc(i.source||'–')} · ${fmtDate(i.intel_date)} · ${esc(i.added_by||'–')}</div></div>`).join('')}
+      </div>`;
+    document.getElementById('dp-proj-actions').innerHTML = `
+      <button class="btn btn-primary btn-sm" onclick="openIntelModal(${p.id},${p.developer_id})">+ Intel</button>
+      <button class="btn btn-out btn-sm" onclick="openProjectModal(${p.id})">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteProj(${p.id},'${esc(p.name)}')">Delete</button>`;
+    document.getElementById('proj-panel').style.display = 'flex';
+    if (currentView === 'developers') {
+      document.getElementById('proj-panel').style.display = 'none';
+      nav('projects');
+      setTimeout(() => showProjPanel(id), 300);
+    }
+  } catch(e) { toast(e.message, true); }
+}
+
+async function openProjectModal(id, devId) {
+  document.getElementById('proj-id').value = id || '';
+  document.getElementById('modal-proj-title').textContent = id ? 'Edit Project' : 'Add Project';
+  ['proj-name','proj-address','proj-suburb-f','proj-value','proj-lots','proj-funder-f','proj-valuer-f','proj-agent','proj-notes'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('proj-type-f').value = '';
+  document.getElementById('proj-status-f').value = 'Active';
+  document.getElementById('proj-planning').value = '';
+  if (devId) document.getElementById('proj-dev-f').value = devId;
+  if (id) {
+    try {
+      const p = await API.get('/projects/' + id);
+      document.getElementById('proj-dev-f').value = p.developer_id || '';
+      document.getElementById('proj-name').value = p.name || '';
+      document.getElementById('proj-address').value = p.address || '';
+      document.getElementById('proj-suburb-f').value = p.suburb || '';
+      document.getElementById('proj-type-f').value = p.project_type || '';
+      document.getElementById('proj-status-f').value = p.status || 'Active';
+      document.getElementById('proj-planning').value = p.planning_status || '';
+      document.getElementById('proj-value').value = p.estimated_value || '';
+      document.getElementById('proj-lots').value = p.lot_count || '';
+      document.getElementById('proj-funder-f').value = p.funder || '';
+      document.getElementById('proj-valuer-f').value = p.valuer || '';
+      document.getElementById('proj-agent').value = p.sales_agent || '';
+      document.getElementById('proj-notes').value = p.notes || '';
+    } catch(e) { toast(e.message, true); return; }
+  }
+  openModal('modal-proj');
+}
+
+async function saveProject() {
+  const id = document.getElementById('proj-id').value;
+  const body = {
+    developer_id: document.getElementById('proj-dev-f').value,
+    name: document.getElementById('proj-name').value.trim(),
+    address: document.getElementById('proj-address').value.trim(),
+    suburb: document.getElementById('proj-suburb-f').value.trim(),
+    project_type: document.getElementById('proj-type-f').value,
+    status: document.getElementById('proj-status-f').value,
+    planning_status: document.getElementById('proj-planning').value,
+    estimated_value: parseFloat(document.getElementById('proj-value').value) || null,
+    lot_count: parseInt(document.getElementById('proj-lots').value) || null,
+    funder: document.getElementById('proj-funder-f').value.trim(),
+    valuer: document.getElementById('proj-valuer-f').value.trim(),
+    sales_agent: document.getElementById('proj-agent').value.trim(),
+    notes: document.getElementById('proj-notes').value.trim(),
+  };
+  if (!body.developer_id) { toast('Please select a developer', true); return; }
+  if (!body.name) { toast('Project name is required', true); return; }
+  try {
+    if (id) { await API.put('/projects/' + id, body); toast('Project updated'); }
+    else    { await API.post('/projects', body); toast('Project added'); }
+    closeModal('modal-proj');
+    loadProjects();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteProj(id, name) {
+  confirmDelete(`Delete project "${name}"?`, async () => {
+    try { await API.del('/projects/' + id); toast('Project deleted'); closePanel('proj-panel'); loadProjects(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+// ── CONTACTS ───────────────────────────────────────────────────────────────
+async function loadContacts() {
+  const q = document.getElementById('con-q').value;
+  const developer_id = document.getElementById('con-dev').value;
+  const linkedin_status = document.getElementById('con-li').value;
+  const incomplete = document.getElementById('con-incomplete').checked;
+  const params = new URLSearchParams({ q, developer_id, linkedin_status, incomplete });
+  try {
+    const rows = await API.get('/contacts?' + params);
+    document.getElementById('con-cnt').textContent = rows.length + ' contact' + (rows.length !== 1 ? 's' : '');
+    const el = document.getElementById('con-list');
+    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">👥</div><strong>No contacts found</strong></div>`; return; }
+    el.innerHTML = rows.map(c => {
+      const hasLinkedInFlag = c.linkedin_status === 'Potential Update' || c.linkedin_status === 'Confirmed Changed';
+      const cardClass = hasLinkedInFlag ? 'contact-card linkedin-flag' : (!c.complete ? 'contact-card incomplete' : 'contact-card');
+      const flagHtml = hasLinkedInFlag
+        ? `<div class="cc-flag linkedin">${c.linkedin_status === 'Confirmed Changed' ? '⚠ Changed' : '? Review'}</div>`
+        : (!c.complete ? `<div class="cc-flag incomplete">Incomplete</div>` : '');
+      return `<div class="${cardClass}">
+        ${flagHtml}
+        <div class="cc-name">${esc(c.first_name)} ${esc(c.last_name)}</div>
+        <div class="cc-title">${esc(c.title||'No title on file')}</div>
+        <div class="cc-dev" onclick="nav('developers')">${esc(c.developer_name||'No developer linked')}</div>
+        ${c.phone ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.47 2 2 0 0 1 3.55 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a><button class="copy-btn" onclick="copyToClipboard('${esc(c.phone)}')" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>` : '<div class="cc-field" style="color:var(--amber)"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.47 2 2 0 0 1 3.55 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>No phone</div>'}
+        ${c.email ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${esc(c.email)}">${esc(c.email)}</a><button class="copy-btn" onclick="copyToClipboard('${esc(c.email)}')" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>` : '<div class="cc-field" style="color:var(--amber)"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>No email</div>'}
+        ${c.linkedin_url ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg><a href="${esc(c.linkedin_url)}" target="_blank">LinkedIn</a> ${linkedInBadge(c.linkedin_status)}</div>` : ''}
+        ${c.follow_up_date ? `<div class="cc-field" style="font-size:.68rem;color:var(--mid)">Follow-up: ${fmtDate(c.follow_up_date)}</div>` : ''}
+        <div class="cc-actions">
+          <button class="btn btn-out btn-xs" onclick="openContactModal(${c.id})">Edit</button>
+          <button class="btn btn-out btn-xs" onclick="copyContactCard(${c.id})">Copy Card</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteCon(${c.id},'${esc(c.first_name)} ${esc(c.last_name)}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function copyContactCard(id) {
+  try {
+    const c = await API.get('/contacts/' + id);
+    const text = [
+      `${c.first_name} ${c.last_name}`,
+      c.title ? c.title : '',
+      c.developer_name ? c.developer_name : '',
+      c.phone ? `Phone: ${c.phone}` : '',
+      c.email ? `Email: ${c.email}` : '',
+      c.linkedin_url ? `LinkedIn: ${c.linkedin_url}` : '',
+    ].filter(Boolean).join('\n');
+    copyToClipboard(text);
+  } catch(e) { toast(e.message, true); }
+}
+
+async function openContactModal(id, devId) {
+  document.getElementById('con-id').value = id || '';
+  document.getElementById('modal-con-title').textContent = id ? 'Edit Contact' : 'Add Contact';
+  ['con-fn','con-ln','con-title','con-phone','con-email','con-li','con-lc','con-fu','con-src','con-notes'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('con-dev-f').value = devId || '';
+  document.getElementById('con-owner-f').value = '';
+  if (id) {
+    try {
+      const c = await API.get('/contacts/' + id);
+      document.getElementById('con-fn').value = c.first_name || '';
+      document.getElementById('con-ln').value = c.last_name || '';
+      document.getElementById('con-title').value = c.title || '';
+      document.getElementById('con-dev-f').value = c.developer_id || '';
+      document.getElementById('con-phone').value = c.phone || '';
+      document.getElementById('con-email').value = c.email || '';
+      document.getElementById('con-li').value = c.linkedin_url || '';
+      document.getElementById('con-lc').value = c.last_contact_date || '';
+      document.getElementById('con-fu').value = c.follow_up_date || '';
+      document.getElementById('con-src').value = c.source || '';
+      document.getElementById('con-notes').value = c.notes || '';
+      document.getElementById('con-owner-f').value = c.relationship_owner || '';
+    } catch(e) { toast(e.message, true); return; }
+  }
+  openModal('modal-con');
+}
+
+async function saveContact() {
+  const id = document.getElementById('con-id').value;
+  const body = {
+    developer_id: document.getElementById('con-dev-f').value || null,
+    first_name: document.getElementById('con-fn').value.trim(),
+    last_name: document.getElementById('con-ln').value.trim(),
+    title: document.getElementById('con-title').value.trim(),
+    phone: document.getElementById('con-phone').value.trim(),
+    email: document.getElementById('con-email').value.trim(),
+    linkedin_url: document.getElementById('con-li').value.trim(),
+    last_contact_date: document.getElementById('con-lc').value || null,
+    follow_up_date: document.getElementById('con-fu').value || null,
+    source: document.getElementById('con-src').value.trim(),
+    notes: document.getElementById('con-notes').value.trim(),
+    relationship_owner: document.getElementById('con-owner-f').value,
+  };
+  if (!body.first_name || !body.last_name) { toast('First and last name are required', true); return; }
+  try {
+    if (id) { await API.put('/contacts/' + id, body); toast('Contact updated'); }
+    else    { await API.post('/contacts', body); toast('Contact added'); }
+    closeModal('modal-con');
+    loadContacts();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteCon(id, name) {
+  confirmDelete(`Delete contact "${name}"?`, async () => {
+    try { await API.del('/contacts/' + id); toast('Contact deleted'); loadContacts(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+// ── INTEL ──────────────────────────────────────────────────────────────────
+async function loadIntel() {
+  const q = document.getElementById('intel-q').value;
+  const source = document.getElementById('intel-source').value;
+  const params = new URLSearchParams({ q, source, limit: 100 });
+  try {
+    const rows = await API.get('/intel?' + params);
+    document.getElementById('intel-cnt').textContent = rows.length + ' entr' + (rows.length !== 1 ? 'ies' : 'y');
+    const el = document.getElementById('intel-list');
+    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">📋</div><strong>No intel found</strong><span>Add intel from a project detail panel or click + Add Intel.</span></div>`; return; }
+    el.innerHTML = rows.map(i => `
+      <div class="intel-entry">
+        <div class="ie-header">
+          <div>
+            <div class="ie-project">${esc(i.project_name || i.developer_name || 'General')}</div>
+            <div class="ie-dev">${i.project_name && i.developer_name ? esc(i.developer_name) : ''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+            <span class="ie-source">${esc(i.source||'Internal')}</span>
+            <button class="btn btn-danger btn-xs" onclick="deleteIntel(${i.id})">✕</button>
+          </div>
+        </div>
+        <div class="ie-content">${esc(i.content)}</div>
+        <div class="ie-footer">
+          ${fmtDate(i.intel_date)}
+          ${i.added_by ? ' · ' + esc(i.added_by) : ''}
+          ${i.source_url ? ` · <a href="${esc(i.source_url)}" target="_blank">Source ↗</a>` : ''}
+        </div>
+      </div>`).join('');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function openIntelModal(projectId, developerId) {
+  document.getElementById('intel-content').value = '';
+  document.getElementById('intel-url').value = '';
+  document.getElementById('intel-by').value = '';
+  document.getElementById('intel-src-f').value = 'Internal';
+  document.getElementById('intel-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('intel-dev-f').value = developerId || '';
+  document.getElementById('intel-proj-f').innerHTML = '<option value="">– No specific project –</option>';
+  if (developerId) {
+    try {
+      const d = await API.get('/developers/' + developerId);
+      d.projects.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.id; o.textContent = p.name;
+        document.getElementById('intel-proj-f').appendChild(o);
+      });
+    } catch(e) {}
+  }
+  if (projectId) document.getElementById('intel-proj-f').value = projectId;
+  openModal('modal-intel');
+}
+
+async function saveIntel() {
+  const body = {
+    developer_id: document.getElementById('intel-dev-f').value || null,
+    project_id: document.getElementById('intel-proj-f').value || null,
+    content: document.getElementById('intel-content').value.trim(),
+    source: document.getElementById('intel-src-f').value,
+    source_url: document.getElementById('intel-url').value.trim(),
+    added_by: document.getElementById('intel-by').value.trim(),
+    intel_date: document.getElementById('intel-date').value,
+  };
+  if (!body.content) { toast('Intel content is required', true); return; }
+  try {
+    await API.post('/intel', body);
+    toast('Intel saved');
+    closeModal('modal-intel');
+    if (currentView === 'intel') loadIntel();
+    if (currentView === 'projects') { const id = document.getElementById('proj-id').value; if (id) showProjPanel(id); }
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteIntel(id) {
+  confirmDelete('Delete this intel entry?', async () => {
+    try { await API.del('/intel/' + id); toast('Intel deleted'); loadIntel(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+// ── SCRAPED LEADS ──────────────────────────────────────────────────────────
+async function loadScraped() {
+  const status = document.getElementById('lead-status').value;
+  const params = new URLSearchParams({ status });
+  try {
+    const rows = await API.get('/scraped?' + params);
+    document.getElementById('nb-scraped').textContent = rows.filter(r=>r.review_status==='Pending').length || 0;
+    const el = document.getElementById('scraped-list');
+    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><strong>No leads found</strong><span>Scraped leads awaiting review will appear here.</span></div>`; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="lead-card ${(r.confidence||'low').toLowerCase()}">
+        <div class="lc-head">
+          <div>
+            <div class="lc-title">${esc(r.project_name || r.address || 'Unknown Project')}</div>
+            <div class="lc-dev">${esc(r.developer_name||'Unknown Developer')} · ${esc(r.suburb||'–')}</div>
+          </div>
+          <div style="display:flex;gap:.3rem;align-items:center;flex-shrink:0">
+            ${confidenceBadge(r.confidence)}
+            ${r.review_status !== 'Pending' ? `<span class="badge b-${r.review_status.toLowerCase()}">${r.review_status}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.72rem;margin-bottom:.4rem">
+          ${r.project_type ? `<span class="badge b-planning">${esc(r.project_type)}</span>` : ''}
+          ${r.status ? statusBadge(r.status) : ''}
+          ${r.funder ? `<span style="color:var(--mid)">Funder: ${esc(r.funder)}</span>` : ''}
+          ${r.valuer ? `<span style="color:var(--mid)">Valuer: ${esc(r.valuer)}</span>` : ''}
+        </div>
+        ${r.raw_snippet ? `<div class="lc-snippet">${esc(r.raw_snippet)}</div>` : ''}
+        <div class="lc-footer">
+          <span>${esc(r.source_name)}</span>
+          ${r.source_url ? `· <a href="${esc(r.source_url)}" target="_blank">View Source ↗</a>` : ''}
+          <span>· Scraped ${fmtDate(r.scraped_at)}</span>
+          ${r.reviewer_notes ? `· <em>${esc(r.reviewer_notes)}</em>` : ''}
+        </div>
+        ${r.review_status === 'Pending' ? `
+        <div class="lc-actions">
+          <button class="btn btn-primary btn-sm" onclick="openPromoteModal(${r.id})">✓ Approve &amp; Add to DB</button>
+          <button class="btn btn-out btn-sm" onclick="rejectLead(${r.id})">✕ Reject</button>
+          <button class="btn btn-out btn-sm" onclick="markDuplicate(${r.id})">⊕ Duplicate</button>
+        </div>` : ''}
+      </div>`).join('');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function openPromoteModal(leadId) {
+  document.getElementById('promote-lead-id').value = leadId;
+  document.getElementById('promote-notes').value = '';
+  document.getElementById('promote-create-dev').checked = true;
+  document.getElementById('promote-create-proj').checked = true;
+  document.getElementById('promote-dev').value = '';
+  openModal('modal-promote');
+}
+
+async function promoteLead() {
+  const id = document.getElementById('promote-lead-id').value;
+  const body = {
+    developer_id: document.getElementById('promote-dev').value || null,
+    create_developer: document.getElementById('promote-create-dev').checked,
+    create_project: document.getElementById('promote-create-proj').checked,
+    reviewer_notes: document.getElementById('promote-notes').value.trim(),
+    reviewed_by: 'Current User',
+  };
+  try {
+    await API.post('/scraped/' + id + '/promote', body);
+    toast('Lead approved and promoted to database');
+    closeModal('modal-promote');
+    loadScraped();
+    populateDevDropdowns();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function rejectLead(id) {
+  try {
+    await API.patch('/scraped/' + id + '/review', { review_status: 'Rejected', reviewed_by: 'Current User' });
+    toast('Lead rejected');
+    loadScraped();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function markDuplicate(id) {
+  try {
+    await API.patch('/scraped/' + id + '/review', { review_status: 'Duplicate', reviewed_by: 'Current User' });
+    toast('Marked as duplicate');
+    loadScraped();
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── LINKEDIN CHECK ─────────────────────────────────────────────────────────
+async function runLinkedInCheck() {
+  toast('Scanning LinkedIn status fields…');
+  try {
+    const contacts = await API.get('/contacts?linkedin_status=Unchecked');
+    const withLI = contacts.filter(c => c.linkedin_url);
+    if (!withLI.length) { toast('No unchecked LinkedIn profiles found'); return; }
+    // Flag all unchecked contacts with a LinkedIn URL as "Potential Update" to prompt manual review
+    let flagged = 0;
+    for (const c of withLI) {
+      await API.patch('/contacts/' + c.id + '/linkedin', {
+        linkedin_status: 'Potential Update',
+        linkedin_snapshot: { title: c.title, company: c.developer_name, snapshotDate: new Date().toISOString().slice(0,10) }
+      });
+      flagged++;
+    }
+    toast(`${flagged} contact${flagged !== 1 ? 's' : ''} flagged for LinkedIn review`);
+    if (currentView === 'contacts') loadContacts();
+    loadDashboard();
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+async function loadSettings() {
+  const el = document.getElementById('settings-body');
+  try {
+    const [sources, users] = await Promise.all([
+      API.get('/settings/scraper-sources'),
+      API.get('/settings/users')
+    ]);
+    el.innerHTML = `
+      <div class="settings-section">
+        <div class="ss-hdr"><h3>Scraper Sources</h3>
+          <button class="btn btn-ghost btn-sm" onclick="addScraperSource()">+ Add Source</button>
+        </div>
+        <div class="ss-body">
+          <p style="font-size:.74rem;color:var(--mid);margin-bottom:.75rem">Configure public sources for developer project discovery. All scrapers respect robots.txt by default. Scraped items require manual review before entering the database.</p>
+          ${sources.map(s => `
+            <div class="source-row">
+              <label class="toggle"><input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSource(${s.id},this.checked)"><span class="toggle-sl"></span></label>
+              <span class="source-name">${esc(s.name)}</span>
+              <span class="source-url">${esc(s.url)}</span>
+              <span style="font-size:.65rem;color:var(--mid)">${s.respect_robots ? '✓ robots.txt' : '⚠ ignoring robots'}</span>
+              <button class="btn btn-danger btn-xs" onclick="deleteSource(${s.id})">✕</button>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="ss-hdr"><h3>Team / Relationship Owners</h3>
+          <button class="btn btn-ghost btn-sm" onclick="addUser()">+ Add User</button>
+        </div>
+        <div class="ss-body">
+          ${users.map(u => `
+            <div class="source-row">
+              <span class="source-name">${esc(u.name)}</span>
+              <span class="source-url">${esc(u.email||'–')}</span>
+              <span style="font-size:.7rem;color:var(--mid)">${esc(u.role)}</span>
+              <button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id})">✕</button>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="ss-hdr"><h3>Data &amp; Export</h3></div>
+        <div class="ss-body" style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-out" onclick="exportCSV('developers')">↓ Export Developers CSV</button>
+          <button class="btn btn-out" onclick="exportCSV('projects')">↓ Export Projects CSV</button>
+          <button class="btn btn-out" onclick="exportCSV('contacts')">↓ Export Contacts CSV</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="ss-hdr"><h3>About</h3></div>
+        <div class="ss-body" style="font-size:.78rem;line-height:1.6;color:var(--mid)">
+          <strong style="color:var(--ink)">CW Developer Intelligence CRM</strong><br>
+          Version 1.0 · Cushman &amp; Wakefield NSW Investment Sales<br><br>
+          <em>Scraped data is clearly separated from confirmed records. Source links are saved for every scraped item. Confidence levels distinguish unverified leads from internal intelligence.</em>
+        </div>
+      </div>`;
+  } catch(e) { el.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><strong>${e.message}</strong></div>`; }
+}
+
+async function toggleSource(id, enabled) {
+  try {
+    const src = (await API.get('/settings/scraper-sources')).find(s => s.id === id);
+    if (src) await API.put('/settings/scraper-sources/' + id, { ...src, enabled: enabled ? 1 : 0 });
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteSource(id) {
+  confirmDelete('Remove this scraper source?', async () => {
+    try { await API.del('/settings/scraper-sources/' + id); toast('Source removed'); loadSettings(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+function addScraperSource() {
+  const name = prompt('Source name (e.g. NSW Planning Portal):');
+  if (!name) return;
+  const url = prompt('Source URL:');
+  if (!url) return;
+  API.post('/settings/scraper-sources', { name: name.trim(), url: url.trim() })
+    .then(() => { toast('Source added'); loadSettings(); })
+    .catch(e => toast(e.message, true));
+}
+
+function addUser() {
+  const name = prompt('Full name:');
+  if (!name) return;
+  const email = prompt('Email (optional):') || '';
+  const role = prompt('Role (Agent/Director/etc):') || 'Agent';
+  API.post('/settings/users', { name: name.trim(), email: email.trim(), role: role.trim() })
+    .then(() => { toast('User added'); loadSettings(); populateDevDropdowns(); })
+    .catch(e => toast(e.message, true));
+}
+
+async function deleteUser(id) {
+  confirmDelete('Remove this user?', async () => {
+    try { await API.del('/settings/users/' + id); toast('User removed'); loadSettings(); populateDevDropdowns(); }
+    catch(e) { toast(e.message, true); }
+  });
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────────────────
+function exportCSV(type) {
+  window.open('/api/' + type + '/export/csv', '_blank');
+}
+
+// ── INTEL DEV CHANGE HANDLER ───────────────────────────────────────────────
+document.getElementById('intel-dev-f').addEventListener('change', async function() {
+  const sel = document.getElementById('intel-proj-f');
+  sel.innerHTML = '<option value="">– No specific project –</option>';
+  if (!this.value) return;
+  try {
+    const d = await API.get('/developers/' + this.value);
+    d.projects.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+});
+
+// Close modals on overlay click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); });
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+(async function init() {
+  await populateDevDropdowns();
+  loadDashboard();
+})();
+</script>
+</body>
+</html>
