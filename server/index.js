@@ -6,6 +6,9 @@ const path    = require('path');
 // Initialise DB (runs schema migrations on first boot)
 require('./db');
 
+// Auto-seed sample data on first boot if database is empty
+require('./seed');
+
 const app = express();
 app.use(cors());
 app.use(express.json());

@@ -1,8 +1,16 @@
 'use strict';
 // Run with: node server/seed.js
-// Clears existing data and inserts realistic sample records for testing.
+// Adds sample records only if the database is empty.
+// Use --force flag to wipe and re-seed: node server/seed.js --force
 
 const { db, syncDeveloperTags } = require('./db');
+
+const force = process.argv.includes('--force');
+const existing = db.prepare('SELECT COUNT(*) AS n FROM developers').get().n;
+if (existing > 0 && !force) {
+  console.log(`Database already has ${existing} developers — skipping seed. Use --force to reset.`);
+  process.exit(0);
+}
 
 console.log('Seeding database...');
 
