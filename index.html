@@ -358,7 +358,7 @@ function nav_go(name){
       <select class="filt" id="fProc" onchange="renderDB()"><option value="">All Processes</option><option>Auction</option><option>EOI</option><option>Off Market</option><option>Private Treaty</option><option>Tender</option></select>
       <select class="filt" id="fYear" onchange="renderDB()"><option value="">All Years</option></select>
       <select class="filt" id="fReg" onchange="renderDB()"><option value="">All Regions</option></select>
-      <div class="tb-r"><span class="cnt" id="db-ct2"></span><button class="btn btn-out btn-sm" onclick="exportExcel()">↓ Export Selection</button></div>
+      <div class="tb-r"><span class="cnt" id="db-ct2"></span><button class="btn btn-out btn-sm" id="export-btn" onclick="exportExcel()">↓ Export Filtered</button></div>
     </div>
     <div class="tw"><table><thead><tr>
       <th><input type="checkbox" id="sel-all" onchange="toggleSelAll(this)"> Address</th>
@@ -537,8 +537,8 @@ function nav_go(name){
         <div class="fg fc"><label>Address *</label><input id="f_addr"></div>
         <div class="fg"><label>Suburb *</label><input id="f_sub"></div>
         <div class="fg"><label>Region</label><select id="f_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option><option>Southern Tablelands</option></select></div>
-        <div class="fg"><label>Source Database</label><select id="f_src" onchange="toggleCCFields(this.value,'f')"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="f_cls" onchange="toggleCCFields(this.value,'f')"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Source Database</label><select id="f_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="f_cls" onchange="toggleCCFields()"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="f_land" oninput="calcF()"></div>
         <div class="fg"><label>Floor Area (m²)</label><input type="number" id="f_floor"></div>
         <div class="fg"><label>Primary Zoning</label><input id="f_zon"></div>
@@ -570,6 +570,7 @@ function nav_go(name){
         <div class="fg"><label>Yield % — auto</label><input type="number" id="f_yld" step="0.01" readonly></div>
         <div class="fg"><label>Land $/m² — auto</label><input type="number" id="f_lr" readonly></div>
         <div class="fg"><label>WALE (yrs)</label><input type="number" id="f_wale" step="0.1"></div>
+        <div class="fg"><label>RC Status</label><input id="f_rc" placeholder="e.g. Under Offer, EOI Open…"></div>
         <div class="fg"><label>Purchaser</label><input id="f_pur"></div>
         <div class="fg"><label>Vendor</label><input id="f_ven"></div>
       </div>
@@ -634,7 +635,7 @@ function nav_go(name){
         <div class="fg"><label>Suburb *</label><input id="ca_sub"></div>
         <div class="fg"><label>Region</label><select id="ca_reg"><option value="">—</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option><option>North Sydney</option><option>Sydney CBD</option><option>West</option><option>Western Sydney</option><option>Central Coast</option><option>Hunter</option><option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option></select></div>
         <div class="fg"><label>Source Database</label><select id="ca_src"><option value="">—</option><option>Metro</option><option>NSW Land</option><option>Premium Investment</option></select></div>
-        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
+        <div class="fg"><label>Asset Class</label><select id="ca_cls"><option value="">—</option><option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option><option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option><option>Middle Markets</option><option>Retail</option><option>Retail / Mixed Use</option><option>Service Station</option><option>Shop Top</option><option>Strata Retail</option><option>Town Centre</option></select></div>
         <div class="fg"><label>Primary Zoning</label><input id="ca_zon"></div>
         <div class="fg"><label>Land Area (m²)</label><input type="number" id="ca_land"></div>
       </div>
@@ -756,7 +757,7 @@ const fD = s => { if(!s||s==='') return '—'; try{ return new Date(s).toLocaleD
 const yldD = y => !y ? '—' : (parseFloat(y) < 1 ? (y*100).toFixed(2) : parseFloat(y).toFixed(2))+'%';
 const gId = () => Math.random().toString(36).substr(2,9).toUpperCase();
 const today = () => new Date().toISOString().split('T')[0];
-const daysTo = d => { if(!d) return null; return Math.round((new Date(d)-new Date())/86400000); };
+const daysTo = d => { if(!d) return null; const t=new Date(); const local=new Date(t.getFullYear(),t.getMonth(),t.getDate()); const [y,m,dy]=String(d).split('-').map(Number); const target=new Date(y,m-1,dy); return Math.round((target-local)/86400000); };
 const addDays = (d,n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; };
 const avg = arr => arr.length ? arr.reduce((a,b)=>a+b)/arr.length : null;
 const med = arr => { if(!arr.length) return null; const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
@@ -846,7 +847,7 @@ async function gsPost(action, data) {
 }
 
 // Column definitions
-const SC = ['id','source','address','suburb','region','classification','status','price','priceGuide','netRent','outgoings','yld','dateListed','saleDate','settlementDate','process','campaignClose','rcStatus','landArea','landRate','floorArea','capVal','units','unitRate','wale','parking','configuration','landAreaHa','landRateHa','landAreaAcre','landRateAcre','noLots','lotRate','permGFA','gfaSQM','zoning','zoning2','fsr','height','approval','devStage','constraints','agent1','agent2','vendor','purchaser','comments'];
+const SC = ['id','source','address','suburb','region','classification','status','price','priceGuide','netRent','outgoings','yld','dateListed','saleDate','settlementDate','process','campaignClose','rcStatus','landArea','landRate','floorArea','capVal','units','unitRate','wale','parking','configuration','landAreaHa','landRateHa','landAreaAcre','landRateAcre','noLots','lotRate','permGFA','gfaSQM','zoning','zoning2','fsr','height','approval','devStage','constraints','agent1','agent2','vendor','purchaser','comments','analysis','operator','places','pricePerPlace','rentPerPlace'];
 const CC = ['id','address','suburb','region','source','classification','zoning','landArea','process','dateListed','closeDate','priceGuide','netIncome','agent1','agent2','vendor','notes','resultNotes','status','salePrice','purchaser','soldDate','settlementDate','rcStatus'];
 
 function recToRow(rec, cols) { return cols.map(c=>{ const v=rec[c]; return v===null||v===undefined?'':String(v); }); }
@@ -858,7 +859,7 @@ async function gsPushAll() {
   await gsPost('writeCamps',{rows:crows});
 }
 
-const NUM_FIELDS = new Set(['price','priceGuide','netRent','outgoings','yld','landArea','landRate','floorArea','capVal','units','unitRate','wale','parking','landAreaHa','landRateHa','landAreaAcre','landRateAcre','noLots','lotRate','permGFA','gfaSQM','fsr','height','approval']);
+const NUM_FIELDS = new Set(['price','priceGuide','netRent','outgoings','yld','landArea','landRate','floorArea','capVal','units','unitRate','wale','parking','landAreaHa','landRateHa','landAreaAcre','landRateAcre','noLots','lotRate','permGFA','gfaSQM','fsr','height','approval','places','pricePerPlace','rentPerPlace']);
 
 function rowsToRecords(rows, cols) {
   if(!rows||rows.length<2) return null;
@@ -907,7 +908,10 @@ async function gsLoad() {
         const r=await jsonpFetch(GS_URL+'?action=readSales');
         if(r.ok&&r.data&&r.data.length>1){
           const loaded=rowsToRecords(r.data,SC);
-          if(loaded&&loaded.length>0){sales=loaded;render();populateFilters();populateBench();}
+          if(loaded&&loaded.length>0){sales=loaded;}
+          const rc=await jsonpFetch(GS_URL+'?action=readCamps');
+          if(rc.ok){const lc=rowsToRecords(rc.data,CC);if(lc&&lc.length>0)camps=lc;}
+          render();populateFilters();populateBench();
           showBanner('✓ '+sales.length+' records — database connected','#15803D',4000);
           gsReady=true;
         }
@@ -1055,7 +1059,7 @@ function updateStats() {
 // ═══════════════════════════════════════════════════════════════════
 // DATABASE VIEW
 // ═══════════════════════════════════════════════════════════════════
-function toggleSelAll(cb) { selIds.clear(); if(cb.checked)getFilteredSales().forEach(s=>selIds.add(s.id)); renderDB(); }
+function toggleSelAll(cb) { selIds.clear(); if(cb.checked)getFilteredSales().forEach(s=>selIds.add(s.id)); renderDB(); updateExportBtn(); }
 
 function getFilteredSales() {
   const srch=(document.getElementById('srch')||{value:''}).value.toLowerCase();
@@ -1093,7 +1097,7 @@ function renderDB() {
     const wale=s.wale?s.wale+' yrs':'—';
     const rc=s.rcStatus?`<span class="badge" style="font-size:.54rem;background:var(--amber-p);color:var(--amber)">${s.rcStatus}</span>`:'<span style="color:var(--light);font-size:.67rem">—</span>';
     const pg=s.priceGuide&&s.status!=='Sold'?` <span class="guide-tag">💰 ${f$(s.priceGuide)}</span>`:'';
-    const rowCC=s.source==='Childcare';
+    const rowCC=s.classification==='Childcare Centre';
     return `<tr class="${i%2===1?'even':''}" onclick="openDetail('${s.id}')">
       <td><input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleSel('${s.id}',this)">
         <span class="taddr" style="display:inline-block;margin-left:.4rem">${s.address}<div class="sub">${s.suburb}${s.region?' · '+s.region:''}</div></span></td>
@@ -1116,7 +1120,8 @@ function renderDB() {
   }).join('');
 }
 
-function toggleSel(id, cb) { if(cb.checked) selIds.add(id); else selIds.delete(id); }
+function toggleSel(id, cb) { if(cb.checked) selIds.add(id); else selIds.delete(id); updateExportBtn(); }
+function updateExportBtn(){ const b=document.getElementById('export-btn'); if(b)b.textContent=selIds.size>0?'↓ Export Selected ('+selIds.size+')':'↓ Export Filtered'; }
 
 // ═══════════════════════════════════════════════════════════════════
 // CAMPAIGN TRACKER
@@ -1261,6 +1266,7 @@ async function confirmSold() {
   const price=parseFloat(document.getElementById('s_price').value)||null;
   const soldDate=document.getElementById('s_sd').value;
   const setDate=document.getElementById('s_setd').value||'';
+  if(!price){toast('Sale price required');return;}
   if(!soldDate){toast('Sold date required');return;}
   const c=camps.find(x=>x.id===soldCampId);if(!c)return;
   const nr=parseFloat(document.getElementById('s_nr').value)||null;
@@ -1847,7 +1853,7 @@ async function openDetail(id){
   const gmaps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address+' '+s.suburb+' NSW')}`;
   const sv=`https://www.google.com/maps/@?api=1&map_action=pano&query=${encodeURIComponent(s.address+' '+s.suburb+' NSW')}`;
   const yld=getYld(s);
-  const isCC=s.source==='Childcare';
+  const isCC=s.classification==='Childcare Centre';
   const fields=isCC?[
     ['Sale Price',f$(s.price),true],['Licensed Places',s.places?s.places+' places':'—',false],
     ['$/Place',s.pricePerPlace?'$'+s.pricePerPlace.toLocaleString():'—',false],['Net Income',s.netRent?f$(s.netRent)+'/yr':'—',false],
@@ -1933,15 +1939,14 @@ function editSale(id){
 function clearForm(){
   ['f_addr','f_sub','f_land','f_floor','f_zon','f_zon2','f_fsr','f_ht','f_cfg','f_con',
    'f_price','f_guide','f_sd','f_setd','f_cd','f_dl','f_nr','f_og','f_yld','f_lr',
-   'f_wale','f_pur','f_ven','f_ag1','f_ag2','f_com','f_lots','f_operator','f_places'].forEach(id=>{
+   'f_wale','f_rc','f_pur','f_ven','f_ag1','f_ag2','f_com','f_lots','f_operator','f_places'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['f_reg','f_src','f_cls','f_stat','f_proc','f_ds'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   toggleCCFields('','f');
 }
-function toggleCCFields(src,prefix){
-  const cls=document.getElementById('f_cls')?.value;
-  const isCC=cls==='Childcare Centre';
+function toggleCCFields(){
+  const isCC=document.getElementById('f_cls')?.value==='Childcare Centre';
   ['f-cc-sec','f-cc-flds'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isCC?'':'none';});
 }
 function fillForm(s){
@@ -1950,7 +1955,7 @@ function fillForm(s){
     f_ht:'height',f_cfg:'configuration',f_con:'constraints',f_ds:'devStage',
     f_price:'price',f_guide:'priceGuide',f_sd:'saleDate',f_setd:'settlementDate',
     f_cd:'campaignClose',f_dl:'dateListed',f_nr:'netRent',f_og:'outgoings',
-    f_wale:'wale',f_pur:'purchaser',f_ven:'vendor',f_ag1:'agent1',f_ag2:'agent2',
+    f_wale:'wale',f_rc:'rcStatus',f_pur:'purchaser',f_ven:'vendor',f_ag1:'agent1',f_ag2:'agent2',
     f_com:'comments',f_stat:'status',f_proc:'process',f_lots:'noLots',
     f_operator:'operator',f_places:'places'};
   Object.entries(fm).forEach(([id,key])=>{
@@ -1977,12 +1982,12 @@ function getForm(){
     campaignClose:g('f_cd'),dateListed:g('f_dl'),
     netRent:n('f_nr'),outgoings:n('f_og'),
     yld:yldV?yldV/100:null,landRate:n('f_lr'),
-    wale:n('f_wale'),purchaser:g('f_pur'),vendor:g('f_ven'),
+    wale:n('f_wale'),rcStatus:g('f_rc'),purchaser:g('f_pur'),vendor:g('f_ven'),
     agent1:g('f_ag1'),agent2:g('f_ag2'),comments:g('f_com'),
     status:g('f_stat')||'Active',process:g('f_proc'),
     capVal:null,units:null,unitRate:null,parking:null,
     landAreaHa:null,landRateHa:null,landAreaAcre:null,landRateAcre:null,
-    lotRate:null,permGFA:null,gfaSQM:null,approval:null,rcStatus:'',analysis:'',
+    lotRate:null,permGFA:null,gfaSQM:null,approval:null,analysis:'',
   };
 }
 async function saveSale(){
@@ -1991,15 +1996,19 @@ async function saveSale(){
   const btn=document.getElementById('f_save');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Saving…';
   if(data.price&&data.landArea&&!data.landRate)data.landRate=Math.round(data.price/data.landArea);
   if(data.price&&data.netRent&&!data.yld)data.yld=data.netRent/data.price;
-  if(data.source==='Childcare'&&data.places){
+  if(data.classification==='Childcare Centre'&&data.places){
     if(data.price)data.pricePerPlace=Math.round(data.price/data.places);
     if(data.netRent)data.rentPerPlace=Math.round(data.netRent/data.places);
   }
-  // AI commentary
-  try{data.analysis=await getAINote(data);}catch(e){}
   if(editId){
     const i=sales.findIndex(s=>s.id===editId);
-    if(i>-1)sales[i]={...sales[i],...data};
+    if(i>-1){
+      const existing=sales[i];
+      // Preserve analysis and rcStatus from existing record unless explicitly set
+      if(!data.analysis)data.analysis=existing.analysis||'';
+      if(!data.rcStatus)data.rcStatus=existing.rcStatus||'';
+      sales[i]={...existing,...data};
+    }
     toast('Sale updated','ok');
   }else{
     data.id=gId();
@@ -2012,11 +2021,23 @@ async function saveSale(){
   }
   await syncAfterEdit();render();populateFilters();populateBench();closeM('addModal');
   btn.disabled=false;btn.textContent='Save Sale';
+  // Fetch AI commentary in background after save (non-blocking)
+  if(!editId||!data.analysis){
+    const savedId=editId||data.id;
+    getAINote(data).then(commentary=>{
+      if(!commentary)return;
+      const rec=sales.find(s=>s.id===savedId);
+      if(rec){rec.analysis=commentary;syncAfterEdit();}
+    }).catch(()=>{});
+  }
 }
 
 async function getAINote(d){
   try{
-    const r=await fetch(GS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'aiCommentary',record:d})});
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),15000);
+    const r=await fetch(GS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'aiCommentary',record:d}),signal:controller.signal});
+    clearTimeout(timeout);
     const j=await r.json().catch(()=>({}));
     return j.ok?j.commentary:null;
   }catch(e){return null;}
@@ -2078,6 +2099,7 @@ function renderNotes(sid){
 function openImport(){openM('importModal');}
 function handleImportFile(e){
   const file=e.target.files[0];if(!file)return;
+  e.target.value=''; // reset so same file can be re-imported
   const reader=new FileReader();
   reader.onload=ev=>{
     try{
@@ -2092,7 +2114,7 @@ function handleImportFile(e){
   };
   reader.readAsBinaryString(file);
 }
-const IMPORT_FIELDS=['address','suburb','region','source','classification','price','saleDate','netRent','yld','landArea','landRate','floorArea','process','campaignClose','agent1','agent2','vendor','purchaser','zoning','fsr','height','wale','devStage','constraints','comments','status','priceGuide'];
+const IMPORT_FIELDS=['address','suburb','region','source','classification','price','saleDate','netRent','yld','landArea','landRate','floorArea','process','campaignClose','agent1','agent2','vendor','purchaser','zoning','fsr','height','wale','devStage','constraints','comments','status','priceGuide','operator','places','pricePerPlace','rentPerPlace','rcStatus'];
 function showColMap(){
   const prev=document.getElementById('imp-preview');
   prev.style.display='';
