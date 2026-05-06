@@ -1,0 +1,17 @@
+{
+  "name": "cw-developer-crm",
+  "version": "1.0.0",
+  "description": "Cushman & Wakefield Developer Intelligence CRM",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js",
+    "setup": "npm install && npm run seed"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.3"
+  }
+}
