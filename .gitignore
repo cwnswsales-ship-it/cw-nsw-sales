@@ -1,3 +1,13 @@
-data/
 node_modules/
+.next/
+out/
+/data/
 package-lock.json
+
+# Environment
+.env.local
+.env*.local
+
+# Misc
+.DS_Store
+*.pem
