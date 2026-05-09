@@ -8,7 +8,11 @@ export interface Agent {
   forecastKey: string | null
 }
 
-const FILE = path.join(process.cwd(), 'data', 'agents.json')
+// Primary location (baked into the Docker image / local dev)
+const PRIMARY = path.join(process.cwd(), 'data', 'agents.json')
+// Writable fallback for platforms with a read-only project filesystem (Vercel, etc.)
+// Changes written here are ephemeral (lost on cold start) but the app won't crash.
+const TMP = '/tmp/cw-agents.json'
 
 const DEFAULTS: Agent[] = [
   { id: 'miron-solomons',  name: 'Miron Solomons',  forecastKey: 'mironSolomons'  },
@@ -17,21 +21,43 @@ const DEFAULTS: Agent[] = [
   { id: 'jake-smith',      name: 'Jake Smith',        forecastKey: 'jakeSmith'      },
 ]
 
-export function readAgents(): Agent[] {
+function parse(file: string): Agent[] | null {
   try {
-    if (!fs.existsSync(FILE)) {
-      writeAgents(DEFAULTS)
-      return DEFAULTS
-    }
-    const parsed = JSON.parse(fs.readFileSync(FILE, 'utf-8'))
-    return Array.isArray(parsed.agents) ? parsed.agents : DEFAULTS
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf-8'))
+    return Array.isArray(parsed.agents) ? parsed.agents : null
   } catch {
-    return DEFAULTS
+    return null
   }
 }
 
+export function readAgents(): Agent[] {
+  // Prefer /tmp if it has a newer agent list (user made changes this session)
+  if (fs.existsSync(TMP)) {
+    const tmp = parse(TMP)
+    if (tmp) return tmp
+  }
+  if (fs.existsSync(PRIMARY)) {
+    const primary = parse(PRIMARY)
+    if (primary) return primary
+  }
+  return DEFAULTS
+}
+
 export function writeAgents(agents: Agent[]): void {
-  fs.writeFileSync(FILE, JSON.stringify({ agents }, null, 2))
+  const json = JSON.stringify({ agents }, null, 2)
+  // Try primary location first (Docker / Railway / Render / local)
+  try {
+    fs.mkdirSync(path.dirname(PRIMARY), { recursive: true })
+    fs.writeFileSync(PRIMARY, json)
+    return
+  } catch {
+    // Primary is read-only (Vercel serverless, etc.) — fall back to /tmp
+  }
+  try {
+    fs.writeFileSync(TMP, json)
+  } catch (err) {
+    console.warn('[agents] Could not persist agent list:', err)
+  }
 }
 
 export function addAgent(name: string): { agent: Agent; error?: string } {
