@@ -16,13 +16,14 @@ async function generateToken(password: string, secret: string): Promise<string> 
     .join('')
 }
 
-const PROTECTED_PATHS = ['/dashboard', '/wip', '/listings', '/forecast', '/agents']
+const PROTECTED_PATHS = ['/dashboard', '/wip', '/listings', '/forecast', '/agents', '/api/agents']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionCookie = request.cookies.get('cw_session')?.value
   const password = process.env.APP_PASSWORD || 'changeme'
   const secret = process.env.AUTH_SECRET || 'cw-wip-secret-2024'
+  const isApiRoute = pathname.startsWith('/api/')
 
   // Redirect authenticated users away from login
   if (pathname === '/login' && sessionCookie) {
@@ -35,15 +36,15 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED_PATHS.some(p => pathname.startsWith(p))
   if (!isProtected) return NextResponse.next()
 
-  if (!sessionCookie) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
   const expectedToken = await generateToken(password, secret)
+  const valid = sessionCookie && sessionCookie === expectedToken
 
-  if (sessionCookie !== expectedToken) {
+  if (!valid) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete('cw_session')
+    if (sessionCookie) response.cookies.delete('cw_session')
     return response
   }
 
@@ -57,6 +58,7 @@ export const config = {
     '/listings/:path*',
     '/forecast/:path*',
     '/agents/:path*',
+    '/api/agents/:path*',
     '/login',
   ],
 }
