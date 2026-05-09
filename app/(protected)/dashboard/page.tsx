@@ -1,5 +1,9 @@
+import type { Metadata } from 'next'
 import Header from '@/components/layout/Header'
 import KPICard from '@/components/dashboard/KPICard'
+import RefreshTime from '@/components/ui/RefreshTime'
+
+export const metadata: Metadata = { title: 'Dashboard | CW WIP' }
 import FeesByAgentChart from '@/components/charts/FeesByAgentChart'
 import FeesByMonthChart from '@/components/charts/FeesByMonthChart'
 import WIPByStatusChart from '@/components/charts/WIPByStatusChart'
@@ -107,7 +111,9 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <Header title="Dashboard" subtitle="— Investment Sales NSW Overview" />
+      <Header title="Dashboard" subtitle="— Investment Sales NSW Overview">
+        <RefreshTime />
+      </Header>
       <main className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-10">
 

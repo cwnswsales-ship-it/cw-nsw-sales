@@ -6,9 +6,10 @@ import { LogOut, ChevronRight } from 'lucide-react'
 interface HeaderProps {
   title: string
   subtitle?: string
+  children?: React.ReactNode
 }
 
-export default function Header({ title, subtitle }: HeaderProps) {
+export default function Header({ title, subtitle, children }: HeaderProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -34,6 +35,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-5">
+        {children}
         <div className="text-right hidden sm:block">
           <p className="text-xs font-medium text-gray-700">CW Investment Sales</p>
           <p className="text-xs text-gray-400">NSW Team</p>

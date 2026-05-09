@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Agent Performance | CW WIP' }
 import Header from '@/components/layout/Header'
 import AgentCard from '@/components/agents/AgentCard'
 import AgentManager from '@/components/agents/AgentManager'

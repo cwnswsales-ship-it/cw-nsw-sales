@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Active Listings | CW WIP' }
 import Header from '@/components/layout/Header'
 import ListingsTable from '@/components/tables/ListingsTable'
 import type { ListingTableRow } from '@/components/tables/ListingsTable'

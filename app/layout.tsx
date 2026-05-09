@@ -2,8 +2,14 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Cushman & Wakefield | WIP',
+  title: {
+    default: 'Cushman & Wakefield | WIP',
+    template: '%s',
+  },
   description: 'Investment Sales NSW — Work In Progress Dashboard',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
 }
 
 export default function RootLayout({

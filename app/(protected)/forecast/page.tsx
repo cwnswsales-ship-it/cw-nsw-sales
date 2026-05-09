@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+export const metadata: Metadata = { title: 'Fee Forecast | CW WIP' }
 import Header from '@/components/layout/Header'
 import ForecastTable from '@/components/tables/ForecastTable'
 import type { ForecastTableRow } from '@/components/tables/ForecastTable'
