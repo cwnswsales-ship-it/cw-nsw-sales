@@ -1,4 +1,8 @@
 node_modules
-data
+.next
 .git
 *.md
+data/*.db
+data/*.sqlite
+.env.local
+.env*.local
