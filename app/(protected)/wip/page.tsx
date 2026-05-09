@@ -1,23 +1,35 @@
 import Header from '@/components/layout/Header'
-import { ClipboardList } from 'lucide-react'
+import WIPTable from '@/components/tables/WIPTable'
+import type { WIPTableRow } from '@/components/tables/WIPTable'
+import { getWIPData } from '@/lib/data'
 
-export default function WIPPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function WIPPage() {
+  const raw = await getWIPData()
+
+  const data: WIPTableRow[] = raw.map(r => ({
+    date: r.date ? r.date.toISOString().split('T')[0] : null,
+    rating: r.rating,
+    address: r.address,
+    vendor: r.vendor,
+    value: r.value,
+    fee: r.fee,
+    landArea: r.landArea,
+    agent1: r.agent1,
+    agent2: r.agent2,
+    agent3: r.agent3,
+    status: r.status,
+    campaignType: r.campaignType,
+    assetType: r.assetType,
+  }))
+
   return (
     <>
-      <Header title="WIP" subtitle="— Work In Progress" />
+      <Header title="WIP" subtitle={`— ${data.length} deals in pipeline`} />
       <main className="flex-1 overflow-auto p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-xl border border-gray-200 p-16 flex flex-col items-center justify-center gap-4">
-            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center">
-              <ClipboardList className="w-8 h-8 text-gray-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-base font-semibold text-gray-700">WIP Table</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Searchable &amp; filterable pipeline table — coming in Stage 4
-              </p>
-            </div>
-          </div>
+        <div className="max-w-full">
+          <WIPTable data={data} />
         </div>
       </main>
     </>
