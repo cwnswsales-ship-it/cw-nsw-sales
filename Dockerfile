@@ -1,12 +1,8 @@
-FROM node:20
-
+FROM node:20-alpine
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm install
-
+RUN npm install --production
 COPY . .
-
+RUN mkdir -p data public
 EXPOSE 3000
-
-CMD ["node", "server/index.js"]
+CMD ["node", "server.js"]
