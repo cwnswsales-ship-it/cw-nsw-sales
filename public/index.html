@@ -3,255 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>CW Developer Intelligence CRM</title>
+<title>CW NSW Sales Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --navy:#1B2A4A;--navy-d:#0F1B30;--navy-m:rgba(27,42,74,.08);--navy-b:rgba(27,42,74,.14);
-  --green:#1A6B42;--green-p:rgba(26,107,66,.1);--green-d:#135230;
-  --white:#fff;--pale:#F4F6FA;--border:#E1E5EE;--mid:#6B7490;--ink:#1A2038;
-  --amber:#D97706;--amber-p:rgba(217,119,6,.1);
-  --red:#DC2626;--red-p:rgba(220,38,38,.1);
-  --blue:#1565C0;--blue-p:rgba(21,101,192,.1);
-  --sidebar:188px;
+  --red:#E1251B;--ink:#231F20;--dark:#3a3a3a;--mid:#6D6E71;--light:#D1D3D4;
+  --pale:#F5F5F5;--white:#fff;--border:#E8E8E8;--green:#15803D;--amber:#B45309;
+  --blue:#1565C0;--sidebar:188px;
+  --red-p:rgba(225,37,27,.1);--green-p:rgba(21,128,61,.1);--amber-p:rgba(180,83,9,.1);--blue-p:rgba(21,101,192,.1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Barlow',sans-serif;background:var(--pale);color:var(--ink);font-size:14px;height:100vh;overflow:hidden}
 
-/* ── HEADER ── */
-.hdr{background:var(--navy-d);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;border-bottom:3px solid var(--green);position:fixed;top:0;left:0;right:0;z-index:300}
-.hdr-logo{display:flex;align-items:center;gap:.7rem}
-.hdr-logo svg{width:28px;height:28px;flex-shrink:0}
-.logo-t1{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;line-height:1}
-.logo-t2{font-size:.52rem;color:rgba(255,255,255,.45);letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+/* HEADER */
+.hdr{background:var(--ink);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.1rem;position:fixed;top:0;left:0;right:0;z-index:300;border-bottom:3px solid var(--red)}
+.hdr-logo{display:flex;align-items:center;gap:.65rem}
+.logo-mark{width:30px;height:30px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#fff;font-size:1rem;letter-spacing:-.02em}
+.logo-t1{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;line-height:1}
+.logo-t2{font-size:.5rem;color:rgba(255,255,255,.4);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
 .hdr-acts{display:flex;gap:.3rem;align-items:center}
+.hdr-sep{width:1px;height:22px;background:rgba(255,255,255,.12);flex-shrink:0}
+.bell-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);padding:.3rem;position:relative;display:flex;align-items:center;justify-content:center;border-radius:2px}
+.bell-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.bell-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.bell-badge{position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border-radius:10px;font-size:.5rem;font-weight:700;padding:.05rem .28rem;line-height:1.4;min-width:14px;text-align:center}
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:.25rem;padding:.34rem .72rem;border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;white-space:nowrap}
-.btn-primary{background:var(--green);color:#fff;border-color:var(--green)}.btn-primary:hover{background:var(--green-d)}
-.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}.btn-navy:hover{background:var(--navy-d)}
-.btn-ghost{background:transparent;color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.18)}.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.45)}
-.btn-out{background:transparent;color:var(--ink);border-color:var(--border)}.btn-out:hover{border-color:var(--navy);color:var(--navy)}
-.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#b91c1c}
-.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#b45309}
-.btn-sm{padding:.22rem .52rem;font-size:.67rem}
-.btn-xs{padding:.14rem .38rem;font-size:.62rem}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.25rem;padding:.36rem .72rem;border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;white-space:nowrap}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red)}.btn-primary:hover{background:#c41e15}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:#126632}
+.btn-out{background:transparent;color:var(--ink);border-color:var(--border)}.btn-out:hover{border-color:var(--ink)}
+.btn-ghost{background:transparent;color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.2)}.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#c41e15}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#92400e}
+.btn-sm{padding:.24rem .55rem;font-size:.68rem}
+.btn-xs{padding:.15rem .38rem;font-size:.62rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* ── LAYOUT ── */
+/* LAYOUT */
 .app{display:flex;height:calc(100vh - 52px);margin-top:52px;overflow:hidden}
 
-/* ── SIDEBAR ── */
-nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--navy);display:flex;flex-direction:column;overflow-y:auto;padding:.5rem 0;flex-shrink:0}
-.nav-sec{padding:.6rem .85rem .18rem;font-size:.52rem;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.16em;font-weight:600}
-.ni{display:flex;align-items:center;gap:.42rem;padding:.46rem .85rem;color:rgba(255,255,255,.45);cursor:pointer;font-size:.75rem;font-weight:500;border-left:2.5px solid transparent;transition:all .1s;user-select:none}
+/* SIDEBAR */
+nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--dark);display:flex;flex-direction:column;overflow-y:auto;padding:.5rem 0;flex-shrink:0}
+.nav-sec{padding:.65rem .85rem .18rem;font-size:.5rem;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.18em;font-weight:700}
+.ni{display:flex;align-items:center;gap:.42rem;padding:.48rem .85rem;color:rgba(255,255,255,.45);cursor:pointer;font-size:.74rem;font-weight:500;border-left:2.5px solid transparent;transition:all .1s;user-select:none}
 .ni:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05)}
-.ni.on{color:#fff;border-left-color:var(--green);background:rgba(26,107,66,.18)}
+.ni.on{color:#fff;border-left-color:var(--red);background:rgba(225,37,27,.15)}
 .ni svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
-.nb{background:var(--green);color:#fff;border-radius:10px;padding:.04rem .32rem;font-size:.55rem;font-weight:700;margin-left:auto;line-height:1.5}
-.nb.amber{background:var(--amber)}.nb.red{background:var(--red)}.nb.blue{background:var(--blue)}
+.nb{background:var(--red);color:#fff;border-radius:10px;padding:.04rem .3rem;font-size:.54rem;font-weight:700;margin-left:auto;line-height:1.5;min-width:16px;text-align:center}
+.nb.grn{background:var(--green)}.nb.amb{background:var(--amber)}.nb.blue{background:var(--blue)}
 
-/* ── MAIN ── */
+/* MAIN */
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .view{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
 .view.on{display:flex}
 
-/* ── PAGE HEADER ── */
+/* PAGE HEADER */
 .ph{background:var(--white);border-bottom:1px solid var(--border);padding:.65rem 1.2rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0}
-.ph h1{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy)}
-.ph-sub{font-size:.72rem;color:var(--mid);margin-left:.15rem}
+.ph h1{font-family:'Barlow Condensed',sans-serif;font-size:1.12rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink)}
+.ph-sub{font-size:.72rem;color:var(--mid)}
 .ph-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
 
-/* ── TOOLBAR ── */
+/* TOOLBAR */
 .tb{padding:.5rem 1.2rem;display:flex;gap:.38rem;align-items:center;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
-.srch{position:relative;flex:1;min-width:160px;max-width:260px}
-.srch input{width:100%;padding:.32rem .46rem .32rem 1.7rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.74rem;background:var(--pale);color:var(--ink)}
-.srch input:focus{outline:none;border-color:var(--navy)}
+.srch{position:relative;flex:1;min-width:150px;max-width:240px}
+.srch input{width:100%;padding:.3rem .46rem .3rem 1.7rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.74rem;background:var(--pale);color:var(--ink)}
+.srch input:focus{outline:none;border-color:var(--ink)}
 .srch-ic{position:absolute;left:.46rem;top:50%;transform:translateY(-50%);color:var(--mid);width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;pointer-events:none}
 .filt{padding:.3rem .42rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;background:var(--pale);color:var(--ink);cursor:pointer}
-.filt:focus{outline:none;border-color:var(--navy)}
+.filt:focus{outline:none;border-color:var(--ink)}
 .tb-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
-.cnt{font-size:.67rem;color:var(--mid);white-space:nowrap}
+.cnt{font-size:.66rem;color:var(--mid);white-space:nowrap}
 
-/* ── TABLE ── */
+/* TABLE */
 .tw{flex:1;overflow:auto;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:.76rem}
-thead th{background:var(--navy);color:#fff;padding:.46rem .7rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;position:sticky;top:0;z-index:10}
-thead th:first-child{border-left:3px solid var(--green)}
+thead th{background:var(--ink);color:#fff;padding:.48rem .72rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;position:sticky;top:0;z-index:10}
+thead th:first-child{border-left:3px solid var(--red)}
 tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .08s}
-tbody tr:hover{background:var(--navy-m)}
+tbody tr:hover{background:rgba(225,37,27,.04)}
 tbody tr.even{background:#fafafa}
-tbody tr.even:hover{background:var(--navy-m)}
-td{padding:.5rem .7rem;vertical-align:middle}
+tbody tr.even:hover{background:rgba(225,37,27,.04)}
+td{padding:.48rem .72rem;vertical-align:middle}
+.td-addr{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-sm{font-size:.68rem;color:var(--mid)}
 
-/* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:.1rem .32rem;border-radius:2px;font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.b-active{background:var(--green-p);color:var(--green)}
-.b-planning{background:var(--blue-p);color:var(--blue)}
-.b-construction{background:var(--amber-p);color:var(--amber)}
-.b-completed{background:rgba(109,110,113,.12);color:var(--mid)}
-.b-onhold{background:var(--amber-p);color:var(--amber)}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:.1rem .34rem;border-radius:2px;font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.b-active{background:var(--blue-p);color:var(--blue)}
+.b-sold{background:var(--green-p);color:var(--green)}
+.b-settlement{background:var(--amber-p);color:var(--amber)}
 .b-withdrawn{background:rgba(109,110,113,.12);color:var(--mid)}
-.b-high{background:var(--green-p);color:var(--green)}
-.b-medium{background:var(--amber-p);color:var(--amber)}
-.b-low{background:var(--red-p);color:var(--red)}
 .b-pending{background:var(--amber-p);color:var(--amber)}
-.b-approved{background:var(--green-p);color:var(--green)}
-.b-rejected{background:var(--red-p);color:var(--red)}
-.b-current{background:var(--green-p);color:var(--green)}
-.b-update{background:var(--amber-p);color:var(--amber)}
-.b-changed{background:var(--red-p);color:var(--red)}
-.b-unchecked{background:rgba(109,110,113,.1);color:var(--mid)}
-.tag-pill{display:inline-flex;align-items:center;padding:.08rem .28rem;border-radius:10px;font-size:.58rem;font-weight:600;margin:.05rem .05rem;color:#fff}
+.b-premium{background:rgba(225,37,27,.12);color:var(--red)}
+.b-new{background:var(--green-p);color:var(--green)}
+.b-change{background:var(--amber-p);color:var(--amber)}
+.src-badge{display:inline-flex;align-items:center;padding:.08rem .3rem;border-radius:2px;font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--pale);color:var(--mid);border:1px solid var(--border)}
 
-/* ── EMPTY STATE ── */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;color:var(--mid);text-align:center;gap:.45rem}
-.empty-ico{font-size:2.4rem;opacity:.5}
-.empty strong{font-size:.88rem;color:var(--ink)}
+/* EMPTY / LOADING */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;color:var(--mid);text-align:center;gap:.5rem}
+.empty strong{font-size:.9rem;color:var(--ink)}
 .empty span{font-size:.78rem}
+.loading{text-align:center;padding:3rem;color:var(--mid);font-size:.82rem}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.3rem}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── DASHBOARD ── */
-.db-scroll{flex:1;overflow-y:auto;padding:1.1rem}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.7rem;margin-bottom:1.1rem}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem;border-top:3px solid var(--navy)}
-.stat-card.green{border-top-color:var(--green)}
-.stat-card.amber{border-top-color:var(--amber)}
-.stat-card.red{border-top-color:var(--red)}
-.stat-card.blue{border-top-color:var(--blue)}
-.stat-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.3rem;font-weight:600}
-.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;line-height:1;color:var(--navy)}
-.stat-val.green{color:var(--green)}.stat-val.amber{color:var(--amber)}.stat-val.red{color:var(--red)}.stat-val.blue{color:var(--blue)}
-.stat-sub{font-size:.64rem;color:var(--mid);margin-top:.2rem}
-.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
-.db-grid.three{grid-template-columns:1fr 1fr 1fr}
+/* DASHBOARD */
+.db-scroll{flex:1;overflow-y:auto;padding:1.1rem 1.2rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.7rem;margin-bottom:1.1rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;border-top:3px solid var(--light);position:relative;overflow:hidden}
+.stat-card.red{border-top-color:var(--red)}.stat-card.green{border-top-color:var(--green)}.stat-card.amber{border-top-color:var(--amber)}.stat-card.blue{border-top-color:var(--blue)}
+.stat-label{font-size:.57rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.3rem;font-weight:700}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:2.1rem;font-weight:700;line-height:1;color:var(--ink)}
+.stat-sub{font-size:.63rem;color:var(--mid);margin-top:.22rem}
+.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem}
 .db-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem}
-.db-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.6rem;font-weight:700}
-.db-row{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
+.db-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem}
+.db-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);font-weight:700}
+.db-row{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem;gap:.5rem}
 .db-row:last-child{border-bottom:none}
-.db-row-l{color:var(--mid);font-size:.72rem}
-.db-row-v{font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:.88rem}
-.bar-wrap{flex:1;background:var(--pale);border-radius:1px;height:5px;overflow:hidden;margin:0 .5rem}
-.bar-fill{height:100%;background:var(--navy);border-radius:1px}
-.intel-item{padding:.45rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
-.intel-item:last-child{border-bottom:none}
-.intel-meta{font-size:.63rem;color:var(--mid);margin-top:.18rem}
-.fu-item{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
-.fu-item:last-child{border-bottom:none}
-.fu-name{font-weight:600}
-.fu-dev{font-size:.67rem;color:var(--mid)}
-.fu-date{font-size:.67rem;white-space:nowrap}
+.db-row-l{color:var(--mid);font-size:.72rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db-row-v{font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;white-space:nowrap}
+.disc-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.75rem .85rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
+.disc-card-info{flex:1;min-width:0}
+.disc-card-addr{font-weight:600;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.disc-card-meta{font-size:.68rem;color:var(--mid);margin-top:.15rem}
+.disc-card-acts{display:flex;gap:.3rem;flex-shrink:0}
+.camp-strip{display:flex;gap:.55rem;overflow-x:auto;padding-bottom:.3rem;flex-shrink:0}
+.camp-chip{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.6rem .8rem;min-width:160px;flex-shrink:0}
+.camp-chip-addr{font-weight:600;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.camp-chip-meta{font-size:.65rem;color:var(--mid);margin-top:.1rem}
+.days-badge{display:inline-flex;align-items:center;padding:.08rem .3rem;border-radius:2px;font-size:.58rem;font-weight:700;white-space:nowrap}
+.days-red{background:var(--red-p);color:var(--red)}
+.days-amber{background:var(--amber-p);color:var(--amber)}
+.days-green{background:var(--green-p);color:var(--green)}
+.days-mid{background:rgba(109,110,113,.1);color:var(--mid)}
 
-/* ── CONTACT CARDS ── */
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.75rem;padding:1rem}
-.contact-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem;position:relative}
-.contact-card.incomplete{border-left:3px solid var(--amber)}
-.contact-card.linkedin-flag{border-left:3px solid var(--red)}
-.cc-name{font-size:.92rem;font-weight:700;color:var(--navy)}
-.cc-title{font-size:.74rem;color:var(--mid);margin:.1rem 0 .5rem}
-.cc-dev{font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:.55rem}
-.cc-field{display:flex;align-items:center;gap:.35rem;font-size:.74rem;margin:.22rem 0;color:var(--ink)}
-.cc-field svg{width:12px;height:12px;stroke:var(--mid);fill:none;stroke-width:2;flex-shrink:0}
-.cc-field a{color:var(--navy);text-decoration:none}.cc-field a:hover{text-decoration:underline}
-.cc-actions{display:flex;gap:.3rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);flex-wrap:wrap}
-.cc-flag{position:absolute;top:.55rem;right:.55rem;font-size:.58rem;font-weight:700;padding:.1rem .3rem;border-radius:2px;text-transform:uppercase}
-.cc-flag.incomplete{background:var(--amber-p);color:var(--amber)}
-.cc-flag.linkedin{background:var(--red-p);color:var(--red)}
-.cc-missing{font-size:.65rem;color:var(--amber);margin-top:.25rem}
+/* DISCOVERY CARDS */
+.disc-grid{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.55rem}
+.d-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem;display:flex;align-items:flex-start;gap:.8rem;position:relative}
+.d-card.premium{border-left:3px solid var(--red)}
+.d-card-body{flex:1;min-width:0}
+.d-card-addr{font-weight:700;font-size:.88rem;margin-bottom:.2rem}
+.d-card-sub{font-size:.72rem;color:var(--mid);margin-bottom:.4rem}
+.d-card-row{display:flex;flex-wrap:wrap;gap:.3rem .8rem;font-size:.72rem;color:var(--mid);margin-bottom:.45rem}
+.d-card-row span b{color:var(--ink);font-weight:600}
+.d-card-acts{display:flex;gap:.35rem;flex-wrap:wrap}
+.d-card-badges{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem}
+.scrape-status{display:flex;align-items:center;gap:.55rem;font-size:.72rem;color:var(--mid);padding:.5rem 1.2rem;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
+.scrape-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.scrape-dot.stale{background:var(--amber)}.scrape-dot.unknown{background:var(--mid)}
 
-/* ── INTEL FEED ── */
-.intel-feed{flex:1;overflow-y:auto;padding:1rem}
-.intel-entry{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;margin-bottom:.6rem;border-left:3px solid var(--navy)}
-.ie-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.45rem}
-.ie-project{font-weight:700;font-size:.84rem;color:var(--navy)}
-.ie-dev{font-size:.7rem;color:var(--mid)}
-.ie-content{font-size:.8rem;line-height:1.5;color:var(--ink)}
-.ie-footer{display:flex;align-items:center;gap:.5rem;margin-top:.45rem;font-size:.65rem;color:var(--mid)}
-.ie-source{background:var(--navy-m);color:var(--navy);padding:.06rem .28rem;border-radius:2px;font-weight:600;font-size:.6rem;text-transform:uppercase}
+/* PREMIUM VIEW */
+.prem-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem;padding:1rem 1.2rem;flex-shrink:0}
 
-/* ── SCRAPED LEADS ── */
-.lead-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;margin-bottom:.6rem}
-.lead-card.high{border-left:3px solid var(--green)}
-.lead-card.medium{border-left:3px solid var(--amber)}
-.lead-card.low{border-left:3px solid var(--mid)}
-.lc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.45rem}
-.lc-title{font-weight:700;font-size:.88rem;color:var(--navy)}
-.lc-dev{font-size:.72rem;color:var(--mid);margin-top:.1rem}
-.lc-snippet{font-size:.76rem;color:var(--ink);line-height:1.5;background:var(--pale);border-radius:2px;padding:.5rem .7rem;margin:.5rem 0;border-left:2px solid var(--border)}
-.lc-footer{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.65rem;color:var(--mid)}
-.lc-actions{display:flex;gap:.35rem;margin-top:.6rem}
+/* EXPORT VIEW */
+.exp-wrap{flex:1;overflow-y:auto;padding:1.2rem}
+.exp-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:1.2rem;max-width:520px}
+.exp-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem;color:var(--ink)}
+.exp-section{margin-bottom:1rem}
+.exp-section label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.28rem}
+.exp-section select,.exp-section input{width:100%;padding:.36rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
+.exp-section select:focus,.exp-section input:focus{outline:none;border-color:var(--ink)}
+.exp-count{background:var(--pale);border-radius:3px;padding:.85rem 1rem;margin:1rem 0;text-align:center}
+.exp-count-n{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;color:var(--ink)}
+.exp-count-l{font-size:.72rem;color:var(--mid)}
+.exp-note{font-size:.7rem;color:var(--mid);padding:.6rem;background:var(--pale);border-radius:2px;border-left:2px solid var(--border)}
 
-/* ── MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(15,27,48,.55);z-index:500;align-items:center;justify-content:center}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
 .overlay.on{display:flex}
-.modal{background:var(--white);border-radius:3px;width:600px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25)}
-.modal.wide{width:760px}
-.modal-hdr{background:var(--navy);color:#fff;padding:.85rem 1.1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:3px 3px 0 0}
+.modal{background:var(--white);border-radius:3px;width:640px;max-width:98vw;margin:auto;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.22)}
+.modal.wide{width:780px}
+.modal-hdr{background:var(--ink);color:#fff;padding:.85rem 1.1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:3px 3px 0 0;border-bottom:3px solid var(--red)}
 .modal-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:1.2rem;line-height:1;padding:.1rem .3rem}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:1.3rem;line-height:1;padding:.1rem .3rem}
 .modal-close:hover{color:#fff}
-.modal-body{padding:1.1rem;overflow-y:auto;flex:1}
+.modal-body{padding:1.1rem;overflow-y:auto;flex:1;max-height:75vh}
 .modal-footer{padding:.75rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.4rem;justify-content:flex-end;flex-shrink:0}
+.form-section{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.form-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.form-section-title{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.7rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
 
-/* ── FORM ── */
-.fg{margin-bottom:.75rem}
-.fg label{display:block;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.28rem}
-.fg input,.fg select,.fg textarea{width:100%;padding:.38rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
-.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--navy)}
-.fg textarea{resize:vertical;min-height:72px}
-.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+/* FORM */
+.fg{margin-bottom:.68rem}
+.fg label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.26rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.36rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--ink)}
+.fg input[readonly]{background:var(--pale);color:var(--mid)}
+.fg textarea{resize:vertical;min-height:64px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
 .fg-row.three{grid-template-columns:1fr 1fr 1fr}
-.form-hint{font-size:.65rem;color:var(--mid);margin-top:.2rem}
+.fg-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-hint{font-size:.64rem;color:var(--mid);margin-top:.18rem}
 
-/* ── DETAIL PANEL ── */
-.detail-wrap{display:flex;flex:1;overflow:hidden}
-.detail-list{flex:1;overflow-y:auto;min-height:0}
-.detail-panel{width:380px;min-width:380px;background:var(--white);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.dp-hdr{background:var(--navy);color:#fff;padding:.85rem 1rem;flex-shrink:0}
-.dp-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.dp-hdr p{font-size:.68rem;color:rgba(255,255,255,.55);margin-top:.15rem}
-.dp-body{flex:1;overflow-y:auto;padding:.85rem 1rem}
-.dp-close{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:1.1rem;margin-left:auto;padding:.1rem}
-.dp-close:hover{color:#fff}
-.dp-section{margin-bottom:1rem}
-.dp-section h4{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.5rem;padding-bottom:.28rem;border-bottom:1px solid var(--border)}
-.dp-field{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.78rem;border-bottom:1px solid var(--pale)}
-.dp-field:last-child{border-bottom:none}
-.dp-field-l{color:var(--mid);font-size:.72rem;flex-shrink:0;margin-right:.5rem}
-.dp-field-v{font-weight:500;text-align:right;word-break:break-word}
-.dp-actions{padding:.65rem 1rem;border-top:1px solid var(--border);display:flex;gap:.35rem;flex-wrap:wrap;flex-shrink:0}
-.intel-mini{font-size:.75rem;padding:.38rem .5rem;background:var(--pale);border-radius:2px;margin-bottom:.38rem;border-left:2px solid var(--navy)}
-.intel-mini .im-date{font-size:.62rem;color:var(--mid);margin-top:.12rem}
+/* PAGINATION */
+.pager{display:flex;align-items:center;gap:.4rem;padding:.5rem 1.2rem;background:var(--white);border-top:1px solid var(--border);flex-shrink:0}
+.pager-btn{padding:.26rem .6rem;border:1px solid var(--border);border-radius:2px;font-size:.72rem;cursor:pointer;background:var(--white);color:var(--ink)}
+.pager-btn:hover:not(:disabled){border-color:var(--ink)}
+.pager-btn:disabled{opacity:.4;cursor:not-allowed}
+.pager-info{font-size:.7rem;color:var(--mid)}
 
-/* ── SETTINGS ── */
-.settings-wrap{flex:1;overflow-y:auto;padding:1.1rem}
-.settings-section{background:var(--white);border:1px solid var(--border);border-radius:3px;margin-bottom:1rem;overflow:hidden}
-.ss-hdr{background:var(--navy);color:#fff;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between}
-.ss-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.ss-body{padding:.85rem 1rem}
-.source-row{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--pale);font-size:.78rem}
-.source-row:last-child{border-bottom:none}
-.source-name{font-weight:600;flex:1}
-.source-url{font-size:.68rem;color:var(--mid);flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.toggle{position:relative;width:32px;height:17px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-sl{position:absolute;inset:0;background:var(--border);border-radius:9px;cursor:pointer;transition:.2s}
-.toggle input:checked+.toggle-sl{background:var(--green)}
-.toggle-sl:before{content:'';position:absolute;width:13px;height:13px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.2s}
-.toggle input:checked+.toggle-sl:before{transform:translateX(15px)}
+/* ALERTS PANEL */
+.alerts-panel{position:fixed;top:52px;right:0;bottom:0;width:340px;background:var(--white);border-left:1px solid var(--border);z-index:400;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s ease;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+.alerts-panel.open{transform:translateX(0)}
+.alerts-panel-hdr{padding:.85rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.alerts-panel-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.alerts-list{flex:1;overflow-y:auto}
+.alert-item{padding:.65rem 1rem;border-bottom:1px solid var(--border);font-size:.76rem;display:flex;gap:.5rem;align-items:flex-start}
+.alert-item.unread{background:rgba(225,37,27,.04)}
+.alert-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-top:.35rem;flex-shrink:0}
+.alert-read-dot{width:6px;height:6px;border-radius:50%;background:var(--border);margin-top:.35rem;flex-shrink:0}
+.alert-msg{flex:1;line-height:1.4}
+.alert-time{font-size:.63rem;color:var(--mid);margin-top:.2rem}
+.alerts-footer{padding:.65rem 1rem;border-top:1px solid var(--border);flex-shrink:0}
 
-/* ── TOAST ── */
+/* TOAST */
 .toast-wrap{position:fixed;bottom:1.2rem;right:1.2rem;z-index:900;display:flex;flex-direction:column;gap:.4rem}
-.toast{background:var(--navy-d);color:#fff;padding:.55rem .9rem;border-radius:3px;font-size:.78rem;border-left:3px solid var(--green);animation:toast-in .2s ease;max-width:320px}
-.toast.err{border-left-color:var(--red)}
-@keyframes toast-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+.toast{background:var(--ink);color:#fff;padding:.55rem .9rem;border-radius:3px;font-size:.78rem;border-left:3px solid var(--green);animation:toast-in .2s ease;max-width:300px;pointer-events:none}
+.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--amber)}.toast.info{border-left-color:var(--blue)}
+@keyframes toast-in{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
 
-/* ── MISC ── */
-.sep{width:1px;background:rgba(255,255,255,.12);height:20px;flex-shrink:0}
-.copy-btn{background:none;border:none;cursor:pointer;color:var(--mid);padding:.1rem;line-height:1}
-.copy-btn:hover{color:var(--navy)}
-.copy-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
-a{color:var(--navy);text-decoration:none}a:hover{text-decoration:underline}
-.loading{text-align:center;padding:2rem;color:var(--mid);font-size:.82rem}
+/* DISC TOGGLE */
+.seg-ctrl{display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
+.seg-btn{padding:.28rem .6rem;font-size:.68rem;font-weight:600;font-family:'Barlow',sans-serif;cursor:pointer;border:none;background:var(--pale);color:var(--mid);text-transform:uppercase;letter-spacing:.04em;border-right:1px solid var(--border)}
+.seg-btn:last-child{border-right:none}
+.seg-btn.on{background:var(--ink);color:#fff}
+
+/* MISC */
+a{color:var(--ink);text-decoration:none}a:hover{text-decoration:underline}
+.agent-link{color:var(--blue);cursor:pointer}.agent-link:hover{text-decoration:underline}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.55rem;padding-bottom:.28rem;border-bottom:1px solid var(--border)}
+
+@media(max-width:768px){
+  nav{display:none}
+  .db-grid{grid-template-columns:1fr}
+  .fg-row.three,.fg-row.four{grid-template-columns:1fr 1fr}
+  .modal{width:99vw;max-height:95vh}
+  .alerts-panel{width:100%}
+}
 </style>
 </head>
 <body>
@@ -259,1307 +249,1357 @@ a{color:var(--navy);text-decoration:none}a:hover{text-decoration:underline}
 <!-- HEADER -->
 <header class="hdr">
   <div class="hdr-logo">
-    <svg viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="2" fill="#1A6B42"/>
-      <path d="M6 14 L14 6 L22 14 L14 22 Z" fill="none" stroke="#fff" stroke-width="1.8"/>
-      <circle cx="14" cy="14" r="3" fill="#fff"/>
-    </svg>
+    <div class="logo-mark">CW</div>
     <div>
-      <div class="logo-t1">Cushman &amp; Wakefield</div>
-      <div class="logo-t2">Developer Intelligence CRM</div>
+      <div class="logo-t1">NSW Sales Intelligence</div>
+      <div class="logo-t2">Cushman &amp; Wakefield</div>
     </div>
   </div>
   <div class="hdr-acts">
-    <button class="btn btn-ghost btn-sm" onclick="runLinkedInCheck()">⚡ LinkedIn Check</button>
-    <div class="sep"></div>
-    <button class="btn btn-ghost btn-sm" onclick="nav('scraped')">🔍 Scraped Leads <span id="hdr-leads-count" style="display:none" class="nb amber">0</span></button>
+    <button class="btn btn-ghost btn-sm" onclick="showView('view-export')">↓ Export</button>
+    <div class="hdr-sep"></div>
+    <button class="bell-btn" onclick="toggleAlerts()" title="Alerts">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="bell-badge" id="bell-badge" style="display:none">0</span>
+    </button>
   </div>
 </header>
 
 <!-- APP -->
 <div class="app">
 
-  <!-- SIDEBAR -->
-  <nav>
-    <div class="nav-sec">Main</div>
-    <div class="ni on" id="ni-dashboard" onclick="nav('dashboard')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
-    </div>
-    <div class="ni" id="ni-developers" onclick="nav('developers')">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Developers
-    </div>
-    <div class="ni" id="ni-projects" onclick="nav('projects')">
-      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-      Projects
-    </div>
-    <div class="ni" id="ni-contacts" onclick="nav('contacts')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Contacts
-    </div>
-    <div class="nav-sec">Intelligence</div>
-    <div class="ni" id="ni-intel" onclick="nav('intel')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Intel
-    </div>
-    <div class="ni" id="ni-scraped" onclick="nav('scraped')">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Scraped Leads
-      <span class="nb amber" id="nb-scraped">0</span>
-    </div>
-    <div class="nav-sec">Admin</div>
-    <div class="ni" id="ni-settings" onclick="nav('settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
-    </div>
-  </nav>
+<!-- SIDEBAR -->
+<nav>
+  <div class="nav-sec">Overview</div>
+  <div class="ni on" id="ni-dash" onclick="showView('view-dash')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </div>
+  <div class="nav-sec">Sales</div>
+  <div class="ni" id="ni-sales" onclick="showView('view-sales')">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    Sales Database
+    <span class="nb grn" id="nb-sales">0</span>
+  </div>
+  <div class="ni" id="ni-campaigns" onclick="showView('view-campaigns')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Campaigns
+    <span class="nb" id="nb-campaigns">0</span>
+  </div>
+  <div class="ni" id="ni-premium" onclick="showView('view-premium')">
+    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Premium
+  </div>
+  <div class="nav-sec">Discovery</div>
+  <div class="ni" id="ni-discoveries" onclick="showView('view-discoveries')">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Discoveries
+    <span class="nb amb" id="nb-discoveries">0</span>
+  </div>
+  <div class="nav-sec">Tools</div>
+  <div class="ni" id="ni-export" onclick="showView('view-export')">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
+  </div>
+</nav>
 
-  <!-- MAIN CONTENT -->
-  <div class="main">
+<!-- MAIN -->
+<div class="main">
 
-    <!-- ── DASHBOARD ── -->
-    <div class="view on" id="view-dashboard">
-      <div class="ph"><h1>Dashboard</h1><span class="ph-sub">NSW Investment Sales Team</span>
-        <div class="ph-r"><button class="btn btn-out btn-sm" onclick="loadDashboard()">↻ Refresh</button></div>
-      </div>
-      <div class="db-scroll" id="db-content"><div class="loading">Loading…</div></div>
+<!-- DASHBOARD -->
+<div class="view on" id="view-dash">
+  <div class="ph">
+    <h1>Dashboard</h1>
+    <span class="ph-sub">NSW Investment Sales</span>
+    <div class="ph-r"><button class="btn btn-out btn-sm" onclick="loadAll()">↻ Refresh</button></div>
+  </div>
+  <div class="db-scroll" id="dash-content"><div class="loading"><span class="spinner"></span>Loading…</div></div>
+</div>
+
+<!-- SALES DATABASE -->
+<div class="view" id="view-sales">
+  <div class="ph">
+    <h1>Sales Database</h1>
+    <div class="ph-r">
+      <button class="btn btn-primary btn-sm" onclick="openSaleModal(null)">+ Add Sale</button>
     </div>
-
-    <!-- ── DEVELOPERS ── -->
-    <div class="view" id="view-developers">
-      <div class="ph"><h1>Developers</h1>
-        <div class="ph-r">
-          <button class="btn btn-out btn-sm" onclick="exportCSV('developers')">↓ Export CSV</button>
-          <button class="btn btn-primary btn-sm" onclick="openDevModal()">+ Add Developer</button>
-        </div>
-      </div>
-      <div class="tb">
-        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="dev-q" placeholder="Search developers…" oninput="loadDevelopers()">
-        </div>
-        <select class="filt" id="dev-type" onchange="loadDevelopers()"><option value="">All Types</option><option>Residential</option><option>Commercial</option><option>Mixed</option><option>Industrial</option><option>Childcare</option><option>Other</option></select>
-        <select class="filt" id="dev-owner" onchange="loadDevelopers()"><option value="">All Owners</option></select>
-        <span class="cnt" id="dev-cnt"></span>
-        <div class="tb-r"></div>
-      </div>
-      <div class="detail-wrap">
-        <div class="tw detail-list" id="dev-list"></div>
-        <div class="detail-panel" id="dev-panel" style="display:none">
-          <div class="dp-hdr">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between">
-              <div><h2 id="dp-dev-name">–</h2><p id="dp-dev-sub">–</p></div>
-              <button class="dp-close" onclick="closePanel('dev-panel')">✕</button>
-            </div>
-          </div>
-          <div class="dp-body" id="dp-dev-body"></div>
-          <div class="dp-actions" id="dp-dev-actions"></div>
-        </div>
-      </div>
+  </div>
+  <div class="tb">
+    <select class="filt" id="sf-source" onchange="renderSales()">
+      <option value="">All Databases</option>
+      <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
+    </select>
+    <select class="filt" id="sf-class" onchange="renderSales()">
+      <option value="">All Asset Classes</option>
+      <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
+      <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
+      <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
+      <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
+      <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
+      <option>Strata Retail</option><option>Town Centre</option>
+    </select>
+    <select class="filt" id="sf-status" onchange="renderSales()">
+      <option value="">All Status</option><option>Active</option><option>Sold</option><option>Withdrawn</option>
+    </select>
+    <select class="filt" id="sf-year" onchange="renderSales()"><option value="">All Years</option></select>
+    <div class="srch">
+      <svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="sf-q" placeholder="Search address, suburb…" oninput="renderSales()">
     </div>
+    <span class="cnt" id="sales-cnt"></span>
+  </div>
+  <div class="tw" id="sales-table-wrap">
+    <table id="sales-table">
+      <thead><tr>
+        <th>Address</th><th>Suburb</th><th>Asset Class / Operator</th><th>Status</th>
+        <th>Sale Price</th><th>Yield</th><th>WALE</th><th>Agent 1</th><th>Sale Date</th><th></th>
+      </tr></thead>
+      <tbody id="sales-tbody"></tbody>
+    </table>
+  </div>
+  <div class="pager" id="sales-pager"></div>
+</div>
 
-    <!-- ── PROJECTS ── -->
-    <div class="view" id="view-projects">
-      <div class="ph"><h1>Projects</h1>
-        <div class="ph-r">
-          <button class="btn btn-out btn-sm" onclick="exportCSV('projects')">↓ Export CSV</button>
-          <button class="btn btn-primary btn-sm" onclick="openProjectModal()">+ Add Project</button>
-        </div>
-      </div>
-      <div class="tb">
-        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="proj-q" placeholder="Search projects…" oninput="loadProjects()">
-        </div>
-        <select class="filt" id="proj-type" onchange="loadProjects()"><option value="">All Types</option><option>Residential</option><option>Commercial</option><option>Mixed Use</option><option>Industrial</option><option>Childcare</option><option>Land</option></select>
-        <select class="filt" id="proj-status" onchange="loadProjects()"><option value="">All Status</option><option>Active</option><option>Planning</option><option>Under Construction</option><option>Completed</option><option>On Hold</option><option>Withdrawn</option></select>
-        <select class="filt" id="proj-dev" onchange="loadProjects()"><option value="">All Developers</option></select>
-        <span class="cnt" id="proj-cnt"></span>
-      </div>
-      <div class="detail-wrap">
-        <div class="tw detail-list" id="proj-list"></div>
-        <div class="detail-panel" id="proj-panel" style="display:none">
-          <div class="dp-hdr">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between">
-              <div><h2 id="dp-proj-name">–</h2><p id="dp-proj-sub">–</p></div>
-              <button class="dp-close" onclick="closePanel('proj-panel')">✕</button>
-            </div>
-          </div>
-          <div class="dp-body" id="dp-proj-body"></div>
-          <div class="dp-actions" id="dp-proj-actions"></div>
-        </div>
-      </div>
+<!-- CAMPAIGNS -->
+<div class="view" id="view-campaigns">
+  <div class="ph">
+    <h1>Campaign Tracker</h1>
+    <div class="ph-r">
+      <button class="btn btn-primary btn-sm" onclick="openCampaignModal(null)">+ Add Campaign</button>
     </div>
+  </div>
+  <div class="tb">
+    <select class="filt" id="cf-status" onchange="renderCampaigns()">
+      <option value="">All Status</option><option>Active</option><option>Settlement</option>
+      <option>Settled</option><option>Withdrawn</option>
+    </select>
+    <div class="srch">
+      <svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="cf-q" placeholder="Search campaigns…" oninput="renderCampaigns()">
+    </div>
+    <span class="cnt" id="camp-cnt"></span>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th>Address</th><th>Suburb</th><th>Type</th><th>Process</th>
+        <th>Close Date</th><th>Price Guide</th><th>Agent 1</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody id="camp-tbody"></tbody>
+    </table>
+  </div>
+</div>
 
-    <!-- ── CONTACTS ── -->
-    <div class="view" id="view-contacts">
-      <div class="ph"><h1>Contacts</h1>
-        <div class="ph-r">
-          <button class="btn btn-out btn-sm" onclick="exportCSV('contacts')">↓ Export CSV</button>
-          <button class="btn btn-primary btn-sm" onclick="openContactModal()">+ Add Contact</button>
+<!-- DISCOVERIES -->
+<div class="view" id="view-discoveries">
+  <div class="ph">
+    <h1>Discoveries</h1>
+    <div class="ph-r">
+      <button class="btn btn-primary btn-sm" id="scan-btn" onclick="runScan()">⟳ Scan Now</button>
+    </div>
+  </div>
+  <div class="scrape-status">
+    <div class="scrape-dot unknown" id="scrape-dot"></div>
+    <span id="scrape-status-txt">Loading scrape status…</span>
+  </div>
+  <div class="tb" style="gap:.5rem">
+    <div class="seg-ctrl">
+      <button class="seg-btn on" id="dseg-pending" onclick="setDiscSeg('pending')">Pending</button>
+      <button class="seg-btn" id="dseg-premium" onclick="setDiscSeg('premium')">Premium Only</button>
+      <button class="seg-btn" id="dseg-all" onclick="setDiscSeg('all')">All</button>
+    </div>
+    <span class="cnt" id="disc-cnt"></span>
+  </div>
+  <div class="disc-grid" id="disc-grid"><div class="loading"><span class="spinner"></span>Loading…</div></div>
+</div>
+
+<!-- PREMIUM -->
+<div class="view" id="view-premium">
+  <div class="ph">
+    <h1>Premium Investments</h1>
+    <div class="ph-r"><button class="btn btn-out btn-sm" onclick="renderPremium()">↻ Refresh</button></div>
+  </div>
+  <div class="prem-stats" id="prem-stats"></div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th>Address</th><th>Suburb</th><th>Type</th><th>Operator/Tenant</th>
+        <th>Sale Price</th><th>Net Rent</th><th>Yield</th><th>WALE</th><th>$/Place</th><th>Agent</th><th>Sale Date</th>
+      </tr></thead>
+      <tbody id="prem-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div class="view" id="view-export">
+  <div class="ph"><h1>Export Data</h1></div>
+  <div class="exp-wrap">
+    <div class="exp-card">
+      <h3>Download Sales Data</h3>
+      <div class="exp-section">
+        <label>Source Database</label>
+        <select id="exp-source" onchange="updateExportCount()">
+          <option value="">All Databases</option>
+          <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
+        </select>
+      </div>
+      <div class="exp-section">
+        <label>Status</label>
+        <select id="exp-status" onchange="updateExportCount()">
+          <option value="">All Status</option><option>Active</option><option>Sold</option><option>Withdrawn</option>
+        </select>
+      </div>
+      <div class="exp-section">
+        <label>Asset Class</label>
+        <select id="exp-class" onchange="updateExportCount()">
+          <option value="">All Asset Classes</option>
+          <option>Childcare Centre</option><option>Fast Food</option><option>Medical</option>
+          <option>Retail Net Lease</option><option>Service Station</option><option>Development Site</option>
+          <option>Commercial</option><option>Industrial</option><option>Retail</option>
+        </select>
+      </div>
+      <div class="fg-row" style="margin-bottom:.5rem">
+        <div class="exp-section">
+          <label>From Date</label>
+          <input type="date" id="exp-from" onchange="updateExportCount()">
+        </div>
+        <div class="exp-section">
+          <label>To Date</label>
+          <input type="date" id="exp-to" onchange="updateExportCount()">
         </div>
       </div>
-      <div class="tb">
-        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="con-q" placeholder="Search contacts…" oninput="loadContacts()">
-        </div>
-        <select class="filt" id="con-dev" onchange="loadContacts()"><option value="">All Developers</option></select>
-        <select class="filt" id="con-li" onchange="loadContacts()"><option value="">All LinkedIn Status</option><option value="Potential Update">Needs Review</option><option value="Confirmed Changed">Changed</option><option value="Current">Current</option><option value="Unchecked">Unchecked</option></select>
-        <label style="font-size:.72rem;display:flex;align-items:center;gap:.3rem;cursor:pointer">
-          <input type="checkbox" id="con-incomplete" onchange="loadContacts()"> Incomplete only
-        </label>
-        <span class="cnt" id="con-cnt"></span>
+      <div class="exp-count">
+        <div class="exp-count-n" id="exp-count">—</div>
+        <div class="exp-count-l">records match</div>
       </div>
-      <div class="cards-grid" id="con-list" style="flex:1;overflow-y:auto"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:.55rem" onclick="doExport()">↓ Download Excel</button>
+      <div class="exp-note" style="margin-top:.75rem">Prices include $ symbol · Dates in dd-mmm-yyyy format · Yields as percentages</div>
     </div>
+  </div>
+</div>
 
-    <!-- ── INTEL ── -->
-    <div class="view" id="view-intel">
-      <div class="ph"><h1>Intel</h1>
-        <div class="ph-r"><button class="btn btn-primary btn-sm" onclick="openIntelModal()">+ Add Intel</button></div>
-      </div>
-      <div class="tb">
-        <div class="srch"><svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="intel-q" placeholder="Search intel…" oninput="loadIntel()">
-        </div>
-        <select class="filt" id="intel-source" onchange="loadIntel()"><option value="">All Sources</option><option>Internal</option><option>Press</option><option>DA Portal</option><option>Agent</option><option>LinkedIn</option><option>Other</option></select>
-        <span class="cnt" id="intel-cnt"></span>
-      </div>
-      <div class="intel-feed" id="intel-list"></div>
-    </div>
-
-    <!-- ── SCRAPED LEADS ── -->
-    <div class="view" id="view-scraped">
-      <div class="ph"><h1>Scraped Leads</h1><span class="ph-sub">Review before adding to database</span>
-        <div class="ph-r">
-          <select class="filt" id="lead-status" onchange="loadScraped()"><option value="Pending">Pending Review</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="all">All</option></select>
-        </div>
-      </div>
-      <div style="flex:1;overflow-y:auto;padding:1rem" id="scraped-list"></div>
-    </div>
-
-    <!-- ── SETTINGS ── -->
-    <div class="view" id="view-settings">
-      <div class="ph"><h1>Settings</h1></div>
-      <div class="settings-wrap" id="settings-body"><div class="loading">Loading…</div></div>
-    </div>
-
-  </div><!-- /main -->
+</div><!-- /main -->
 </div><!-- /app -->
 
+<!-- ALERTS PANEL -->
+<div class="alerts-panel" id="alerts-panel">
+  <div class="alerts-panel-hdr">
+    <h3>Alerts</h3>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <button class="btn btn-out btn-xs" onclick="markAllAlertsRead()">Mark All Read</button>
+      <button class="btn btn-out btn-xs" onclick="toggleAlerts()">✕</button>
+    </div>
+  </div>
+  <div class="alerts-list" id="alerts-list"><div class="loading">Loading…</div></div>
+  <div class="alerts-footer" style="font-size:.68rem;color:var(--mid)">Click an alert to view details</div>
+</div>
+
 <!-- TOAST CONTAINER -->
-<div class="toast-wrap" id="toasts"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
 
-<!-- ── MODALS ── -->
-
-<!-- Developer Modal -->
-<div class="overlay" id="modal-dev">
-  <div class="modal">
-    <div class="modal-hdr"><h2 id="modal-dev-title">Add Developer</h2><button class="modal-close" onclick="closeModal('modal-dev')">✕</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="dev-id">
-      <div class="fg-row">
-        <div class="fg"><label>Company Name *</label><input id="dev-name" placeholder="e.g. Meriton Group"></div>
-        <div class="fg"><label>ABN</label><input id="dev-abn" placeholder="12 345 678 901"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Type</label>
-          <select id="dev-type-f"><option value="">– Select –</option><option>Residential</option><option>Commercial</option><option>Mixed</option><option>Industrial</option><option>Childcare</option><option>Other</option></select>
-        </div>
-        <div class="fg"><label>Suburb</label><input id="dev-suburb" placeholder="e.g. Mascot"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Website</label><input id="dev-website" placeholder="https://…"></div>
-        <div class="fg"><label>Relationship Owner</label><select id="dev-owner-f"><option value="">– Select –</option></select></div>
-      </div>
-      <div class="fg"><label>Tags <span style="font-weight:400;text-transform:none">(comma-separated)</span></label><input id="dev-tags" placeholder="e.g. Active Pipeline, High Value"></div>
-      <div class="fg"><label>Notes</label><textarea id="dev-notes" rows="3"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-dev')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveDeveloper()">Save Developer</button>
-    </div>
-  </div>
-</div>
-
-<!-- Project Modal -->
-<div class="overlay" id="modal-proj">
+<!-- MODAL: ADD/EDIT SALE -->
+<div class="overlay" id="sale-overlay">
   <div class="modal wide">
-    <div class="modal-hdr"><h2 id="modal-proj-title">Add Project</h2><button class="modal-close" onclick="closeModal('modal-proj')">✕</button></div>
+    <div class="modal-hdr">
+      <h2 id="sale-modal-title">Add Sale</h2>
+      <button class="modal-close" onclick="closeSaleModal()">✕</button>
+    </div>
     <div class="modal-body">
-      <input type="hidden" id="proj-id">
-      <div class="fg-row">
-        <div class="fg"><label>Developer *</label><select id="proj-dev-f"><option value="">– Select Developer –</option></select></div>
-        <div class="fg"><label>Project Name *</label><input id="proj-name" placeholder="e.g. World Tower Stage 3"></div>
-      </div>
-      <div class="fg"><label>Address</label><input id="proj-address" placeholder="Street address"></div>
-      <div class="fg-row">
-        <div class="fg"><label>Suburb</label><input id="proj-suburb-f" placeholder="e.g. Sydney CBD"></div>
-        <div class="fg"><label>Project Type</label>
-          <select id="proj-type-f"><option value="">– Select –</option><option>Residential</option><option>Commercial</option><option>Mixed Use</option><option>Industrial</option><option>Childcare</option><option>Land</option></select>
+      <input type="hidden" id="sm-id">
+
+      <div class="form-section">
+        <div class="form-section-title">Location</div>
+        <div class="fg"><label>Address *</label><input id="sm-address" placeholder="e.g. 123 George Street"></div>
+        <div class="fg-row">
+          <div class="fg"><label>Suburb</label><input id="sm-suburb"></div>
+          <div class="fg"><label>Region</label>
+            <select id="sm-region">
+              <option value="">Select region…</option>
+              <option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
+              <option>North Shore</option><option>Sydney CBD</option><option>West</option>
+              <option>Western Sydney</option><option>Central Coast</option><option>Hunter</option>
+              <option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option>
+              <option>Southern Tablelands</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Zoning</label><input id="sm-zoning" placeholder="e.g. R4"></div>
+          <div class="fg"><label>FSR</label><input id="sm-fsr" placeholder="e.g. 3:1"></div>
+          <div class="fg"><label>Height (m)</label><input id="sm-height" type="number" min="0"></div>
         </div>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Status</label>
-          <select id="proj-status-f"><option>Active</option><option>Planning</option><option>Under Construction</option><option>Completed</option><option>On Hold</option><option>Withdrawn</option></select>
+
+      <div class="form-section">
+        <div class="form-section-title">Classification</div>
+        <div class="fg-row">
+          <div class="fg"><label>Source Database</label>
+            <select id="sm-source">
+              <option value="">Select…</option>
+              <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
+            </select>
+          </div>
+          <div class="fg"><label>Asset Class</label>
+            <select id="sm-class" onchange="onClassChange()">
+              <option value="">Select…</option>
+              <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
+              <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
+              <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
+              <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
+              <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
+              <option>Strata Retail</option><option>Town Centre</option>
+            </select>
+          </div>
         </div>
-        <div class="fg"><label>Planning Status</label>
-          <select id="proj-planning"><option value="">–</option><option>DA Pending</option><option>DA Approved</option><option>CDC</option><option>Construction Certificate</option><option>Completed</option></select>
+        <div class="fg-row">
+          <div class="fg"><label>Status</label>
+            <select id="sm-status">
+              <option>Active</option><option>Sold</option><option>Withdrawn</option>
+            </select>
+          </div>
+          <div class="fg"><label>Process</label>
+            <select id="sm-process">
+              <option value="">Select…</option>
+              <option>Auction</option><option>EOI</option><option>Off Market</option>
+              <option>Private Treaty</option><option>Tender</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="fg-row three">
-        <div class="fg"><label>Est. Value (AUD)</label><input id="proj-value" type="number" placeholder="0"></div>
-        <div class="fg"><label>Lot / Unit Count</label><input id="proj-lots" type="number" placeholder="0"></div>
-        <div class="fg"><label>Sales Agent</label><input id="proj-agent" placeholder="Agent name"></div>
+
+      <!-- Premium section (conditionally shown) -->
+      <div class="form-section" id="sm-premium-section" style="display:none">
+        <div class="form-section-title" style="color:var(--red)">Premium Investment Details</div>
+        <div class="fg-row">
+          <div class="fg"><label>Operator / Tenant</label><input id="sm-operator" placeholder="e.g. G8 Education"></div>
+          <div class="fg" id="sm-places-wrap" style="display:none">
+            <label>Licensed Places (CC)</label><input id="sm-places" type="number" min="0" placeholder="e.g. 90">
+          </div>
+        </div>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Funder</label><input id="proj-funder-f" placeholder="e.g. Westpac"></div>
-        <div class="fg"><label>Valuer</label><input id="proj-valuer-f" placeholder="e.g. JLL"></div>
+
+      <div class="form-section">
+        <div class="form-section-title">Financials</div>
+        <div class="fg-row">
+          <div class="fg"><label>Sale Price ($)</label><input id="sm-price" type="number" min="0" oninput="autoCalc()"></div>
+          <div class="fg"><label>Price Guide ($)</label><input id="sm-guide" type="number" min="0"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Net Rent ($/yr)</label><input id="sm-rent" type="number" min="0" oninput="autoCalc()"></div>
+          <div class="fg"><label>Outgoings ($/yr)</label><input id="sm-outgoings" type="number" min="0"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Yield % (auto-calc)</label><input id="sm-yield" readonly placeholder="auto"></div>
+          <div class="fg"><label>Land $/m² (auto-calc)</label><input id="sm-landpsm" readonly placeholder="auto"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>WALE (yrs)</label><input id="sm-wale" type="number" step="0.1" min="0"></div>
+          <div class="fg"><label>RC Status</label><input id="sm-rcstatus" placeholder="e.g. Pending"></div>
+        </div>
       </div>
-      <div class="fg"><label>Notes</label><textarea id="proj-notes" rows="3"></textarea></div>
+
+      <div class="form-section">
+        <div class="form-section-title">Areas</div>
+        <div class="fg-row">
+          <div class="fg"><label>Land Area (m²)</label><input id="sm-landarea" type="number" min="0" oninput="autoCalc()"></div>
+          <div class="fg"><label>Floor Area (m²)</label><input id="sm-floorarea" type="number" min="0"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Dates</div>
+        <div class="fg-row">
+          <div class="fg"><label>Sale Date</label><input id="sm-saledate" type="date"></div>
+          <div class="fg"><label>Settlement Date</label><input id="sm-settledate" type="date"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Campaign Close Date</label><input id="sm-closedate" type="date"></div>
+          <div class="fg"><label>Date Listed</label><input id="sm-listed" type="date"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Parties</div>
+        <div class="fg-row">
+          <div class="fg"><label>Agent 1</label><input id="sm-agent1"></div>
+          <div class="fg"><label>Agent 2</label><input id="sm-agent2"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Vendor</label><input id="sm-vendor"></div>
+          <div class="fg"><label>Purchaser</label><input id="sm-purchaser"></div>
+        </div>
+      </div>
+
+      <div class="fg"><label>Comments</label><textarea id="sm-comments" rows="3"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-proj')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+      <button class="btn btn-out" onclick="closeSaleModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSale()">Save Sale</button>
     </div>
   </div>
 </div>
 
-<!-- Contact Modal -->
-<div class="overlay" id="modal-con">
-  <div class="modal wide">
-    <div class="modal-hdr"><h2 id="modal-con-title">Add Contact</h2><button class="modal-close" onclick="closeModal('modal-con')">✕</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="con-id">
-      <div class="fg-row">
-        <div class="fg"><label>First Name *</label><input id="con-fn" placeholder="First name"></div>
-        <div class="fg"><label>Last Name *</label><input id="con-ln" placeholder="Last name"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Title / Role</label><input id="con-title" placeholder="e.g. Development Director"></div>
-        <div class="fg"><label>Developer</label><select id="con-dev-f"><option value="">– No Developer –</option></select></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Phone</label><input id="con-phone" placeholder="+61 2 …"></div>
-        <div class="fg"><label>Email</label><input id="con-email" type="email" placeholder="name@company.com"></div>
-      </div>
-      <div class="fg"><label>LinkedIn URL</label><input id="con-li" placeholder="https://linkedin.com/in/…"></div>
-      <div class="fg-row">
-        <div class="fg"><label>Last Contact Date</label><input id="con-lc" type="date"></div>
-        <div class="fg"><label>Follow-up Date</label><input id="con-fu" type="date"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Source</label><input id="con-src" placeholder="e.g. Direct, Referral, Event"></div>
-        <div class="fg"><label>Relationship Owner</label><select id="con-owner-f"><option value="">– Select –</option></select></div>
-      </div>
-      <div class="fg"><label>Notes</label><textarea id="con-notes" rows="3"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-con')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveContact()">Save Contact</button>
-    </div>
-  </div>
-</div>
-
-<!-- Intel Modal -->
-<div class="overlay" id="modal-intel">
+<!-- MODAL: ADD/EDIT CAMPAIGN -->
+<div class="overlay" id="camp-overlay">
   <div class="modal">
-    <div class="modal-hdr"><h2>Add Intel Update</h2><button class="modal-close" onclick="closeModal('modal-intel')">✕</button></div>
+    <div class="modal-hdr">
+      <h2 id="camp-modal-title">Add Campaign</h2>
+      <button class="modal-close" onclick="closeCampModal()">✕</button>
+    </div>
     <div class="modal-body">
-      <div class="fg"><label>Developer</label><select id="intel-dev-f"><option value="">– Select Developer –</option></select></div>
-      <div class="fg"><label>Project (optional)</label><select id="intel-proj-f"><option value="">– No specific project –</option></select></div>
-      <div class="fg"><label>Intel / Notes *</label><textarea id="intel-content" rows="5" placeholder="What did you hear, see or find?"></textarea></div>
+      <input type="hidden" id="cm-id">
+      <div class="fg"><label>Address *</label><input id="cm-address"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Suburb</label><input id="cm-suburb"></div>
+        <div class="fg"><label>Region</label>
+          <select id="cm-region">
+            <option value="">Select…</option>
+            <option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
+            <option>North Shore</option><option>Sydney CBD</option><option>West</option>
+            <option>Western Sydney</option><option>Central Coast</option><option>Hunter</option>
+            <option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option>
+            <option>Southern Tablelands</option>
+          </select>
+        </div>
+      </div>
       <div class="fg-row">
         <div class="fg"><label>Source</label>
-          <select id="intel-src-f"><option>Internal</option><option>Press</option><option>DA Portal</option><option>Agent</option><option>LinkedIn</option><option>Other</option></select>
+          <select id="cm-source">
+            <option value="">Select…</option>
+            <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
+          </select>
         </div>
-        <div class="fg"><label>Date</label><input id="intel-date" type="date"></div>
+        <div class="fg"><label>Asset Class</label>
+          <select id="cm-class">
+            <option value="">Select…</option>
+            <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
+            <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
+            <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
+            <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
+            <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
+            <option>Strata Retail</option><option>Town Centre</option>
+          </select>
+        </div>
       </div>
-      <div class="fg"><label>Source URL (optional)</label><input id="intel-url" placeholder="https://…"></div>
-      <div class="fg"><label>Added By</label><input id="intel-by" placeholder="Your name"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Process</label>
+          <select id="cm-process">
+            <option value="">Select…</option>
+            <option>Auction</option><option>EOI</option><option>Off Market</option>
+            <option>Private Treaty</option><option>Tender</option>
+          </select>
+        </div>
+        <div class="fg"><label>Zoning</label><input id="cm-zoning"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Date Listed</label><input id="cm-listed" type="date"></div>
+        <div class="fg"><label>Close Date</label><input id="cm-close" type="date"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Price Guide ($)</label><input id="cm-guide" type="number" min="0"></div>
+        <div class="fg"><label>Net Income ($/yr)</label><input id="cm-income" type="number" min="0"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Land Area (m²)</label><input id="cm-landarea" type="number" min="0"></div>
+        <div class="fg"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Agent 1</label><input id="cm-agent1"></div>
+        <div class="fg"><label>Agent 2</label><input id="cm-agent2"></div>
+      </div>
+      <div class="fg"><label>Vendor</label><input id="cm-vendor"></div>
+      <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-intel')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveIntel()">Save Intel</button>
+      <button class="btn btn-out" onclick="closeCampModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCampaign()">Save Campaign</button>
     </div>
   </div>
 </div>
 
-<!-- Promote Lead Modal -->
-<div class="overlay" id="modal-promote">
+<!-- MODAL: MARK SOLD -->
+<div class="overlay" id="sold-overlay">
   <div class="modal">
-    <div class="modal-hdr"><h2>Approve &amp; Promote Lead</h2><button class="modal-close" onclick="closeModal('modal-promote')">✕</button></div>
+    <div class="modal-hdr">
+      <h2>Mark Campaign Sold</h2>
+      <button class="modal-close" onclick="closeSoldModal()">✕</button>
+    </div>
     <div class="modal-body">
-      <p style="font-size:.8rem;color:var(--mid);margin-bottom:.85rem">Approve this scraped lead and optionally create database records from it.</p>
-      <input type="hidden" id="promote-lead-id">
-      <div class="fg">
-        <label>Existing Developer (leave blank to create new)</label>
-        <select id="promote-dev"><option value="">– Create new developer –</option></select>
+      <input type="hidden" id="sold-camp-id">
+      <div class="fg-row">
+        <div class="fg"><label>Sale Price * ($)</label><input id="sold-price" type="number" min="0" required></div>
+        <div class="fg"><label>Sold Date *</label><input id="sold-date" type="date" required></div>
       </div>
-      <div class="fg" style="display:flex;align-items:center;gap:.5rem">
-        <input type="checkbox" id="promote-create-dev" checked>
-        <label style="font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--ink)">Create new Developer record if no existing match</label>
+      <div class="fg-row">
+        <div class="fg"><label>Settlement Date</label><input id="sold-settle" type="date"></div>
+        <div class="fg"><label>Net Rent ($/yr)</label><input id="sold-rent" type="number" min="0"></div>
       </div>
-      <div class="fg" style="display:flex;align-items:center;gap:.5rem">
-        <input type="checkbox" id="promote-create-proj" checked>
-        <label style="font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--ink)">Create new Project record</label>
+      <div class="fg-row">
+        <div class="fg"><label>Vendor</label><input id="sold-vendor"></div>
+        <div class="fg"><label>Purchaser</label><input id="sold-purchaser"></div>
       </div>
-      <div class="fg"><label>Reviewer Notes</label><textarea id="promote-notes" rows="2"></textarea></div>
+      <div class="fg"><label>Result Notes</label><textarea id="sold-notes" rows="3"></textarea></div>
+      <div class="fg" style="margin-top:.5rem">
+        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.78rem;font-weight:400">
+          <input type="checkbox" id="sold-create-sale" checked> Also create a Sale record in the database
+        </label>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-promote')">Cancel</button>
-      <button class="btn btn-primary" onclick="promoteLead()">Approve &amp; Promote</button>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm Delete Modal -->
-<div class="overlay" id="modal-confirm">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-hdr" style="background:var(--red)"><h2>Confirm Delete</h2><button class="modal-close" onclick="closeModal('modal-confirm')">✕</button></div>
-    <div class="modal-body">
-      <p id="confirm-msg" style="font-size:.84rem;line-height:1.5"></p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-confirm')">Cancel</button>
-      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+      <button class="btn btn-out" onclick="closeSoldModal()">Cancel</button>
+      <button class="btn btn-amber" onclick="markSold()">Mark as Settlement</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── API ────────────────────────────────────────────────────────────────────
-const API = {
-  async get(path) {
-    const r = await fetch('/api' + path);
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async post(path, body) {
-    const r = await fetch('/api' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async put(path, body) {
-    const r = await fetch('/api' + path, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async patch(path, body) {
-    const r = await fetch('/api' + path, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async del(path) {
-    const r = await fetch('/api' + path, { method:'DELETE' });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  sales: [], campaigns: [], discoveries: [], alerts: [], stats: {},
+  activeView: 'view-dash',
+  salesPage: 1, salesPageSize: 50,
+  discSeg: 'pending',
+  alertsOpen: false
 };
 
-// ── NAVIGATION ─────────────────────────────────────────────────────────────
-let currentView = 'dashboard';
-function nav(name) {
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+const f$ = v => v ? '$' + Math.round(v).toLocaleString('en-AU') : '—';
+const fYld = v => v ? (v < 1 ? (v * 100).toFixed(2) : parseFloat(v).toFixed(2)) + '%' : '—';
+const fD = v => {
+  if (!v) return '—';
+  try { return new Date(v + (v.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'}); }
+  catch(e) { return v; }
+};
+const fNum = v => v ? Number(v).toLocaleString('en-AU') : '—';
+const daysTo = v => {
+  if (!v) return null;
+  const t = new Date();
+  const local = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  const [y,m,d] = v.split('-').map(Number);
+  return Math.round((new Date(y, m-1, d) - local) / 86400000);
+};
+const daysBadge = v => {
+  if (v === null) return '';
+  const cls = v < 0 ? 'days-mid' : v <= 7 ? 'days-red' : v <= 14 ? 'days-amber' : 'days-green';
+  const lbl = v < 0 ? `${Math.abs(v)}d ago` : v === 0 ? 'Today' : `${v}d`;
+  return `<span class="days-badge ${cls}">${lbl}</span>`;
+};
+const statusBadge = s => {
+  if (!s) return '';
+  const m = {active:'b-active',sold:'b-sold',settlement:'b-settlement',withdrawn:'b-withdrawn',pending:'b-pending'};
+  const k = s.toLowerCase();
+  return `<span class="badge ${m[k]||'b-pending'}">${s}</span>`;
+};
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: {'Content-Type': 'application/json'},
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(txt || `HTTP ${res.status}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('json')) return res.json();
+    return res.text();
+  } catch(e) {
+    throw e;
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
-  const v = document.getElementById('view-' + name);
-  const n = document.getElementById('ni-' + name);
-  if (v) v.classList.add('on');
-  if (n) n.classList.add('on');
-  currentView = name;
-  if (name === 'dashboard')  loadDashboard();
-  if (name === 'developers') loadDevelopers();
-  if (name === 'projects')   loadProjects();
-  if (name === 'contacts')   loadContacts();
-  if (name === 'intel')      loadIntel();
-  if (name === 'scraped')    loadScraped();
-  if (name === 'settings')   loadSettings();
+  const view = document.getElementById(id);
+  if (view) view.classList.add('on');
+  const ni = document.getElementById('ni-' + id.replace('view-', ''));
+  if (ni) ni.classList.add('on');
+  state.activeView = id;
+  if (id === 'view-dash') renderDash();
+  if (id === 'view-sales') renderSales();
+  if (id === 'view-campaigns') renderCampaigns();
+  if (id === 'view-discoveries') renderDiscoveries();
+  if (id === 'view-premium') renderPremium();
+  if (id === 'view-export') updateExportCount();
 }
 
-// ── TOAST ──────────────────────────────────────────────────────────────────
-function toast(msg, err = false) {
-  const w = document.getElementById('toasts');
-  const t = document.createElement('div');
-  t.className = 'toast' + (err ? ' err' : '');
-  t.textContent = msg;
-  w.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
-}
-
-// ── HELPERS ────────────────────────────────────────────────────────────────
-function fmtMoney(v) {
-  if (!v) return '–';
-  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
-  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
-  return '$' + v.toLocaleString();
-}
-function fmtDate(s) {
-  if (!s) return '–';
-  const d = new Date(s);
-  return d.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
-}
-function daysFromNow(s) {
-  if (!s) return null;
-  return Math.round((new Date(s) - new Date()) / 864e5);
-}
-function statusBadge(s) {
-  const map = { 'Active':'active','Planning':'planning','Under Construction':'construction','Completed':'completed','On Hold':'onhold','Withdrawn':'withdrawn' };
-  return `<span class="badge b-${map[s]||'active'}">${s||'–'}</span>`;
-}
-function linkedInBadge(s) {
-  const map = { 'Current':'current','Potential Update':'update','Confirmed Changed':'changed','Unchecked':'unchecked' };
-  const labels = { 'Current':'Current','Potential Update':'Review','Confirmed Changed':'Changed','Unchecked':'Unchecked' };
-  return `<span class="badge b-${map[s]||'unchecked'}">${labels[s]||s||'–'}</span>`;
-}
-function confidenceBadge(s) {
-  const map = { 'High':'high','Medium':'medium','Low':'low' };
-  return `<span class="badge b-${map[s]||'low'}">${s||'–'}</span>`;
-}
-function esc(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
-}
-
-function closePanel(id) {
-  document.getElementById(id).style.display = 'none';
-}
-function openModal(id) {
-  document.getElementById(id).classList.add('on');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('on');
-}
-
-// ── CONFIRM DELETE ─────────────────────────────────────────────────────────
-function confirmDelete(msg, onOk) {
-  document.getElementById('confirm-msg').textContent = msg;
-  const btn = document.getElementById('confirm-ok');
-  btn.onclick = () => { closeModal('modal-confirm'); onOk(); };
-  openModal('modal-confirm');
-}
-
-// ── POPULATE DEVELOPER DROPDOWNS ──────────────────────────────────────────
-async function populateDevDropdowns() {
-  const devs = await API.get('/developers');
-  ['proj-dev-f','intel-dev-f','con-dev-f','promote-dev'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const first = sel.options[0];
-    sel.innerHTML = '';
-    sel.appendChild(first);
-    devs.forEach(d => {
-      const o = document.createElement('option');
-      o.value = d.id; o.textContent = d.name;
-      sel.appendChild(o);
-    });
-  });
-  // Filter dropdowns
-  ['dev-owner','proj-dev','con-dev'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const first = sel.options[0];
-  });
-  // Owner dropdowns
-  const users = await API.get('/settings/users');
-  ['dev-owner-f','con-owner-f'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const first = sel.options[0];
-    sel.innerHTML = '';
-    sel.appendChild(first);
-    users.forEach(u => {
-      const o = document.createElement('option');
-      o.value = u.name; o.textContent = u.name;
-      sel.appendChild(o);
-    });
-  });
-  const devOwnerFilt = document.getElementById('dev-owner');
-  if (devOwnerFilt) {
-    const first = devOwnerFilt.options[0];
-    devOwnerFilt.innerHTML = '';
-    devOwnerFilt.appendChild(first);
-    users.forEach(u => { const o=document.createElement('option'); o.value=u.name; o.textContent=u.name; devOwnerFilt.appendChild(o); });
-  }
-  const projDevFilt = document.getElementById('proj-dev');
-  if (projDevFilt) {
-    const first = projDevFilt.options[0];
-    projDevFilt.innerHTML = '';
-    projDevFilt.appendChild(first);
-    devs.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; projDevFilt.appendChild(o); });
-  }
-  const conDevFilt = document.getElementById('con-dev');
-  if (conDevFilt) {
-    const first = conDevFilt.options[0];
-    conDevFilt.innerHTML = '';
-    conDevFilt.appendChild(first);
-    devs.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; conDevFilt.appendChild(o); });
-  }
-}
-
-// ── DASHBOARD ──────────────────────────────────────────────────────────────
-async function loadDashboard() {
-  const el = document.getElementById('db-content');
-  el.innerHTML = '<div class="loading">Loading…</div>';
+// ─── LOAD ALL ─────────────────────────────────────────────────────────────────
+async function loadAll() {
   try {
-    const s = await API.get('/settings/stats');
-    document.getElementById('nb-scraped').textContent = s.pending_scraped;
-    const hc = document.getElementById('hdr-leads-count');
-    if (s.pending_scraped > 0) { hc.textContent = s.pending_scraped; hc.style.display=''; } else { hc.style.display='none'; }
-
-    const maxFunder = s.top_funders[0]?.count || 1;
-    const maxValuer = s.top_valuers[0]?.count || 1;
-
-    el.innerHTML = `
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Developers</div><div class="stat-val">${s.total_developers}</div></div>
-        <div class="stat-card green"><div class="stat-label">Active Projects</div><div class="stat-val green">${s.active_projects}</div><div class="stat-sub">${s.total_projects} total</div></div>
-        <div class="stat-card"><div class="stat-label">Contacts</div><div class="stat-val">${s.total_contacts}</div><div class="stat-sub">${s.incomplete_contacts} incomplete</div></div>
-        <div class="stat-card amber"><div class="stat-label">Scraped Leads</div><div class="stat-val amber">${s.pending_scraped}</div><div class="stat-sub">awaiting review</div></div>
-        <div class="stat-card red"><div class="stat-label">Follow-ups Due</div><div class="stat-val red">${s.followups_due}</div></div>
-        <div class="stat-card amber"><div class="stat-label">LinkedIn Flags</div><div class="stat-val amber">${s.linkedin_flags}</div><div class="stat-sub">needs review</div></div>
-      </div>
-      <div class="db-grid" style="margin-bottom:.7rem">
-        <div class="db-card">
-          <h3>Follow-ups This Week</h3>
-          ${s.followup_contacts.length === 0 ? '<div style="color:var(--mid);font-size:.78rem">No follow-ups due</div>' :
-            s.followup_contacts.map(c => {
-              const d = daysFromNow(c.follow_up_date);
-              const label = d < 0 ? `<span style="color:var(--red);font-weight:700">${Math.abs(d)}d overdue</span>` : d === 0 ? `<span style="color:var(--amber);font-weight:700">Today</span>` : `<span style="color:var(--mid)">${d}d</span>`;
-              return `<div class="fu-item"><div><div class="fu-name" style="cursor:pointer" onclick="nav('contacts')">${esc(c.first_name)} ${esc(c.last_name)}</div><div class="fu-dev">${esc(c.developer_name||'–')} · ${esc(c.title||'–')}</div></div><div class="fu-date">${label}</div></div>`;
-            }).join('')}
-        </div>
-        <div class="db-card">
-          <h3>Recent Intel</h3>
-          ${s.recent_intel.length === 0 ? '<div style="color:var(--mid);font-size:.78rem">No intel yet</div>' :
-            s.recent_intel.map(i => `
-              <div class="intel-item">
-                <div style="font-weight:600;font-size:.78rem">${esc(i.project_name||i.developer_name||'General')}</div>
-                <div>${esc(i.content.slice(0,100))}${i.content.length>100?'…':''}</div>
-                <div class="intel-meta">${esc(i.source||'–')} · ${fmtDate(i.intel_date)}</div>
-              </div>`).join('')}
-        </div>
-      </div>
-      <div class="db-grid three">
-        <div class="db-card">
-          <h3>Top Funders</h3>
-          ${s.top_funders.map(f => `
-            <div class="db-row">
-              <span class="db-row-l">${esc(f.name)}</span>
-              <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(f.count/maxFunder*100)}%"></div></div>
-              <span class="db-row-v">${f.count}</span>
-            </div>`).join('') || '<div style="color:var(--mid);font-size:.78rem">No data</div>'}
-        </div>
-        <div class="db-card">
-          <h3>Top Valuers</h3>
-          ${s.top_valuers.map(v => `
-            <div class="db-row">
-              <span class="db-row-l">${esc(v.name)}</span>
-              <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(v.count/maxValuer*100)}%"></div></div>
-              <span class="db-row-v">${v.count}</span>
-            </div>`).join('') || '<div style="color:var(--mid);font-size:.78rem">No data</div>'}
-        </div>
-        <div class="db-card">
-          <h3>Quick Actions</h3>
-          <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.2rem">
-            <button class="btn btn-primary btn-sm" onclick="openDevModal()">+ Add Developer</button>
-            <button class="btn btn-navy btn-sm" onclick="openProjectModal()">+ Add Project</button>
-            <button class="btn btn-out btn-sm" onclick="openContactModal()">+ Add Contact</button>
-            <button class="btn btn-out btn-sm" onclick="openIntelModal()">+ Add Intel</button>
-            <button class="btn btn-amber btn-sm" onclick="nav('scraped')">Review Scraped Leads (${s.pending_scraped})</button>
-          </div>
-        </div>
-      </div>`;
-  } catch(e) { el.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><strong>Error loading dashboard</strong><span>${e.message}</span></div>`; }
-}
-
-// ── DEVELOPERS ─────────────────────────────────────────────────────────────
-async function loadDevelopers() {
-  const q = document.getElementById('dev-q').value;
-  const type = document.getElementById('dev-type').value;
-  const owner = document.getElementById('dev-owner').value;
-  const params = new URLSearchParams({ q, type, owner });
-  try {
-    const devs = await API.get('/developers?' + params);
-    document.getElementById('dev-cnt').textContent = devs.length + ' developer' + (devs.length !== 1 ? 's' : '');
-    const el = document.getElementById('dev-list');
-    if (!devs.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">🏢</div><strong>No developers found</strong><span>Try adjusting your filters or add a new developer.</span></div>`; return; }
-    el.innerHTML = `<table>
-      <thead><tr>
-        <th>Developer</th><th>Type</th><th>Suburb</th><th>Projects</th><th>Contacts</th><th>Owner</th><th>Tags</th><th>Updated</th><th></th>
-      </tr></thead>
-      <tbody>${devs.map((d,i) => `
-        <tr class="${i%2?'even':''}" onclick="showDevPanel(${d.id})">
-          <td><div style="font-weight:600">${esc(d.name)}</div><div style="font-size:.65rem;color:var(--mid)">${esc(d.abn||'–')}</div></td>
-          <td><span class="badge b-active">${esc(d.type||'–')}</span></td>
-          <td>${esc(d.suburb||'–')}</td>
-          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700">${d.project_count}</td>
-          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700">${d.contact_count}</td>
-          <td style="font-size:.72rem">${esc(d.relationship_owner||'–')}</td>
-          <td>${(d.tags||[]).map(t=>`<span class="tag-pill" style="background:${t.colour}">${esc(t.name)}</span>`).join('')}</td>
-          <td style="font-size:.7rem;color:var(--mid)">${fmtDate(d.updated_at)}</td>
-          <td onclick="event.stopPropagation()">
-            <button class="btn btn-out btn-xs" onclick="openDevModal(${d.id})">Edit</button>
-          </td>
-        </tr>`).join('')}
-      </tbody></table>`;
-  } catch(e) { toast(e.message, true); }
-}
-
-async function showDevPanel(id) {
-  try {
-    const d = await API.get('/developers/' + id);
-    document.getElementById('dp-dev-name').textContent = d.name;
-    document.getElementById('dp-dev-sub').textContent = (d.type||'–') + (d.suburb ? ' · ' + d.suburb : '');
-    const body = document.getElementById('dp-dev-body');
-    body.innerHTML = `
-      <div class="dp-section">
-        <h4>Details</h4>
-        <div class="dp-field"><span class="dp-field-l">ABN</span><span class="dp-field-v">${esc(d.abn||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Website</span><span class="dp-field-v">${d.website ? `<a href="${esc(d.website)}" target="_blank">${esc(d.website)}</a>` : '–'}</span></div>
-        <div class="dp-field"><span class="dp-field-l">State</span><span class="dp-field-v">${esc(d.state||'NSW')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Owner</span><span class="dp-field-v">${esc(d.relationship_owner||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Tags</span><span class="dp-field-v">${(d.tags||[]).map(t=>`<span class="tag-pill" style="background:${t.colour}">${esc(t.name)}</span>`).join(' ')||'–'}</span></div>
-      </div>
-      ${d.notes ? `<div class="dp-section"><h4>Notes</h4><p style="font-size:.78rem;line-height:1.5;color:var(--ink)">${esc(d.notes)}</p></div>` : ''}
-      <div class="dp-section">
-        <h4>Projects (${d.projects.length})</h4>
-        ${d.projects.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No projects yet</div>' :
-          d.projects.map(p => `<div class="intel-mini" onclick="showProjPanel(${p.id})" style="cursor:pointer"><div style="font-weight:600">${esc(p.name)}</div><div class="im-date">${statusBadge(p.status)} · ${esc(p.suburb||'–')}</div></div>`).join('')}
-      </div>
-      <div class="dp-section">
-        <h4>Contacts (${d.contacts.length})</h4>
-        ${d.contacts.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No contacts yet</div>' :
-          d.contacts.map(c => `<div class="intel-mini"><div style="font-weight:600">${esc(c.first_name)} ${esc(c.last_name)}</div><div class="im-date">${esc(c.title||'–')}</div></div>`).join('')}
-      </div>
-      <div class="dp-section">
-        <h4>Recent Intel</h4>
-        ${d.intel.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No intel yet</div>' :
-          d.intel.slice(0,3).map(i => `<div class="intel-mini"><div>${esc(i.content.slice(0,120))}${i.content.length>120?'…':''}</div><div class="im-date">${esc(i.source||'–')} · ${fmtDate(i.intel_date)}</div></div>`).join('')}
-      </div>`;
-    document.getElementById('dp-dev-actions').innerHTML = `
-      <button class="btn btn-primary btn-sm" onclick="openProjectModal(null,${d.id})">+ Project</button>
-      <button class="btn btn-navy btn-sm" onclick="openContactModal(null,${d.id})">+ Contact</button>
-      <button class="btn btn-out btn-sm" onclick="openDevModal(${d.id})">Edit</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteDev(${d.id},'${esc(d.name)}')">Delete</button>`;
-    document.getElementById('dev-panel').style.display = 'flex';
-  } catch(e) { toast(e.message, true); }
-}
-
-async function openDevModal(id) {
-  document.getElementById('dev-id').value = id || '';
-  document.getElementById('modal-dev-title').textContent = id ? 'Edit Developer' : 'Add Developer';
-  ['dev-name','dev-abn','dev-suburb','dev-website','dev-notes','dev-tags'].forEach(f => document.getElementById(f).value = '');
-  document.getElementById('dev-type-f').value = '';
-  document.getElementById('dev-owner-f').value = '';
-  if (id) {
-    try {
-      const d = await API.get('/developers/' + id);
-      document.getElementById('dev-name').value = d.name || '';
-      document.getElementById('dev-abn').value = d.abn || '';
-      document.getElementById('dev-suburb').value = d.suburb || '';
-      document.getElementById('dev-website').value = d.website || '';
-      document.getElementById('dev-notes').value = d.notes || '';
-      document.getElementById('dev-type-f').value = d.type || '';
-      document.getElementById('dev-owner-f').value = d.relationship_owner || '';
-      document.getElementById('dev-tags').value = (d.tags||[]).map(t=>t.name).join(', ');
-    } catch(e) { toast(e.message, true); return; }
-  }
-  openModal('modal-dev');
-}
-
-async function saveDeveloper() {
-  const id = document.getElementById('dev-id').value;
-  const body = {
-    name: document.getElementById('dev-name').value.trim(),
-    abn: document.getElementById('dev-abn').value.trim(),
-    type: document.getElementById('dev-type-f').value,
-    suburb: document.getElementById('dev-suburb').value.trim(),
-    website: document.getElementById('dev-website').value.trim(),
-    relationship_owner: document.getElementById('dev-owner-f').value,
-    notes: document.getElementById('dev-notes').value.trim(),
-    tags: document.getElementById('dev-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
-  };
-  if (!body.name) { toast('Company name is required', true); return; }
-  try {
-    if (id) { await API.put('/developers/' + id, body); toast('Developer updated'); }
-    else    { await API.post('/developers', body); toast('Developer added'); }
-    closeModal('modal-dev');
-    loadDevelopers();
-    populateDevDropdowns();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function deleteDev(id, name) {
-  confirmDelete(`Delete developer "${name}" and all linked projects, contacts and intel?`, async () => {
-    try { await API.del('/developers/' + id); toast('Developer deleted'); closePanel('dev-panel'); loadDevelopers(); populateDevDropdowns(); }
-    catch(e) { toast(e.message, true); }
-  });
-}
-
-// ── PROJECTS ───────────────────────────────────────────────────────────────
-async function loadProjects() {
-  const q = document.getElementById('proj-q').value;
-  const type = document.getElementById('proj-type').value;
-  const status = document.getElementById('proj-status').value;
-  const developer_id = document.getElementById('proj-dev').value;
-  const params = new URLSearchParams({ q, type, status, developer_id });
-  try {
-    const rows = await API.get('/projects?' + params);
-    document.getElementById('proj-cnt').textContent = rows.length + ' project' + (rows.length !== 1 ? 's' : '');
-    const el = document.getElementById('proj-list');
-    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">📁</div><strong>No projects found</strong></div>`; return; }
-    el.innerHTML = `<table>
-      <thead><tr>
-        <th>Project</th><th>Developer</th><th>Type</th><th>Status</th><th>Planning</th><th>Est. Value</th><th>Funder</th><th>Valuer</th><th>Updated</th><th></th>
-      </tr></thead>
-      <tbody>${rows.map((p,i) => `
-        <tr class="${i%2?'even':''}" onclick="showProjPanel(${p.id})">
-          <td><div style="font-weight:600">${esc(p.name)}</div><div style="font-size:.65rem;color:var(--mid)">${esc(p.suburb||'–')}</div></td>
-          <td style="font-size:.75rem">${esc(p.developer_name||'–')}</td>
-          <td><span class="badge b-planning">${esc(p.project_type||'–')}</span></td>
-          <td>${statusBadge(p.status)}</td>
-          <td style="font-size:.7rem">${esc(p.planning_status||'–')}</td>
-          <td style="font-family:'Barlow Condensed',sans-serif;font-size:.88rem;font-weight:600">${fmtMoney(p.estimated_value)}</td>
-          <td style="font-size:.72rem">${esc(p.funder||'–')}</td>
-          <td style="font-size:.72rem">${esc(p.valuer||'–')}</td>
-          <td style="font-size:.7rem;color:var(--mid)">${fmtDate(p.updated_at)}</td>
-          <td onclick="event.stopPropagation()"><button class="btn btn-out btn-xs" onclick="openProjectModal(${p.id})">Edit</button></td>
-        </tr>`).join('')}
-      </tbody></table>`;
-  } catch(e) { toast(e.message, true); }
-}
-
-async function showProjPanel(id) {
-  try {
-    const p = await API.get('/projects/' + id);
-    document.getElementById('dp-proj-name').textContent = p.name;
-    document.getElementById('dp-proj-sub').textContent = (p.developer_name||'–') + (p.suburb ? ' · ' + p.suburb : '');
-    const body = document.getElementById('dp-proj-body');
-    body.innerHTML = `
-      <div class="dp-section">
-        <h4>Details</h4>
-        <div class="dp-field"><span class="dp-field-l">Address</span><span class="dp-field-v">${esc(p.address||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Type</span><span class="dp-field-v">${esc(p.project_type||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Status</span><span class="dp-field-v">${statusBadge(p.status)}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Planning</span><span class="dp-field-v">${esc(p.planning_status||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Est. Value</span><span class="dp-field-v" style="font-weight:700;color:var(--navy)">${fmtMoney(p.estimated_value)}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Lots / Units</span><span class="dp-field-v">${p.lot_count||'–'}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Funder</span><span class="dp-field-v">${esc(p.funder||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Valuer</span><span class="dp-field-v">${esc(p.valuer||'–')}</span></div>
-        <div class="dp-field"><span class="dp-field-l">Sales Agent</span><span class="dp-field-v">${esc(p.sales_agent||'–')}</span></div>
-      </div>
-      ${p.notes ? `<div class="dp-section"><h4>Notes</h4><p style="font-size:.78rem;line-height:1.5">${esc(p.notes)}</p></div>` : ''}
-      <div class="dp-section">
-        <h4>Intel History (${p.intel.length})</h4>
-        ${p.intel.length === 0 ? '<div style="color:var(--mid);font-size:.75rem">No intel yet</div>' :
-          p.intel.map(i => `<div class="intel-mini"><div>${esc(i.content)}</div><div class="im-date">${esc(i.source||'–')} · ${fmtDate(i.intel_date)} · ${esc(i.added_by||'–')}</div></div>`).join('')}
-      </div>`;
-    document.getElementById('dp-proj-actions').innerHTML = `
-      <button class="btn btn-primary btn-sm" onclick="openIntelModal(${p.id},${p.developer_id})">+ Intel</button>
-      <button class="btn btn-out btn-sm" onclick="openProjectModal(${p.id})">Edit</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteProj(${p.id},'${esc(p.name)}')">Delete</button>`;
-    document.getElementById('proj-panel').style.display = 'flex';
-    if (currentView === 'developers') {
-      document.getElementById('proj-panel').style.display = 'none';
-      nav('projects');
-      setTimeout(() => showProjPanel(id), 300);
-    }
-  } catch(e) { toast(e.message, true); }
-}
-
-async function openProjectModal(id, devId) {
-  document.getElementById('proj-id').value = id || '';
-  document.getElementById('modal-proj-title').textContent = id ? 'Edit Project' : 'Add Project';
-  ['proj-name','proj-address','proj-suburb-f','proj-value','proj-lots','proj-funder-f','proj-valuer-f','proj-agent','proj-notes'].forEach(f => document.getElementById(f).value = '');
-  document.getElementById('proj-type-f').value = '';
-  document.getElementById('proj-status-f').value = 'Active';
-  document.getElementById('proj-planning').value = '';
-  if (devId) document.getElementById('proj-dev-f').value = devId;
-  if (id) {
-    try {
-      const p = await API.get('/projects/' + id);
-      document.getElementById('proj-dev-f').value = p.developer_id || '';
-      document.getElementById('proj-name').value = p.name || '';
-      document.getElementById('proj-address').value = p.address || '';
-      document.getElementById('proj-suburb-f').value = p.suburb || '';
-      document.getElementById('proj-type-f').value = p.project_type || '';
-      document.getElementById('proj-status-f').value = p.status || 'Active';
-      document.getElementById('proj-planning').value = p.planning_status || '';
-      document.getElementById('proj-value').value = p.estimated_value || '';
-      document.getElementById('proj-lots').value = p.lot_count || '';
-      document.getElementById('proj-funder-f').value = p.funder || '';
-      document.getElementById('proj-valuer-f').value = p.valuer || '';
-      document.getElementById('proj-agent').value = p.sales_agent || '';
-      document.getElementById('proj-notes').value = p.notes || '';
-    } catch(e) { toast(e.message, true); return; }
-  }
-  openModal('modal-proj');
-}
-
-async function saveProject() {
-  const id = document.getElementById('proj-id').value;
-  const body = {
-    developer_id: document.getElementById('proj-dev-f').value,
-    name: document.getElementById('proj-name').value.trim(),
-    address: document.getElementById('proj-address').value.trim(),
-    suburb: document.getElementById('proj-suburb-f').value.trim(),
-    project_type: document.getElementById('proj-type-f').value,
-    status: document.getElementById('proj-status-f').value,
-    planning_status: document.getElementById('proj-planning').value,
-    estimated_value: parseFloat(document.getElementById('proj-value').value) || null,
-    lot_count: parseInt(document.getElementById('proj-lots').value) || null,
-    funder: document.getElementById('proj-funder-f').value.trim(),
-    valuer: document.getElementById('proj-valuer-f').value.trim(),
-    sales_agent: document.getElementById('proj-agent').value.trim(),
-    notes: document.getElementById('proj-notes').value.trim(),
-  };
-  if (!body.developer_id) { toast('Please select a developer', true); return; }
-  if (!body.name) { toast('Project name is required', true); return; }
-  try {
-    if (id) { await API.put('/projects/' + id, body); toast('Project updated'); }
-    else    { await API.post('/projects', body); toast('Project added'); }
-    closeModal('modal-proj');
-    loadProjects();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function deleteProj(id, name) {
-  confirmDelete(`Delete project "${name}"?`, async () => {
-    try { await API.del('/projects/' + id); toast('Project deleted'); closePanel('proj-panel'); loadProjects(); }
-    catch(e) { toast(e.message, true); }
-  });
-}
-
-// ── CONTACTS ───────────────────────────────────────────────────────────────
-async function loadContacts() {
-  const q = document.getElementById('con-q').value;
-  const developer_id = document.getElementById('con-dev').value;
-  const linkedin_status = document.getElementById('con-li').value;
-  const incomplete = document.getElementById('con-incomplete').checked;
-  const params = new URLSearchParams({ q, developer_id, linkedin_status, incomplete });
-  try {
-    const rows = await API.get('/contacts?' + params);
-    document.getElementById('con-cnt').textContent = rows.length + ' contact' + (rows.length !== 1 ? 's' : '');
-    const el = document.getElementById('con-list');
-    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">👥</div><strong>No contacts found</strong></div>`; return; }
-    el.innerHTML = rows.map(c => {
-      const hasLinkedInFlag = c.linkedin_status === 'Potential Update' || c.linkedin_status === 'Confirmed Changed';
-      const cardClass = hasLinkedInFlag ? 'contact-card linkedin-flag' : (!c.complete ? 'contact-card incomplete' : 'contact-card');
-      const flagHtml = hasLinkedInFlag
-        ? `<div class="cc-flag linkedin">${c.linkedin_status === 'Confirmed Changed' ? '⚠ Changed' : '? Review'}</div>`
-        : (!c.complete ? `<div class="cc-flag incomplete">Incomplete</div>` : '');
-      return `<div class="${cardClass}">
-        ${flagHtml}
-        <div class="cc-name">${esc(c.first_name)} ${esc(c.last_name)}</div>
-        <div class="cc-title">${esc(c.title||'No title on file')}</div>
-        <div class="cc-dev" onclick="nav('developers')">${esc(c.developer_name||'No developer linked')}</div>
-        ${c.phone ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.47 2 2 0 0 1 3.55 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a><button class="copy-btn" onclick="copyToClipboard('${esc(c.phone)}')" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>` : '<div class="cc-field" style="color:var(--amber)"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.47 2 2 0 0 1 3.55 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>No phone</div>'}
-        ${c.email ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${esc(c.email)}">${esc(c.email)}</a><button class="copy-btn" onclick="copyToClipboard('${esc(c.email)}')" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>` : '<div class="cc-field" style="color:var(--amber)"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>No email</div>'}
-        ${c.linkedin_url ? `<div class="cc-field"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg><a href="${esc(c.linkedin_url)}" target="_blank">LinkedIn</a> ${linkedInBadge(c.linkedin_status)}</div>` : ''}
-        ${c.follow_up_date ? `<div class="cc-field" style="font-size:.68rem;color:var(--mid)">Follow-up: ${fmtDate(c.follow_up_date)}</div>` : ''}
-        <div class="cc-actions">
-          <button class="btn btn-out btn-xs" onclick="openContactModal(${c.id})">Edit</button>
-          <button class="btn btn-out btn-xs" onclick="copyContactCard(${c.id})">Copy Card</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteCon(${c.id},'${esc(c.first_name)} ${esc(c.last_name)}')">Delete</button>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function copyContactCard(id) {
-  try {
-    const c = await API.get('/contacts/' + id);
-    const text = [
-      `${c.first_name} ${c.last_name}`,
-      c.title ? c.title : '',
-      c.developer_name ? c.developer_name : '',
-      c.phone ? `Phone: ${c.phone}` : '',
-      c.email ? `Email: ${c.email}` : '',
-      c.linkedin_url ? `LinkedIn: ${c.linkedin_url}` : '',
-    ].filter(Boolean).join('\n');
-    copyToClipboard(text);
-  } catch(e) { toast(e.message, true); }
-}
-
-async function openContactModal(id, devId) {
-  document.getElementById('con-id').value = id || '';
-  document.getElementById('modal-con-title').textContent = id ? 'Edit Contact' : 'Add Contact';
-  ['con-fn','con-ln','con-title','con-phone','con-email','con-li','con-lc','con-fu','con-src','con-notes'].forEach(f => document.getElementById(f).value = '');
-  document.getElementById('con-dev-f').value = devId || '';
-  document.getElementById('con-owner-f').value = '';
-  if (id) {
-    try {
-      const c = await API.get('/contacts/' + id);
-      document.getElementById('con-fn').value = c.first_name || '';
-      document.getElementById('con-ln').value = c.last_name || '';
-      document.getElementById('con-title').value = c.title || '';
-      document.getElementById('con-dev-f').value = c.developer_id || '';
-      document.getElementById('con-phone').value = c.phone || '';
-      document.getElementById('con-email').value = c.email || '';
-      document.getElementById('con-li').value = c.linkedin_url || '';
-      document.getElementById('con-lc').value = c.last_contact_date || '';
-      document.getElementById('con-fu').value = c.follow_up_date || '';
-      document.getElementById('con-src').value = c.source || '';
-      document.getElementById('con-notes').value = c.notes || '';
-      document.getElementById('con-owner-f').value = c.relationship_owner || '';
-    } catch(e) { toast(e.message, true); return; }
-  }
-  openModal('modal-con');
-}
-
-async function saveContact() {
-  const id = document.getElementById('con-id').value;
-  const body = {
-    developer_id: document.getElementById('con-dev-f').value || null,
-    first_name: document.getElementById('con-fn').value.trim(),
-    last_name: document.getElementById('con-ln').value.trim(),
-    title: document.getElementById('con-title').value.trim(),
-    phone: document.getElementById('con-phone').value.trim(),
-    email: document.getElementById('con-email').value.trim(),
-    linkedin_url: document.getElementById('con-li').value.trim(),
-    last_contact_date: document.getElementById('con-lc').value || null,
-    follow_up_date: document.getElementById('con-fu').value || null,
-    source: document.getElementById('con-src').value.trim(),
-    notes: document.getElementById('con-notes').value.trim(),
-    relationship_owner: document.getElementById('con-owner-f').value,
-  };
-  if (!body.first_name || !body.last_name) { toast('First and last name are required', true); return; }
-  try {
-    if (id) { await API.put('/contacts/' + id, body); toast('Contact updated'); }
-    else    { await API.post('/contacts', body); toast('Contact added'); }
-    closeModal('modal-con');
-    loadContacts();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function deleteCon(id, name) {
-  confirmDelete(`Delete contact "${name}"?`, async () => {
-    try { await API.del('/contacts/' + id); toast('Contact deleted'); loadContacts(); }
-    catch(e) { toast(e.message, true); }
-  });
-}
-
-// ── INTEL ──────────────────────────────────────────────────────────────────
-async function loadIntel() {
-  const q = document.getElementById('intel-q').value;
-  const source = document.getElementById('intel-source').value;
-  const params = new URLSearchParams({ q, source, limit: 100 });
-  try {
-    const rows = await API.get('/intel?' + params);
-    document.getElementById('intel-cnt').textContent = rows.length + ' entr' + (rows.length !== 1 ? 'ies' : 'y');
-    const el = document.getElementById('intel-list');
-    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">📋</div><strong>No intel found</strong><span>Add intel from a project detail panel or click + Add Intel.</span></div>`; return; }
-    el.innerHTML = rows.map(i => `
-      <div class="intel-entry">
-        <div class="ie-header">
-          <div>
-            <div class="ie-project">${esc(i.project_name || i.developer_name || 'General')}</div>
-            <div class="ie-dev">${i.project_name && i.developer_name ? esc(i.developer_name) : ''}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
-            <span class="ie-source">${esc(i.source||'Internal')}</span>
-            <button class="btn btn-danger btn-xs" onclick="deleteIntel(${i.id})">✕</button>
-          </div>
-        </div>
-        <div class="ie-content">${esc(i.content)}</div>
-        <div class="ie-footer">
-          ${fmtDate(i.intel_date)}
-          ${i.added_by ? ' · ' + esc(i.added_by) : ''}
-          ${i.source_url ? ` · <a href="${esc(i.source_url)}" target="_blank">Source ↗</a>` : ''}
-        </div>
-      </div>`).join('');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function openIntelModal(projectId, developerId) {
-  document.getElementById('intel-content').value = '';
-  document.getElementById('intel-url').value = '';
-  document.getElementById('intel-by').value = '';
-  document.getElementById('intel-src-f').value = 'Internal';
-  document.getElementById('intel-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('intel-dev-f').value = developerId || '';
-  document.getElementById('intel-proj-f').innerHTML = '<option value="">– No specific project –</option>';
-  if (developerId) {
-    try {
-      const d = await API.get('/developers/' + developerId);
-      d.projects.forEach(p => {
-        const o = document.createElement('option');
-        o.value = p.id; o.textContent = p.name;
-        document.getElementById('intel-proj-f').appendChild(o);
-      });
-    } catch(e) {}
-  }
-  if (projectId) document.getElementById('intel-proj-f').value = projectId;
-  openModal('modal-intel');
-}
-
-async function saveIntel() {
-  const body = {
-    developer_id: document.getElementById('intel-dev-f').value || null,
-    project_id: document.getElementById('intel-proj-f').value || null,
-    content: document.getElementById('intel-content').value.trim(),
-    source: document.getElementById('intel-src-f').value,
-    source_url: document.getElementById('intel-url').value.trim(),
-    added_by: document.getElementById('intel-by').value.trim(),
-    intel_date: document.getElementById('intel-date').value,
-  };
-  if (!body.content) { toast('Intel content is required', true); return; }
-  try {
-    await API.post('/intel', body);
-    toast('Intel saved');
-    closeModal('modal-intel');
-    if (currentView === 'intel') loadIntel();
-    if (currentView === 'projects') { const id = document.getElementById('proj-id').value; if (id) showProjPanel(id); }
-  } catch(e) { toast(e.message, true); }
-}
-
-async function deleteIntel(id) {
-  confirmDelete('Delete this intel entry?', async () => {
-    try { await API.del('/intel/' + id); toast('Intel deleted'); loadIntel(); }
-    catch(e) { toast(e.message, true); }
-  });
-}
-
-// ── SCRAPED LEADS ──────────────────────────────────────────────────────────
-async function loadScraped() {
-  const status = document.getElementById('lead-status').value;
-  const params = new URLSearchParams({ status });
-  try {
-    const rows = await API.get('/scraped?' + params);
-    document.getElementById('nb-scraped').textContent = rows.filter(r=>r.review_status==='Pending').length || 0;
-    const el = document.getElementById('scraped-list');
-    if (!rows.length) { el.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><strong>No leads found</strong><span>Scraped leads awaiting review will appear here.</span></div>`; return; }
-    el.innerHTML = rows.map(r => `
-      <div class="lead-card ${(r.confidence||'low').toLowerCase()}">
-        <div class="lc-head">
-          <div>
-            <div class="lc-title">${esc(r.project_name || r.address || 'Unknown Project')}</div>
-            <div class="lc-dev">${esc(r.developer_name||'Unknown Developer')} · ${esc(r.suburb||'–')}</div>
-          </div>
-          <div style="display:flex;gap:.3rem;align-items:center;flex-shrink:0">
-            ${confidenceBadge(r.confidence)}
-            ${r.review_status !== 'Pending' ? `<span class="badge b-${r.review_status.toLowerCase()}">${r.review_status}</span>` : ''}
-          </div>
-        </div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.72rem;margin-bottom:.4rem">
-          ${r.project_type ? `<span class="badge b-planning">${esc(r.project_type)}</span>` : ''}
-          ${r.status ? statusBadge(r.status) : ''}
-          ${r.funder ? `<span style="color:var(--mid)">Funder: ${esc(r.funder)}</span>` : ''}
-          ${r.valuer ? `<span style="color:var(--mid)">Valuer: ${esc(r.valuer)}</span>` : ''}
-        </div>
-        ${r.raw_snippet ? `<div class="lc-snippet">${esc(r.raw_snippet)}</div>` : ''}
-        <div class="lc-footer">
-          <span>${esc(r.source_name)}</span>
-          ${r.source_url ? `· <a href="${esc(r.source_url)}" target="_blank">View Source ↗</a>` : ''}
-          <span>· Scraped ${fmtDate(r.scraped_at)}</span>
-          ${r.reviewer_notes ? `· <em>${esc(r.reviewer_notes)}</em>` : ''}
-        </div>
-        ${r.review_status === 'Pending' ? `
-        <div class="lc-actions">
-          <button class="btn btn-primary btn-sm" onclick="openPromoteModal(${r.id})">✓ Approve &amp; Add to DB</button>
-          <button class="btn btn-out btn-sm" onclick="rejectLead(${r.id})">✕ Reject</button>
-          <button class="btn btn-out btn-sm" onclick="markDuplicate(${r.id})">⊕ Duplicate</button>
-        </div>` : ''}
-      </div>`).join('');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function openPromoteModal(leadId) {
-  document.getElementById('promote-lead-id').value = leadId;
-  document.getElementById('promote-notes').value = '';
-  document.getElementById('promote-create-dev').checked = true;
-  document.getElementById('promote-create-proj').checked = true;
-  document.getElementById('promote-dev').value = '';
-  openModal('modal-promote');
-}
-
-async function promoteLead() {
-  const id = document.getElementById('promote-lead-id').value;
-  const body = {
-    developer_id: document.getElementById('promote-dev').value || null,
-    create_developer: document.getElementById('promote-create-dev').checked,
-    create_project: document.getElementById('promote-create-proj').checked,
-    reviewer_notes: document.getElementById('promote-notes').value.trim(),
-    reviewed_by: 'Current User',
-  };
-  try {
-    await API.post('/scraped/' + id + '/promote', body);
-    toast('Lead approved and promoted to database');
-    closeModal('modal-promote');
-    loadScraped();
-    populateDevDropdowns();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function rejectLead(id) {
-  try {
-    await API.patch('/scraped/' + id + '/review', { review_status: 'Rejected', reviewed_by: 'Current User' });
-    toast('Lead rejected');
-    loadScraped();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function markDuplicate(id) {
-  try {
-    await API.patch('/scraped/' + id + '/review', { review_status: 'Duplicate', reviewed_by: 'Current User' });
-    toast('Marked as duplicate');
-    loadScraped();
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── LINKEDIN CHECK ─────────────────────────────────────────────────────────
-async function runLinkedInCheck() {
-  toast('Scanning LinkedIn status fields…');
-  try {
-    const contacts = await API.get('/contacts?linkedin_status=Unchecked');
-    const withLI = contacts.filter(c => c.linkedin_url);
-    if (!withLI.length) { toast('No unchecked LinkedIn profiles found'); return; }
-    // Flag all unchecked contacts with a LinkedIn URL as "Potential Update" to prompt manual review
-    let flagged = 0;
-    for (const c of withLI) {
-      await API.patch('/contacts/' + c.id + '/linkedin', {
-        linkedin_status: 'Potential Update',
-        linkedin_snapshot: { title: c.title, company: c.developer_name, snapshotDate: new Date().toISOString().slice(0,10) }
-      });
-      flagged++;
-    }
-    toast(`${flagged} contact${flagged !== 1 ? 's' : ''} flagged for LinkedIn review`);
-    if (currentView === 'contacts') loadContacts();
-    loadDashboard();
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── SETTINGS ───────────────────────────────────────────────────────────────
-async function loadSettings() {
-  const el = document.getElementById('settings-body');
-  try {
-    const [sources, users] = await Promise.all([
-      API.get('/settings/scraper-sources'),
-      API.get('/settings/users')
+    const [sales, campaigns, discoveries, alerts, stats] = await Promise.all([
+      api('GET', '/api/sales').catch(() => []),
+      api('GET', '/api/campaigns').catch(() => []),
+      api('GET', '/api/discoveries').catch(() => []),
+      api('GET', '/api/alerts').catch(() => []),
+      api('GET', '/api/stats').catch(() => ({}))
     ]);
-    el.innerHTML = `
-      <div class="settings-section">
-        <div class="ss-hdr"><h3>Scraper Sources</h3>
-          <button class="btn btn-ghost btn-sm" onclick="addScraperSource()">+ Add Source</button>
+    state.sales = Array.isArray(sales) ? sales : (sales.data || []);
+    state.campaigns = Array.isArray(campaigns) ? campaigns : (campaigns.data || []);
+    state.discoveries = Array.isArray(discoveries) ? discoveries : (discoveries.data || []);
+    state.alerts = Array.isArray(alerts) ? alerts : (alerts.data || []);
+    state.stats = stats || {};
+    updateBadges();
+    renderCurrentView();
+    loadScrapeStatus();
+  } catch(e) {
+    toast('Failed to load data: ' + e.message, 'err');
+  }
+}
+
+function renderCurrentView() {
+  const v = state.activeView;
+  if (v === 'view-dash') renderDash();
+  else if (v === 'view-sales') renderSales();
+  else if (v === 'view-campaigns') renderCampaigns();
+  else if (v === 'view-discoveries') renderDiscoveries();
+  else if (v === 'view-premium') renderPremium();
+}
+
+function updateBadges() {
+  document.getElementById('nb-sales').textContent = state.sales.length;
+  const activeCamps = state.campaigns.filter(c => c.status === 'Active' || c.status === 'active').length;
+  document.getElementById('nb-campaigns').textContent = activeCamps;
+  const pending = state.discoveries.filter(d => !d.dismissed && (d.status === 'pending' || !d.tracked)).length;
+  document.getElementById('nb-discoveries').textContent = pending;
+  const unread = state.alerts.filter(a => !a.read).length;
+  const bell = document.getElementById('bell-badge');
+  bell.textContent = unread;
+  bell.style.display = unread > 0 ? 'block' : 'none';
+  renderAlertsList();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDash() {
+  const el = document.getElementById('dash-content');
+  const s = state.stats;
+  const sales = state.sales;
+  const camps = state.campaigns;
+  const discs = state.discoveries;
+  const alerts = state.alerts;
+
+  const pendingDiscs = discs.filter(d => !d.dismissed && !d.tracked);
+  const premiumDiscs = pendingDiscs.filter(d => d.is_premium);
+  const unread = alerts.filter(a => !a.read).length;
+  const activeCamps = camps.filter(c => (c.status||'').toLowerCase() === 'active');
+  const dueIn14 = activeCamps.filter(c => { const d = daysTo(c.close_date); return d !== null && d >= 0 && d <= 14; });
+  const recentSales = [...sales].sort((a,b) => (b.sale_date||'').localeCompare(a.sale_date||'')).slice(0,5);
+
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card red">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-val">${sales.length}</div>
+        <div class="stat-sub">in database</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Active Campaigns</div>
+        <div class="stat-val">${activeCamps.length}</div>
+        <div class="stat-sub">campaigns running</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Pending Discoveries</div>
+        <div class="stat-val">${pendingDiscs.length}${premiumDiscs.length ? ` <span style="font-size:.9rem;color:var(--red)">(${premiumDiscs.length} premium)</span>` : ''}</div>
+        <div class="stat-sub">awaiting review</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Unread Alerts</div>
+        <div class="stat-val">${unread}</div>
+        <div class="stat-sub">notifications</div>
+      </div>
+    </div>
+
+    <div class="db-grid" style="margin-bottom:.7rem">
+      <div class="db-card">
+        <div class="db-card-hdr">
+          <h3>New Discoveries</h3>
+          <button class="btn btn-out btn-xs" onclick="showView('view-discoveries')">View All</button>
         </div>
-        <div class="ss-body">
-          <p style="font-size:.74rem;color:var(--mid);margin-bottom:.75rem">Configure public sources for developer project discovery. All scrapers respect robots.txt by default. Scraped items require manual review before entering the database.</p>
-          ${sources.map(s => `
-            <div class="source-row">
-              <label class="toggle"><input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSource(${s.id},this.checked)"><span class="toggle-sl"></span></label>
-              <span class="source-name">${esc(s.name)}</span>
-              <span class="source-url">${esc(s.url)}</span>
-              <span style="font-size:.65rem;color:var(--mid)">${s.respect_robots ? '✓ robots.txt' : '⚠ ignoring robots'}</span>
-              <button class="btn btn-danger btn-xs" onclick="deleteSource(${s.id})">✕</button>
+        ${pendingDiscs.length === 0
+          ? '<div style="font-size:.76rem;color:var(--mid);padding:.5rem 0">No pending discoveries</div>'
+          : pendingDiscs.slice(0,5).map(d => `
+            <div class="disc-card">
+              <div class="disc-card-info">
+                <div class="disc-card-addr">${d.address || '—'}</div>
+                <div class="disc-card-meta">${d.suburb||''} · ${d.asset_class||d.type||''} · ${d.is_premium?'<span style="color:var(--red);font-weight:600">PREMIUM</span>':''}</div>
+              </div>
+              <div class="disc-card-acts">
+                <button class="btn btn-green btn-xs" onclick="trackDiscovery('${d.id}',this)">ACCEPT</button>
+                <button class="btn btn-out btn-xs" onclick="dismissDiscovery('${d.id}',this)">DISMISS</button>
+              </div>
             </div>`).join('')}
-        </div>
       </div>
-      <div class="settings-section">
-        <div class="ss-hdr"><h3>Team / Relationship Owners</h3>
-          <button class="btn btn-ghost btn-sm" onclick="addUser()">+ Add User</button>
+
+      <div class="db-card">
+        <div class="db-card-hdr">
+          <h3>Recent Sales</h3>
+          <button class="btn btn-out btn-xs" onclick="showView('view-sales')">View All</button>
         </div>
-        <div class="ss-body">
-          ${users.map(u => `
-            <div class="source-row">
-              <span class="source-name">${esc(u.name)}</span>
-              <span class="source-url">${esc(u.email||'–')}</span>
-              <span style="font-size:.7rem;color:var(--mid)">${esc(u.role)}</span>
-              <button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id})">✕</button>
+        ${recentSales.length === 0
+          ? '<div style="font-size:.76rem;color:var(--mid);padding:.5rem 0">No sales recorded</div>'
+          : recentSales.map(s => `
+            <div class="db-row">
+              <div class="db-row-l">${s.address||'—'}<br><span style="font-size:.63rem">${s.suburb||''}</span></div>
+              <div style="text-align:right">
+                <div class="db-row-v">${f$(s.sale_price)}</div>
+                <div style="font-size:.63rem;color:var(--mid)">${fD(s.sale_date)}</div>
+              </div>
             </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="db-card" style="margin-bottom:.7rem">
+      <div class="db-card-hdr">
+        <h3>Active Campaigns — Closing in 14 Days</h3>
+        <button class="btn btn-out btn-xs" onclick="showView('view-campaigns')">All Campaigns</button>
+      </div>
+      ${dueIn14.length === 0
+        ? '<div style="font-size:.76rem;color:var(--mid)">No campaigns closing in the next 14 days</div>'
+        : `<div class="camp-strip">${dueIn14.map(c => {
+            const d = daysTo(c.close_date);
+            return `<div class="camp-chip" onclick="openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+              <div class="camp-chip-addr">${c.address||'—'}</div>
+              <div class="camp-chip-meta">${c.suburb||''} · ${daysBadge(d)}</div>
+              <div class="camp-chip-meta" style="margin-top:.3rem">${f$(c.price_guide)}</div>
+            </div>`;}).join('')}</div>`}
+    </div>
+  `;
+}
+
+// ─── SALES TABLE ──────────────────────────────────────────────────────────────
+function getFilteredSales() {
+  let rows = state.sales;
+  const src = document.getElementById('sf-source')?.value || '';
+  const cls = document.getElementById('sf-class')?.value || '';
+  const sts = document.getElementById('sf-status')?.value || '';
+  const yr = document.getElementById('sf-year')?.value || '';
+  const q = (document.getElementById('sf-q')?.value || '').toLowerCase().trim();
+  if (src) rows = rows.filter(r => r.source === src || r.source_database === src);
+  if (cls) rows = rows.filter(r => r.asset_class === cls || r.classification === cls);
+  if (sts) rows = rows.filter(r => (r.status||'').toLowerCase() === sts.toLowerCase());
+  if (yr) rows = rows.filter(r => r.sale_date && r.sale_date.startsWith(yr));
+  if (q) rows = rows.filter(r =>
+    (r.address||'').toLowerCase().includes(q) ||
+    (r.suburb||'').toLowerCase().includes(q) ||
+    (r.asset_class||r.classification||'').toLowerCase().includes(q) ||
+    (r.agent_1||r.agent1||'').toLowerCase().includes(q)
+  );
+  return rows;
+}
+
+function renderSales() {
+  const yearSel = document.getElementById('sf-year');
+  if (yearSel && yearSel.options.length <= 1) {
+    const years = [...new Set(state.sales.map(s => s.sale_date?.slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
+    years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o); });
+  }
+  const rows = getFilteredSales();
+  const total = rows.length;
+  const pageSize = state.salesPageSize;
+  const maxPage = Math.max(1, Math.ceil(total / pageSize));
+  if (state.salesPage > maxPage) state.salesPage = 1;
+  const page = state.salesPage;
+  const slice = rows.slice((page-1)*pageSize, page*pageSize);
+
+  document.getElementById('sales-cnt').textContent = `${total} record${total !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('sales-tbody');
+  if (slice.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><strong>No records found</strong><span>Adjust filters or add a sale</span></div></td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map((r, i) => {
+      const ac = r.asset_class || r.classification || '—';
+      const op = r.operator || r.tenant || '';
+      const agent = r.agent_1 || r.agent1 || '—';
+      return `<tr class="${i%2===1?'even':''}" onclick="openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+        <td class="td-addr" title="${r.address||''}">${r.address||'—'}</td>
+        <td>${r.suburb||'—'}</td>
+        <td>${ac}${op?`<br><span class="td-sm">${op}</span>`:''}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td style="font-weight:600">${f$(r.sale_price)}</td>
+        <td>${fYld(r.yield_pct)}</td>
+        <td>${r.wale ? r.wale + 'y' : '—'}</td>
+        <td><span class="agent-link">${agent}</span></td>
+        <td>${fD(r.sale_date)}</td>
+        <td><button class="btn btn-out btn-xs" onclick="event.stopPropagation();openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">Edit</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Pager
+  const pager = document.getElementById('sales-pager');
+  pager.innerHTML = `
+    <button class="pager-btn" onclick="changeSalesPage(-1)" ${page<=1?'disabled':''}>← Prev</button>
+    <span class="pager-info">Page ${page} of ${maxPage} · ${total} records</span>
+    <button class="pager-btn" onclick="changeSalesPage(1)" ${page>=maxPage?'disabled':''}>Next →</button>
+  `;
+}
+
+function changeSalesPage(dir) {
+  state.salesPage += dir;
+  renderSales();
+}
+
+// ─── CAMPAIGNS ────────────────────────────────────────────────────────────────
+function renderCampaigns() {
+  const sts = document.getElementById('cf-status')?.value || '';
+  const q = (document.getElementById('cf-q')?.value || '').toLowerCase().trim();
+  let rows = state.campaigns;
+  if (sts) rows = rows.filter(c => (c.status||'').toLowerCase() === sts.toLowerCase());
+  if (q) rows = rows.filter(c =>
+    (c.address||'').toLowerCase().includes(q) ||
+    (c.suburb||'').toLowerCase().includes(q) ||
+    (c.agent_1||c.agent1||'').toLowerCase().includes(q)
+  );
+  document.getElementById('camp-cnt').textContent = `${rows.length} campaign${rows.length!==1?'s':''}`;
+  const tbody = document.getElementById('camp-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><strong>No campaigns found</strong><span>Add a campaign to get started</span></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((c,i) => {
+    const d = daysTo(c.close_date);
+    const agent = c.agent_1 || c.agent1 || '—';
+    return `<tr class="${i%2===1?'even':''}" onclick="openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <td class="td-addr" title="${c.address||''}">${c.address||'—'}</td>
+      <td>${c.suburb||'—'}</td>
+      <td>${c.asset_class||c.type||'—'}</td>
+      <td>${c.process||'—'}</td>
+      <td>${c.close_date ? `${fD(c.close_date)} ${daysBadge(d)}` : '—'}</td>
+      <td>${f$(c.price_guide)}</td>
+      <td><span class="agent-link">${agent}</span></td>
+      <td>${statusBadge(c.status)}</td>
+      <td style="display:flex;gap:.3rem;padding:.35rem .4rem">
+        <button class="btn btn-out btn-xs" onclick="event.stopPropagation();openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">Edit</button>
+        ${(c.status||'').toLowerCase() === 'active' ? `<button class="btn btn-amber btn-xs" onclick="event.stopPropagation();openSoldModal('${c.id}')">Mark Sold</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── DISCOVERIES ─────────────────────────────────────────────────────────────
+function setDiscSeg(seg) {
+  state.discSeg = seg;
+  ['pending','premium','all'].forEach(s => {
+    document.getElementById('dseg-'+s).classList.toggle('on', s === seg);
+  });
+  renderDiscoveries();
+}
+
+async function loadScrapeStatus() {
+  try {
+    const log = await api('GET', '/api/scrape/log');
+    const dot = document.getElementById('scrape-dot');
+    const txt = document.getElementById('scrape-status-txt');
+    if (log && log.last_run) {
+      const d = new Date(log.last_run);
+      const hrs = (Date.now() - d) / 3600000;
+      dot.className = 'scrape-dot ' + (hrs < 2 ? '' : hrs < 24 ? 'stale' : 'stale');
+      txt.textContent = `Last scan: ${fD(log.last_run.slice(0,10))} · ${log.results_count||0} results · Status: ${log.status||'OK'}`;
+    } else {
+      dot.className = 'scrape-dot unknown';
+      txt.textContent = 'No scan recorded yet';
+    }
+  } catch(e) {
+    document.getElementById('scrape-status-txt').textContent = 'Scrape status unavailable';
+  }
+}
+
+async function runScan() {
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Scanning…';
+  try {
+    const result = await api('POST', '/api/scrape');
+    toast(`Scan complete · ${result.count||0} new discoveries`, 'info');
+    await loadAll();
+    loadScrapeStatus();
+  } catch(e) {
+    toast('Scan failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⟳ Scan Now';
+  }
+}
+
+function renderDiscoveries() {
+  const seg = state.discSeg;
+  let rows = state.discoveries;
+  if (seg === 'pending') rows = rows.filter(d => !d.dismissed && !d.tracked);
+  else if (seg === 'premium') rows = rows.filter(d => d.is_premium && !d.dismissed);
+  document.getElementById('disc-cnt').textContent = `${rows.length} listing${rows.length!==1?'s':''}`;
+  const grid = document.getElementById('disc-grid');
+  if (rows.length === 0) {
+    grid.innerHTML = `<div class="empty"><strong>No discoveries</strong><span>${seg==='pending'?'All caught up! Run a scan to find new listings.':'No listings match this filter.'}</span></div>`;
+    return;
+  }
+  const srcColors = {CRE:'#1565C0',RealCommercial:'#15803D',Stonebridge:'#B45309',BurgessRawson:'#E1251B'};
+  grid.innerHTML = rows.map(d => {
+    const src = d.source_name || d.source || '';
+    const srcColor = srcColors[src] || '';
+    const isNew = d.listing_type === 'new' || !d.listing_type;
+    const isChange = d.listing_type === 'change' || d.listing_type === 'status_change';
+    return `<div class="d-card${d.is_premium?' premium':''}">
+      <div class="d-card-body">
+        <div class="d-card-badges">
+          ${d.is_premium ? '<span class="badge b-premium">PREMIUM</span>' : ''}
+          ${isChange ? '<span class="badge b-change">STATUS CHANGE</span>' : '<span class="badge b-new">NEW LISTING</span>'}
+          ${src ? `<span class="src-badge" style="${srcColor?`color:${srcColor};border-color:${srcColor}30`:''}">${src}</span>` : ''}
+        </div>
+        <div class="d-card-addr">${d.address||'—'}</div>
+        <div class="d-card-sub">${[d.suburb, d.asset_class||d.type].filter(Boolean).join(' · ')}</div>
+        <div class="d-card-row">
+          ${d.price||d.price_guide ? `<span>Price: <b>${f$(d.price||d.price_guide)}</b></span>` : ''}
+          ${d.yield_pct ? `<span>Yield: <b>${fYld(d.yield_pct)}</b></span>` : ''}
+          ${d.agent ? `<span>Agent: <b>${d.agent}</b></span>` : ''}
+        </div>
+        <div class="d-card-acts">
+          ${!d.tracked ? `<button class="btn btn-green btn-sm" onclick="trackDiscovery('${d.id}',this)">TRACK</button>` : '<span class="badge b-active">Tracked</span>'}
+          ${!d.dismissed ? `<button class="btn btn-out btn-sm" onclick="dismissDiscovery('${d.id}',this)">DISMISS</button>` : '<span class="badge b-withdrawn">Dismissed</span>'}
         </div>
       </div>
-      <div class="settings-section">
-        <div class="ss-hdr"><h3>Data &amp; Export</h3></div>
-        <div class="ss-body" style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <button class="btn btn-out" onclick="exportCSV('developers')">↓ Export Developers CSV</button>
-          <button class="btn btn-out" onclick="exportCSV('projects')">↓ Export Projects CSV</button>
-          <button class="btn btn-out" onclick="exportCSV('contacts')">↓ Export Contacts CSV</button>
-        </div>
+    </div>`;
+  }).join('');
+}
+
+async function trackDiscovery(id, btn) {
+  btn.disabled = true;
+  try {
+    await api('POST', `/api/discoveries/${id}/track`);
+    const d = state.discoveries.find(x => String(x.id) === String(id));
+    if (d) d.tracked = true;
+    toast('Added to campaigns', 'info');
+    renderDiscoveries();
+    updateBadges();
+  } catch(e) {
+    toast('Failed: ' + e.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+async function dismissDiscovery(id, btn) {
+  btn.disabled = true;
+  try {
+    await api('POST', `/api/discoveries/${id}/dismiss`);
+    const d = state.discoveries.find(x => String(x.id) === String(id));
+    if (d) d.dismissed = true;
+    renderDiscoveries();
+    updateBadges();
+  } catch(e) {
+    toast('Failed: ' + e.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+// ─── PREMIUM ──────────────────────────────────────────────────────────────────
+const PREMIUM_CLASSES = ['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'];
+
+function renderPremium() {
+  const rows = state.sales.filter(s =>
+    s.source === 'Premium Investment' || s.source_database === 'Premium Investment' ||
+    PREMIUM_CLASSES.includes(s.asset_class) || PREMIUM_CLASSES.includes(s.classification)
+  );
+  const withYield = rows.filter(r => r.yield_pct);
+  const withWale = rows.filter(r => r.wale);
+  const avgYield = withYield.length ? withYield.reduce((a,r) => a + parseFloat(r.yield_pct), 0) / withYield.length : null;
+  const avgWale = withWale.length ? withWale.reduce((a,r) => a + parseFloat(r.wale), 0) / withWale.length : null;
+  const cc = rows.filter(r => (r.asset_class||r.classification) === 'Childcare Centre' && r.sale_price && r.licensed_places);
+  const avgPpsm = cc.length ? cc.reduce((a,r) => a + r.sale_price / r.licensed_places, 0) / cc.length : null;
+
+  document.getElementById('prem-stats').innerHTML = `
+    <div class="stat-card red"><div class="stat-label">Total Premium</div><div class="stat-val">${rows.length}</div><div class="stat-sub">sales</div></div>
+    <div class="stat-card amber"><div class="stat-label">Avg Yield</div><div class="stat-val" style="font-size:1.5rem">${avgYield ? fYld(avgYield) : '—'}</div><div class="stat-sub">across ${withYield.length} records</div></div>
+    <div class="stat-card blue"><div class="stat-label">Avg WALE</div><div class="stat-val" style="font-size:1.5rem">${avgWale ? avgWale.toFixed(1)+'y' : '—'}</div><div class="stat-sub">across ${withWale.length} records</div></div>
+    <div class="stat-card green"><div class="stat-label">Avg $/Place (CC)</div><div class="stat-val" style="font-size:1.5rem">${avgPpsm ? f$(avgPpsm) : '—'}</div><div class="stat-sub">${cc.length} childcare records</div></div>
+  `;
+
+  const tbody = document.getElementById('prem-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty"><strong>No premium records</strong><span>Sales with premium asset classes will appear here</span></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r,i) => {
+    const ac = r.asset_class || r.classification || '—';
+    const ppplace = (ac === 'Childcare Centre' && r.sale_price && r.licensed_places) ? f$(r.sale_price / r.licensed_places) : '—';
+    return `<tr class="${i%2===1?'even':''}" onclick="openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+      <td class="td-addr">${r.address||'—'}</td>
+      <td>${r.suburb||'—'}</td>
+      <td>${ac}</td>
+      <td>${r.operator||r.tenant||'—'}</td>
+      <td style="font-weight:600">${f$(r.sale_price)}</td>
+      <td>${f$(r.net_rent)}</td>
+      <td>${fYld(r.yield_pct)}</td>
+      <td>${r.wale ? r.wale + 'y' : '—'}</td>
+      <td>${ppplace}</td>
+      <td><span class="agent-link">${r.agent_1||r.agent1||'—'}</span></td>
+      <td>${fD(r.sale_date)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function updateExportCount() {
+  const src = document.getElementById('exp-source')?.value || '';
+  const sts = document.getElementById('exp-status')?.value || '';
+  const cls = document.getElementById('exp-class')?.value || '';
+  const from = document.getElementById('exp-from')?.value || '';
+  const to = document.getElementById('exp-to')?.value || '';
+  let rows = state.sales;
+  if (src) rows = rows.filter(r => r.source === src || r.source_database === src);
+  if (sts) rows = rows.filter(r => (r.status||'').toLowerCase() === sts.toLowerCase());
+  if (cls) rows = rows.filter(r => r.asset_class === cls || r.classification === cls);
+  if (from) rows = rows.filter(r => r.sale_date && r.sale_date >= from);
+  if (to) rows = rows.filter(r => r.sale_date && r.sale_date <= to);
+  document.getElementById('exp-count').textContent = rows.length;
+}
+
+function doExport() {
+  const params = new URLSearchParams({
+    source: document.getElementById('exp-source')?.value || '',
+    status: document.getElementById('exp-status')?.value || '',
+    classification: document.getElementById('exp-class')?.value || '',
+    from: document.getElementById('exp-from')?.value || '',
+    to: document.getElementById('exp-to')?.value || ''
+  });
+  window.location.href = `/api/export?${params}`;
+}
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+function toggleAlerts() {
+  state.alertsOpen = !state.alertsOpen;
+  document.getElementById('alerts-panel').classList.toggle('open', state.alertsOpen);
+  if (state.alertsOpen) renderAlertsList();
+}
+
+function renderAlertsList() {
+  const list = document.getElementById('alerts-list');
+  if (!list) return;
+  const alerts = state.alerts;
+  if (alerts.length === 0) {
+    list.innerHTML = '<div style="padding:1.5rem;text-align:center;font-size:.76rem;color:var(--mid)">No alerts</div>';
+    return;
+  }
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item ${!a.read?'unread':''}">
+      <div class="${!a.read?'alert-dot':'alert-read-dot'}"></div>
+      <div>
+        <div class="alert-msg">${a.message||a.msg||'Alert'}</div>
+        <div class="alert-time">${fD(a.created_at?.slice(0,10))}</div>
       </div>
-      <div class="settings-section">
-        <div class="ss-hdr"><h3>About</h3></div>
-        <div class="ss-body" style="font-size:.78rem;line-height:1.6;color:var(--mid)">
-          <strong style="color:var(--ink)">CW Developer Intelligence CRM</strong><br>
-          Version 1.0 · Cushman &amp; Wakefield NSW Investment Sales<br><br>
-          <em>Scraped data is clearly separated from confirmed records. Source links are saved for every scraped item. Confidence levels distinguish unverified leads from internal intelligence.</em>
-        </div>
-      </div>`;
-  } catch(e) { el.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><strong>${e.message}</strong></div>`; }
+    </div>`).join('');
 }
 
-async function toggleSource(id, enabled) {
+async function markAllAlertsRead() {
   try {
-    const src = (await API.get('/settings/scraper-sources')).find(s => s.id === id);
-    if (src) await API.put('/settings/scraper-sources/' + id, { ...src, enabled: enabled ? 1 : 0 });
-  } catch(e) { toast(e.message, true); }
+    await api('POST', '/api/alerts/read-all');
+    state.alerts.forEach(a => a.read = true);
+    updateBadges();
+    toast('All alerts marked as read');
+  } catch(e) {
+    toast('Failed: ' + e.message, 'err');
+  }
 }
 
-async function deleteSource(id) {
-  confirmDelete('Remove this scraper source?', async () => {
-    try { await API.del('/settings/scraper-sources/' + id); toast('Source removed'); loadSettings(); }
-    catch(e) { toast(e.message, true); }
+// ─── SALE MODAL ───────────────────────────────────────────────────────────────
+function openSaleModal(sale) {
+  const isEdit = sale && (sale.id || sale.id === 0);
+  document.getElementById('sale-modal-title').textContent = isEdit ? 'Edit Sale' : 'Add Sale';
+  const fields = ['id','address','suburb','region','source','class','zoning','fsr','height',
+    'status','process','price','guide','rent','outgoings','yield','landpsm','wale','rcstatus',
+    'landarea','floorarea','saledate','settledate','closedate','listed','agent1','agent2',
+    'vendor','purchaser','comments','operator','places','premiumSection'];
+  // Reset
+  fields.forEach(f => {
+    const el = document.getElementById('sm-'+f);
+    if (el && el.tagName !== 'DIV') el.value = '';
   });
+  document.getElementById('sm-premium-section').style.display = 'none';
+  document.getElementById('sm-places-wrap').style.display = 'none';
+
+  if (isEdit) {
+    const s = sale;
+    setVal('sm-id', s.id);
+    setVal('sm-address', s.address);
+    setVal('sm-suburb', s.suburb);
+    setVal('sm-region', s.region);
+    setVal('sm-source', s.source || s.source_database);
+    setVal('sm-class', s.asset_class || s.classification);
+    setVal('sm-zoning', s.zoning);
+    setVal('sm-fsr', s.fsr);
+    setVal('sm-height', s.height);
+    setVal('sm-status', s.status);
+    setVal('sm-process', s.process);
+    setVal('sm-price', s.sale_price);
+    setVal('sm-guide', s.price_guide);
+    setVal('sm-rent', s.net_rent);
+    setVal('sm-outgoings', s.outgoings);
+    setVal('sm-wale', s.wale);
+    setVal('sm-rcstatus', s.rc_status || s.rcstatus);
+    setVal('sm-landarea', s.land_area || s.landarea);
+    setVal('sm-floorarea', s.floor_area || s.floorarea);
+    setVal('sm-saledate', s.sale_date);
+    setVal('sm-settledate', s.settlement_date);
+    setVal('sm-closedate', s.close_date || s.campaign_close_date);
+    setVal('sm-listed', s.date_listed);
+    setVal('sm-agent1', s.agent_1 || s.agent1);
+    setVal('sm-agent2', s.agent_2 || s.agent2);
+    setVal('sm-vendor', s.vendor);
+    setVal('sm-purchaser', s.purchaser);
+    setVal('sm-comments', s.comments);
+    setVal('sm-operator', s.operator || s.tenant);
+    setVal('sm-places', s.licensed_places);
+    onClassChange();
+    autoCalc();
+  }
+  document.getElementById('sale-overlay').classList.add('on');
 }
 
-function addScraperSource() {
-  const name = prompt('Source name (e.g. NSW Planning Portal):');
-  if (!name) return;
-  const url = prompt('Source URL:');
-  if (!url) return;
-  API.post('/settings/scraper-sources', { name: name.trim(), url: url.trim() })
-    .then(() => { toast('Source added'); loadSettings(); })
-    .catch(e => toast(e.message, true));
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el && val !== undefined && val !== null) el.value = val;
 }
 
-function addUser() {
-  const name = prompt('Full name:');
-  if (!name) return;
-  const email = prompt('Email (optional):') || '';
-  const role = prompt('Role (Agent/Director/etc):') || 'Agent';
-  API.post('/settings/users', { name: name.trim(), email: email.trim(), role: role.trim() })
-    .then(() => { toast('User added'); loadSettings(); populateDevDropdowns(); })
-    .catch(e => toast(e.message, true));
+function closeSaleModal() {
+  document.getElementById('sale-overlay').classList.remove('on');
 }
 
-async function deleteUser(id) {
-  confirmDelete('Remove this user?', async () => {
-    try { await API.del('/settings/users/' + id); toast('User removed'); loadSettings(); populateDevDropdowns(); }
-    catch(e) { toast(e.message, true); }
-  });
+const PREMIUM_ASSET_CLASSES = ['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'];
+
+function onClassChange() {
+  const cls = document.getElementById('sm-class').value;
+  const isPrem = PREMIUM_ASSET_CLASSES.includes(cls);
+  const isCC = cls === 'Childcare Centre';
+  document.getElementById('sm-premium-section').style.display = isPrem ? 'block' : 'none';
+  document.getElementById('sm-places-wrap').style.display = isCC ? 'block' : 'none';
 }
 
-// ── EXPORT ─────────────────────────────────────────────────────────────────
-function exportCSV(type) {
-  window.open('/api/' + type + '/export/csv', '_blank');
+function autoCalc() {
+  const price = parseFloat(document.getElementById('sm-price').value) || 0;
+  const rent = parseFloat(document.getElementById('sm-rent').value) || 0;
+  const area = parseFloat(document.getElementById('sm-landarea').value) || 0;
+  const yldEl = document.getElementById('sm-yield');
+  const lpsEl = document.getElementById('sm-landpsm');
+  if (price && rent) yldEl.value = ((rent / price) * 100).toFixed(2) + '%';
+  else yldEl.value = '';
+  if (price && area) lpsEl.value = f$(price / area);
+  else lpsEl.value = '';
 }
 
-// ── INTEL DEV CHANGE HANDLER ───────────────────────────────────────────────
-document.getElementById('intel-dev-f').addEventListener('change', async function() {
-  const sel = document.getElementById('intel-proj-f');
-  sel.innerHTML = '<option value="">– No specific project –</option>';
-  if (!this.value) return;
+async function saveSale() {
+  const addr = document.getElementById('sm-address').value.trim();
+  if (!addr) { toast('Address is required', 'err'); return; }
+  const id = document.getElementById('sm-id').value;
+  const price = parseFloat(document.getElementById('sm-price').value) || null;
+  const rent = parseFloat(document.getElementById('sm-rent').value) || null;
+  const yldRaw = price && rent ? rent / price : null;
+  const body = {
+    address: addr,
+    suburb: document.getElementById('sm-suburb').value,
+    region: document.getElementById('sm-region').value,
+    source_database: document.getElementById('sm-source').value,
+    asset_class: document.getElementById('sm-class').value,
+    zoning: document.getElementById('sm-zoning').value,
+    fsr: document.getElementById('sm-fsr').value,
+    height: parseFloat(document.getElementById('sm-height').value) || null,
+    status: document.getElementById('sm-status').value,
+    process: document.getElementById('sm-process').value,
+    sale_price: price,
+    price_guide: parseFloat(document.getElementById('sm-guide').value) || null,
+    net_rent: rent,
+    outgoings: parseFloat(document.getElementById('sm-outgoings').value) || null,
+    yield_pct: yldRaw,
+    wale: parseFloat(document.getElementById('sm-wale').value) || null,
+    rc_status: document.getElementById('sm-rcstatus').value,
+    land_area: parseFloat(document.getElementById('sm-landarea').value) || null,
+    floor_area: parseFloat(document.getElementById('sm-floorarea').value) || null,
+    sale_date: document.getElementById('sm-saledate').value || null,
+    settlement_date: document.getElementById('sm-settledate').value || null,
+    close_date: document.getElementById('sm-closedate').value || null,
+    date_listed: document.getElementById('sm-listed').value || null,
+    agent_1: document.getElementById('sm-agent1').value,
+    agent_2: document.getElementById('sm-agent2').value,
+    vendor: document.getElementById('sm-vendor').value,
+    purchaser: document.getElementById('sm-purchaser').value,
+    comments: document.getElementById('sm-comments').value,
+    operator: document.getElementById('sm-operator').value,
+    licensed_places: parseInt(document.getElementById('sm-places').value) || null
+  };
   try {
-    const d = await API.get('/developers/' + this.value);
-    d.projects.forEach(p => {
-      const o = document.createElement('option');
-      o.value = p.id; o.textContent = p.name;
-      sel.appendChild(o);
-    });
-  } catch(e) {}
+    if (id) {
+      await api('PUT', `/api/sales/${id}`, body);
+      const idx = state.sales.findIndex(s => String(s.id) === String(id));
+      if (idx >= 0) state.sales[idx] = {...state.sales[idx], ...body, id};
+      toast('Sale updated', 'info');
+    } else {
+      const created = await api('POST', '/api/sales', body);
+      if (created && created.id) state.sales.unshift({...body, id: created.id});
+      toast('Sale added', 'info');
+    }
+    closeSaleModal();
+    updateBadges();
+    renderCurrentView();
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'err');
+  }
+}
+
+// ─── CAMPAIGN MODAL ───────────────────────────────────────────────────────────
+function openCampaignModal(camp) {
+  const isEdit = camp && (camp.id || camp.id === 0);
+  document.getElementById('camp-modal-title').textContent = isEdit ? 'Edit Campaign' : 'Add Campaign';
+  ['id','address','suburb','region','source','class','process','zoning','listed','close',
+   'guide','income','landarea','agent1','agent2','vendor','notes'].forEach(f => {
+    const el = document.getElementById('cm-'+f);
+    if (el) el.value = '';
+  });
+  if (isEdit) {
+    const c = camp;
+    setVal('cm-id', c.id);
+    setVal('cm-address', c.address);
+    setVal('cm-suburb', c.suburb);
+    setVal('cm-region', c.region);
+    setVal('cm-source', c.source || c.source_database);
+    setVal('cm-class', c.asset_class || c.type);
+    setVal('cm-process', c.process);
+    setVal('cm-zoning', c.zoning);
+    setVal('cm-listed', c.date_listed);
+    setVal('cm-close', c.close_date);
+    setVal('cm-guide', c.price_guide);
+    setVal('cm-income', c.net_income || c.net_rent);
+    setVal('cm-landarea', c.land_area);
+    setVal('cm-agent1', c.agent_1 || c.agent1);
+    setVal('cm-agent2', c.agent_2 || c.agent2);
+    setVal('cm-vendor', c.vendor);
+    setVal('cm-notes', c.notes);
+  }
+  document.getElementById('camp-overlay').classList.add('on');
+}
+
+function closeCampModal() {
+  document.getElementById('camp-overlay').classList.remove('on');
+}
+
+async function saveCampaign() {
+  const addr = document.getElementById('cm-address').value.trim();
+  if (!addr) { toast('Address is required', 'err'); return; }
+  const id = document.getElementById('cm-id').value;
+  const body = {
+    address: addr,
+    suburb: document.getElementById('cm-suburb').value,
+    region: document.getElementById('cm-region').value,
+    source_database: document.getElementById('cm-source').value,
+    asset_class: document.getElementById('cm-class').value,
+    process: document.getElementById('cm-process').value,
+    zoning: document.getElementById('cm-zoning').value,
+    date_listed: document.getElementById('cm-listed').value || null,
+    close_date: document.getElementById('cm-close').value || null,
+    price_guide: parseFloat(document.getElementById('cm-guide').value) || null,
+    net_income: parseFloat(document.getElementById('cm-income').value) || null,
+    land_area: parseFloat(document.getElementById('cm-landarea').value) || null,
+    agent_1: document.getElementById('cm-agent1').value,
+    agent_2: document.getElementById('cm-agent2').value,
+    vendor: document.getElementById('cm-vendor').value,
+    notes: document.getElementById('cm-notes').value,
+    status: 'Active'
+  };
+  try {
+    if (id) {
+      await api('PUT', `/api/campaigns/${id}`, body);
+      const idx = state.campaigns.findIndex(c => String(c.id) === String(id));
+      if (idx >= 0) state.campaigns[idx] = {...state.campaigns[idx], ...body, id};
+      toast('Campaign updated');
+    } else {
+      const created = await api('POST', '/api/campaigns', body);
+      if (created && created.id) state.campaigns.unshift({...body, id: created.id});
+      toast('Campaign added');
+    }
+    closeCampModal();
+    updateBadges();
+    renderCurrentView();
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'err');
+  }
+}
+
+// ─── SOLD MODAL ───────────────────────────────────────────────────────────────
+function openSoldModal(campId) {
+  ['price','date','settle','rent','vendor','purchaser','notes'].forEach(f => {
+    const el = document.getElementById('sold-'+f);
+    if (el) el.value = '';
+  });
+  document.getElementById('sold-camp-id').value = campId;
+  document.getElementById('sold-create-sale').checked = true;
+  document.getElementById('sold-overlay').classList.add('on');
+}
+
+function closeSoldModal() {
+  document.getElementById('sold-overlay').classList.remove('on');
+}
+
+async function markSold() {
+  const price = parseFloat(document.getElementById('sold-price').value);
+  const soldDate = document.getElementById('sold-date').value;
+  if (!price) { toast('Sale price is required', 'err'); return; }
+  if (!soldDate) { toast('Sold date is required', 'err'); return; }
+  const campId = document.getElementById('sold-camp-id').value;
+  const createSale = document.getElementById('sold-create-sale').checked;
+  const body = {
+    status: 'settlement',
+    sale_price: price,
+    sale_date: soldDate,
+    settlement_date: document.getElementById('sold-settle').value || null,
+    net_rent: parseFloat(document.getElementById('sold-rent').value) || null,
+    vendor: document.getElementById('sold-vendor').value,
+    purchaser: document.getElementById('sold-purchaser').value,
+    result_notes: document.getElementById('sold-notes').value,
+    create_sale_record: createSale
+  };
+  try {
+    await api('PUT', `/api/campaigns/${campId}`, body);
+    const idx = state.campaigns.findIndex(c => String(c.id) === String(campId));
+    if (idx >= 0) state.campaigns[idx] = {...state.campaigns[idx], status: 'settlement'};
+    toast('Marked as settlement', 'info');
+    closeSoldModal();
+    updateBadges();
+    if (createSale) await loadAll(); // reload to get new sale record
+    else renderCurrentView();
+  } catch(e) {
+    toast('Failed: ' + e.message, 'err');
+  }
+}
+
+// ─── KEYBOARD / CLICK OUTSIDE ─────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.overlay.on').forEach(o => o.classList.remove('on'));
+    if (state.alertsOpen) { state.alertsOpen = false; document.getElementById('alerts-panel').classList.remove('open'); }
+  }
 });
 
-// Close modals on overlay click
 document.querySelectorAll('.overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); });
 });
 
-// ── INIT ───────────────────────────────────────────────────────────────────
-(async function init() {
-  await populateDevDropdowns();
-  loadDashboard();
-})();
+// ─── POLL ─────────────────────────────────────────────────────────────────────
+setInterval(loadAll, 60000);
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadAll();
 </script>
 </body>
 </html>
