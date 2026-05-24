@@ -4,679 +4,324 @@ const express     = require('express');
 const cors        = require('cors');
 const compression = require('compression');
 const path        = require('path');
+const crypto      = require('crypto');
 const cron        = require('node-cron');
-const XLSX        = require('xlsx');
-const { db, gId } = require('./db');
+const { v4: uuidv4 } = require('uuid');
+const db          = require('./db');
 const { runScraper } = require('./scraper');
 
-const app = express();
+const app  = express();
+const PORT = process.env.PORT || 3000;
+const APP_PASSWORD = process.env.APP_PASSWORD || 'CW@Investment2025';
+const APP_SECRET   = process.env.APP_SECRET   || 'cw-nsw-sales-secret-key-2025';
 
-app.use(cors());
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── Field mapping helpers ──────────────────────────────────────────────────
+// ── Auth ─────────────────────────────────────────────────────────────────────
 
-// camelCase body → snake_case DB columns for sales
-function saleBodyToRow(body) {
-  return {
-    source:          body.source,
-    address:         body.address,
-    suburb:          body.suburb,
-    region:          body.region,
-    classification:  body.classification,
-    status:          body.status,
-    price:           numOrNull(body.price),
-    price_guide:     numOrNull(body.priceGuide ?? body.price_guide),
-    net_rent:        numOrNull(body.netRent ?? body.net_rent),
-    outgoings:       numOrNull(body.outgoings),
-    yld:             numOrNull(body.yld),
-    date_listed:     body.dateListed ?? body.date_listed ?? null,
-    sale_date:       body.saleDate ?? body.sale_date ?? null,
-    settlement_date: body.settlementDate ?? body.settlement_date ?? null,
-    process:         body.process,
-    campaign_close:  body.campaignClose ?? body.campaign_close ?? null,
-    rc_status:       body.rcStatus ?? body.rc_status ?? null,
-    land_area:       numOrNull(body.landArea ?? body.land_area),
-    land_rate:       numOrNull(body.landRate ?? body.land_rate),
-    floor_area:      numOrNull(body.floorArea ?? body.floor_area),
-    cap_val:         numOrNull(body.capVal ?? body.cap_val),
-    units:           numOrNull(body.units),
-    unit_rate:       numOrNull(body.unitRate ?? body.unit_rate),
-    wale:            numOrNull(body.wale),
-    parking:         numOrNull(body.parking),
-    configuration:   body.configuration ?? null,
-    land_area_ha:    numOrNull(body.landAreaHa ?? body.land_area_ha),
-    land_rate_ha:    numOrNull(body.landRateHa ?? body.land_rate_ha),
-    land_area_acre:  numOrNull(body.landAreaAcre ?? body.land_area_acre),
-    land_rate_acre:  numOrNull(body.landRateAcre ?? body.land_rate_acre),
-    no_lots:         numOrNull(body.noLots ?? body.no_lots),
-    lot_rate:        numOrNull(body.lotRate ?? body.lot_rate),
-    perm_gfa:        numOrNull(body.permGfa ?? body.perm_gfa),
-    gfa_sqm:         numOrNull(body.gfaSqm ?? body.gfa_sqm),
-    zoning:          body.zoning ?? null,
-    zoning2:         body.zoning2 ?? null,
-    fsr:             numOrNull(body.fsr),
-    height:          numOrNull(body.height),
-    approval:        numOrNull(body.approval),
-    dev_stage:       body.devStage ?? body.dev_stage ?? null,
-    constraints:     body.constraints ?? null,
-    agent1:          body.agent1 ?? null,
-    agent2:          body.agent2 ?? null,
-    vendor:          body.vendor ?? null,
-    purchaser:       body.purchaser ?? null,
-    comments:        body.comments ?? null,
-    analysis:        body.analysis ?? null,
-    operator:        body.operator ?? null,
-    places:          numOrNull(body.places),
-    price_per_place: numOrNull(body.pricePerPlace ?? body.price_per_place),
-    rent_per_place:  numOrNull(body.rentPerPlace ?? body.rent_per_place),
-  };
+function generateToken() {
+  const timestamp = Date.now();
+  const hash = crypto.createHmac('sha256', APP_SECRET)
+    .update(`auth:${timestamp}`)
+    .digest('hex');
+  return Buffer.from(JSON.stringify({ timestamp, hash })).toString('base64url');
 }
 
-function rowToSale(row) {
-  return {
-    id:             row.id,
-    source:         row.source,
-    address:        row.address,
-    suburb:         row.suburb,
-    region:         row.region,
-    classification: row.classification,
-    status:         row.status,
-    price:          row.price,
-    priceGuide:     row.price_guide,
-    netRent:        row.net_rent,
-    outgoings:      row.outgoings,
-    yld:            row.yld,
-    dateListed:     row.date_listed,
-    saleDate:       row.sale_date,
-    settlementDate: row.settlement_date,
-    process:        row.process,
-    campaignClose:  row.campaign_close,
-    rcStatus:       row.rc_status,
-    landArea:       row.land_area,
-    landRate:       row.land_rate,
-    floorArea:      row.floor_area,
-    capVal:         row.cap_val,
-    units:          row.units,
-    unitRate:       row.unit_rate,
-    wale:           row.wale,
-    parking:        row.parking,
-    configuration:  row.configuration,
-    landAreaHa:     row.land_area_ha,
-    landRateHa:     row.land_rate_ha,
-    landAreaAcre:   row.land_area_acre,
-    landRateAcre:   row.land_rate_acre,
-    noLots:         row.no_lots,
-    lotRate:        row.lot_rate,
-    permGfa:        row.perm_gfa,
-    gfaSqm:         row.gfa_sqm,
-    zoning:         row.zoning,
-    zoning2:        row.zoning2,
-    fsr:            row.fsr,
-    height:         row.height,
-    approval:       row.approval,
-    devStage:       row.dev_stage,
-    constraints:    row.constraints,
-    agent1:         row.agent1,
-    agent2:         row.agent2,
-    vendor:         row.vendor,
-    purchaser:      row.purchaser,
-    comments:       row.comments,
-    analysis:       row.analysis,
-    operator:       row.operator,
-    places:         row.places,
-    pricePerPlace:  row.price_per_place,
-    rentPerPlace:   row.rent_per_place,
-    createdAt:      row.created_at,
-    updatedAt:      row.updated_at,
-  };
+function validateToken(token) {
+  if (!token) return false;
+  try {
+    const { timestamp, hash } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - timestamp > 7 * 24 * 60 * 60 * 1000) return false; // 7-day expiry
+    const expected = crypto.createHmac('sha256', APP_SECRET)
+      .update(`auth:${timestamp}`)
+      .digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
-function numOrNull(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const n = Number(v);
-  return isNaN(n) ? null : n;
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (validateToken(token)) return next();
+  res.status(401).json({ error: 'Unauthorized' });
 }
 
-function autoCalc(row) {
-  // Land rate
-  if (row.price && row.land_area && !row.land_rate) {
-    row.land_rate = row.price / row.land_area;
+app.post('/api/auth/login', (req, res) => {
+  const { password } = req.body || {};
+  if (!password || password !== APP_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid password' });
   }
-  // Yield
-  if (row.price && row.net_rent && !row.yld) {
-    row.yld = row.net_rent / row.price;
+  res.json({ token: generateToken() });
+});
+
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({ ok: true });
+});
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+app.get('/api/stats', requireAuth, (req, res) => {
+  const totalSales      = db.prepare("SELECT COUNT(*) as c FROM sales").get().c;
+  const totalTracking   = db.prepare("SELECT COUNT(*) as c FROM tracking WHERE status != 'Converted to Sale'").get().c;
+  const pendingValidate = db.prepare("SELECT COUNT(*) as c FROM discoveries WHERE status = 'pending'").get().c;
+  const recentSales     = db.prepare("SELECT id, address, suburb, asset_class, price, yield_percent, agent1, settlement_date FROM sales ORDER BY created_at DESC LIMIT 5").all();
+  const lastScrape      = db.prepare("SELECT ran_at, source, found, added, status FROM scrape_log ORDER BY ran_at DESC LIMIT 1").get();
+  const byAsset         = db.prepare("SELECT asset_class, COUNT(*) as count FROM sales WHERE asset_class IS NOT NULL GROUP BY asset_class ORDER BY count DESC LIMIT 6").all();
+  const byRegion        = db.prepare("SELECT region, COUNT(*) as count FROM sales WHERE region IS NOT NULL GROUP BY region ORDER BY count DESC LIMIT 6").all();
+  res.json({ totalSales, totalTracking, pendingValidate, recentSales, lastScrape, byAsset, byRegion });
+});
+
+// ── Sales ─────────────────────────────────────────────────────────────────────
+
+app.get('/api/sales', requireAuth, (req, res) => {
+  const { search, asset_class, process, status, years, region, suburb } = req.query;
+  let sql = 'SELECT * FROM sales WHERE 1=1';
+  const params = [];
+
+  if (search) {
+    sql += ' AND (address LIKE ? OR suburb LIKE ? OR vendor LIKE ? OR purchaser LIKE ? OR agent1 LIKE ? OR agent2 LIKE ? OR notes LIKE ?)';
+    const s = `%${search}%`;
+    params.push(s, s, s, s, s, s, s);
   }
-  // Childcare per-place metrics
-  if (row.classification === 'Childcare Centre' && row.places) {
-    if (row.price && !row.price_per_place) {
-      row.price_per_place = row.price / row.places;
+  if (asset_class) { sql += ' AND asset_class = ?'; params.push(asset_class); }
+  if (process)     { sql += ' AND process = ?'; params.push(process); }
+  if (status)      { sql += ' AND status = ?'; params.push(status); }
+  if (region)      { sql += ' AND region = ?'; params.push(region); }
+  if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+
+  if (years) {
+    const yearList = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
+    if (yearList.length) {
+      sql += ` AND year IN (${yearList.map(() => '?').join(',')})`;
+      params.push(...yearList);
     }
-    if (row.net_rent && !row.rent_per_place) {
-      row.rent_per_place = row.net_rent / row.places;
+  }
+
+  sql += ' ORDER BY created_at DESC';
+  res.json(db.prepare(sql).all(...params));
+});
+
+app.post('/api/sales', requireAuth, (req, res) => {
+  const body = req.body;
+  const id = uuidv4();
+  const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
+  db.prepare(`
+    INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
+      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
+      zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
+    body.status || 'Sold', body.price, body.price_guide, body.net_rent,
+    body.yield_percent, body.wale, body.land_area, body.floor_area, body.zoning,
+    body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
+    body.firm1, body.firm2, body.exchange_date, body.settlement_date,
+    body.campaign_close_date, year, body.notes, body.source_url);
+  res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
+});
+
+app.put('/api/sales/:id', requireAuth, (req, res) => {
+  const body = req.body;
+  const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
+  db.prepare(`
+    UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
+      price=?, price_guide=?, net_rent=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
+      zoning=?, fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
+      exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
+      updated_at=datetime('now')
+    WHERE id=?
+  `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
+    body.price, body.price_guide, body.net_rent, body.yield_percent, body.wale,
+    body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
+    body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
+    body.exchange_date, body.settlement_date, body.campaign_close_date, year,
+    body.notes, body.source_url, req.params.id);
+  res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
+});
+
+app.delete('/api/sales/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM sales WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Tracking ──────────────────────────────────────────────────────────────────
+
+app.get('/api/tracking', requireAuth, (req, res) => {
+  const { search, asset_class, process, status, years, region, suburb } = req.query;
+  let sql = "SELECT * FROM tracking WHERE status != 'Converted to Sale'";
+  const params = [];
+
+  if (search) {
+    sql += ' AND (address LIKE ? OR suburb LIKE ? OR vendor LIKE ? OR agent1 LIKE ? OR agent2 LIKE ? OR notes LIKE ?)';
+    const s = `%${search}%`;
+    params.push(s, s, s, s, s, s);
+  }
+  if (asset_class) { sql += ' AND asset_class = ?'; params.push(asset_class); }
+  if (process)     { sql += ' AND process = ?'; params.push(process); }
+  if (status)      { sql += ' AND status = ?'; params.push(status); }
+  if (region)      { sql += ' AND region = ?'; params.push(region); }
+  if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+
+  if (years) {
+    const yearList = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
+    if (yearList.length) {
+      sql += ` AND year IN (${yearList.map(() => '?').join(',')})`;
+      params.push(...yearList);
     }
   }
-  return row;
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SALES ROUTES
-// ═══════════════════════════════════════════════════════════════════════════
+  sql += ' ORDER BY created_at DESC';
+  res.json(db.prepare(sql).all(...params));
+});
 
-app.get('/api/sales', (req, res) => {
+app.post('/api/tracking', requireAuth, (req, res) => {
+  const body = req.body;
+  const id = uuidv4();
+  const year = body.year || new Date().getFullYear();
+  db.prepare(`
+    INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
+      price_guide, net_rent, estimated_yield, vendor, agent1, agent2, firm1, firm2,
+      campaign_close_date, expected_settlement_date, year, notes, source_url, discovery_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
+    body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
+    body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
+    body.campaign_close_date, body.expected_settlement_date, year,
+    body.notes, body.source_url, body.discovery_id || null);
+  res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(id));
+});
+
+app.put('/api/tracking/:id', requireAuth, (req, res) => {
+  const body = req.body;
+  const year = body.year || undefined;
+  db.prepare(`
+    UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
+      price_guide=?, net_rent=?, estimated_yield=?, vendor=?, agent1=?, agent2=?, firm1=?, firm2=?,
+      campaign_close_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
+      updated_at=datetime('now')
+    WHERE id=?
+  `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
+    body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
+    body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
+    body.campaign_close_date, body.expected_settlement_date, year,
+    body.notes, body.source_url, req.params.id);
+  res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
+});
+
+app.delete('/api/tracking/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM tracking WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// Convert tracking → sale (settlement complete)
+app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
+  const tracked = db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id);
+  if (!tracked) return res.status(404).json({ error: 'Not found' });
+  const body = req.body;
+  const saleId = uuidv4();
+  const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
+  db.prepare(`
+    INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
+      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
+      vendor, purchaser, agent1, agent2, firm1, firm2,
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(saleId, tracked.address, tracked.suburb, tracked.region, tracked.asset_class,
+    tracked.process, 'Sold', body.price, tracked.price_guide, body.net_rent || tracked.net_rent,
+    body.yield_percent, body.wale, body.land_area, body.floor_area,
+    tracked.vendor, body.purchaser, tracked.agent1, tracked.agent2, tracked.firm1, tracked.firm2,
+    body.exchange_date, body.settlement_date, tracked.campaign_close_date,
+    year, body.notes || tracked.notes, tracked.source_url);
+  db.prepare("UPDATE tracking SET status='Converted to Sale', updated_at=datetime('now') WHERE id=?")
+    .run(req.params.id);
+  res.json({ sale: db.prepare('SELECT * FROM sales WHERE id = ?').get(saleId) });
+});
+
+// ── Validate (Discoveries) ────────────────────────────────────────────────────
+
+app.get('/api/validate', requireAuth, (req, res) => {
+  const { status } = req.query;
+  const s = status || 'pending';
+  res.json(db.prepare('SELECT * FROM discoveries WHERE status = ? ORDER BY scraped_at DESC').all(s));
+});
+
+app.post('/api/validate/:id/approve', requireAuth, (req, res) => {
+  const disc = db.prepare('SELECT * FROM discoveries WHERE id = ?').get(req.params.id);
+  if (!disc) return res.status(404).json({ error: 'Not found' });
+  const body = req.body;
+  const trackId = uuidv4();
+  const year = new Date().getFullYear();
+  db.prepare(`
+    INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
+      price_guide, agent1, firm1, year, notes, source_url, discovery_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(trackId, body.address || disc.address, body.suburb || disc.suburb,
+    body.region || disc.region, body.asset_class || disc.asset_class,
+    body.process || null, body.status || 'Active Campaign',
+    body.price_guide || disc.price_guide, body.agent1 || disc.agent,
+    body.firm1 || disc.firm, year, body.notes || disc.description,
+    disc.source_url, disc.id);
+  db.prepare("UPDATE discoveries SET status='approved', reviewed_at=datetime('now') WHERE id=?")
+    .run(disc.id);
+  res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId) });
+});
+
+app.post('/api/validate/:id/dismiss', requireAuth, (req, res) => {
+  db.prepare("UPDATE discoveries SET status='dismissed', reviewed_at=datetime('now') WHERE id=?")
+    .run(req.params.id);
+  res.json({ ok: true });
+});
+
+app.delete('/api/validate/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM discoveries WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Scraper ───────────────────────────────────────────────────────────────────
+
+app.post('/api/scraper/run', requireAuth, async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM sales ORDER BY created_at DESC').all();
-    res.json(rows.map(rowToSale));
+    const results = await runScraper();
+    res.json({ ok: true, results });
   } catch (err) {
-    console.error('[GET /api/sales]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/sales', (req, res) => {
-  try {
-    const id = req.body.id || gId();
-    let row = saleBodyToRow(req.body);
-    row = autoCalc(row);
-
-    const cols = Object.keys(row).filter(k => row[k] !== undefined);
-    const vals = cols.map(k => row[k]);
-
-    db.prepare(
-      `INSERT INTO sales (id, ${cols.join(',')}, created_at, updated_at)
-       VALUES (?, ${cols.map(() => '?').join(',')}, datetime('now'), datetime('now'))`
-    ).run(id, ...vals);
-
-    const created = db.prepare('SELECT * FROM sales WHERE id = ?').get(id);
-    res.status(201).json(rowToSale(created));
-  } catch (err) {
-    console.error('[POST /api/sales]', err.message);
-    res.status(400).json({ error: err.message });
-  }
+app.get('/api/scraper/logs', requireAuth, (req, res) => {
+  res.json(db.prepare('SELECT * FROM scrape_log ORDER BY ran_at DESC LIMIT 20').all());
 });
 
-app.put('/api/sales/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    let row = saleBodyToRow(req.body);
-    row = autoCalc(row);
+// ── Filter Options ────────────────────────────────────────────────────────────
 
-    const cols = Object.keys(row).filter(k => row[k] !== undefined);
-    const vals = cols.map(k => row[k]);
-
-    db.prepare(
-      `UPDATE sales SET ${cols.map(c => `${c} = ?`).join(', ')}, updated_at = datetime('now') WHERE id = ?`
-    ).run(...vals, id);
-
-    const updated = db.prepare('SELECT * FROM sales WHERE id = ?').get(id);
-    if (!updated) return res.status(404).json({ error: 'Not found' });
-    res.json(rowToSale(updated));
-  } catch (err) {
-    console.error('[PUT /api/sales/:id]', err.message);
-    res.status(400).json({ error: err.message });
-  }
+app.get('/api/options', requireAuth, (req, res) => {
+  const table = req.query.table === 'tracking' ? 'tracking' : 'sales';
+  const suburbs = db.prepare(`SELECT DISTINCT suburb FROM ${table} WHERE suburb IS NOT NULL ORDER BY suburb`).all().map(r => r.suburb);
+  const years   = db.prepare(`SELECT DISTINCT year FROM ${table} WHERE year IS NOT NULL ORDER BY year DESC`).all().map(r => r.year);
+  const regions = db.prepare(`SELECT DISTINCT region FROM ${table} WHERE region IS NOT NULL ORDER BY region`).all().map(r => r.region);
+  res.json({ suburbs, years, regions });
 });
 
-app.delete('/api/sales/:id', (req, res) => {
-  try {
-    db.prepare('DELETE FROM sales WHERE id = ?').run(req.params.id);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('[DELETE /api/sales/:id]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CAMPAIGNS ROUTES
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.get('/api/campaigns', (req, res) => {
-  try {
-    const rows = db.prepare('SELECT * FROM campaigns ORDER BY close_date ASC').all();
-    res.json(rows);
-  } catch (err) {
-    console.error('[GET /api/campaigns]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/campaigns', (req, res) => {
-  try {
-    const id = req.body.id || gId();
-    const b = req.body;
-    db.prepare(`
-      INSERT INTO campaigns
-        (id, address, suburb, region, source, classification, process, date_listed,
-         close_date, price_guide, net_income, agent1, agent2, vendor, zoning,
-         land_area, notes, result_notes, status, sale_price, purchaser, sold_date,
-         settlement_date, source_url, scrape_source, last_checked, created_at, updated_at)
-      VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-         datetime('now'), datetime('now'))
-    `).run(
-      id, b.address, b.suburb ?? null, b.region ?? null,
-      b.source ?? 'Metro', b.classification ?? null, b.process ?? null,
-      b.dateListed ?? b.date_listed ?? null, b.closeDate ?? b.close_date ?? null,
-      numOrNull(b.priceGuide ?? b.price_guide),
-      numOrNull(b.netIncome ?? b.net_income),
-      b.agent1 ?? null, b.agent2 ?? null, b.vendor ?? null,
-      b.zoning ?? null, numOrNull(b.landArea ?? b.land_area),
-      b.notes ?? null, b.resultNotes ?? b.result_notes ?? null,
-      b.status ?? 'active', numOrNull(b.salePrice ?? b.sale_price),
-      b.purchaser ?? null, b.soldDate ?? b.sold_date ?? null,
-      b.settlementDate ?? b.settlement_date ?? null,
-      b.sourceUrl ?? b.source_url ?? null,
-      b.scrapeSource ?? b.scrape_source ?? null,
-      null
-    );
-    const created = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
-    res.status(201).json(created);
-  } catch (err) {
-    console.error('[POST /api/campaigns]', err.message);
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.put('/api/campaigns/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const b = req.body;
-    const existing = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
-    if (!existing) return res.status(404).json({ error: 'Not found' });
-
-    db.prepare(`
-      UPDATE campaigns SET
-        address = ?, suburb = ?, region = ?, source = ?, classification = ?,
-        process = ?, date_listed = ?, close_date = ?, price_guide = ?,
-        net_income = ?, agent1 = ?, agent2 = ?, vendor = ?, zoning = ?,
-        land_area = ?, notes = ?, result_notes = ?, status = ?,
-        sale_price = ?, purchaser = ?, sold_date = ?, settlement_date = ?,
-        source_url = ?, last_checked = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
-      b.address ?? existing.address,
-      b.suburb ?? existing.suburb,
-      b.region ?? existing.region,
-      b.source ?? existing.source,
-      b.classification ?? existing.classification,
-      b.process ?? existing.process,
-      b.dateListed ?? b.date_listed ?? existing.date_listed,
-      b.closeDate ?? b.close_date ?? existing.close_date,
-      numOrNull(b.priceGuide ?? b.price_guide) ?? existing.price_guide,
-      numOrNull(b.netIncome ?? b.net_income) ?? existing.net_income,
-      b.agent1 ?? existing.agent1,
-      b.agent2 ?? existing.agent2,
-      b.vendor ?? existing.vendor,
-      b.zoning ?? existing.zoning,
-      numOrNull(b.landArea ?? b.land_area) ?? existing.land_area,
-      b.notes ?? existing.notes,
-      b.resultNotes ?? b.result_notes ?? existing.result_notes,
-      b.status ?? existing.status,
-      numOrNull(b.salePrice ?? b.sale_price) ?? existing.sale_price,
-      b.purchaser ?? existing.purchaser,
-      b.soldDate ?? b.sold_date ?? existing.sold_date,
-      b.settlementDate ?? b.settlement_date ?? existing.settlement_date,
-      b.sourceUrl ?? b.source_url ?? existing.source_url,
-      existing.last_checked,
-      id
-    );
-
-    res.json(db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id));
-  } catch (err) {
-    console.error('[PUT /api/campaigns/:id]', err.message);
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/campaigns/:id', (req, res) => {
-  try {
-    db.prepare('DELETE FROM campaigns WHERE id = ?').run(req.params.id);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('[DELETE /api/campaigns/:id]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DISCOVERIES ROUTES
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.get('/api/discoveries', (req, res) => {
-  try {
-    const status = req.query.status || 'pending';
-    const rows = db.prepare(
-      `SELECT * FROM discoveries WHERE status = ? ORDER BY is_premium DESC, created_at DESC`
-    ).all(status);
-    res.json(rows);
-  } catch (err) {
-    console.error('[GET /api/discoveries]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/discoveries/:id/accept', (req, res) => {
-  try {
-    const disc = db.prepare('SELECT * FROM discoveries WHERE id = ?').get(req.params.id);
-    if (!disc) return res.status(404).json({ error: 'Discovery not found' });
-
-    // Insert into campaigns
-    const campaignId = gId();
-    db.prepare(`
-      INSERT INTO campaigns
-        (id, address, suburb, region, source, classification, process, close_date,
-         price_guide, net_income, agent1, zoning, status, source_url, scrape_source,
-         last_checked, created_at, updated_at)
-      VALUES
-        (?, ?, ?, ?, 'Metro', ?, ?, ?, ?, ?, ?, null, 'active', ?, ?, datetime('now'), datetime('now'), datetime('now'))
-    `).run(
-      campaignId,
-      disc.address, disc.suburb, disc.region,
-      disc.classification, disc.process, disc.close_date,
-      disc.price_guide, disc.net_income, disc.agent,
-      disc.source_url, disc.scrape_source,
-      new Date().toISOString()
-    );
-
-    // Update discovery status
-    db.prepare(`UPDATE discoveries SET status = 'accepted' WHERE id = ?`).run(req.params.id);
-
-    // Create alert
-    const alertId = gId();
-    db.prepare(`
-      INSERT INTO alerts (id, type, title, body, link_id, link_type, read, created_at)
-      VALUES (?, 'tracked', ?, ?, ?, 'campaign', 0, datetime('now'))
-    `).run(
-      alertId,
-      `Now tracking: ${disc.address}`,
-      `Discovery accepted and added to active campaigns. Source: ${disc.scrape_source || 'unknown'}.`,
-      campaignId
-    );
-
-    const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
-    res.status(201).json(campaign);
-  } catch (err) {
-    console.error('[POST /api/discoveries/:id/accept]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/discoveries/:id/dismiss', (req, res) => {
-  try {
-    const info = db.prepare(`UPDATE discoveries SET status = 'dismissed' WHERE id = ?`).run(req.params.id);
-    if (info.changes === 0) return res.status(404).json({ error: 'Not found' });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('[POST /api/discoveries/:id/dismiss]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ALERTS ROUTES
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.get('/api/alerts', (req, res) => {
-  try {
-    const rows = db.prepare('SELECT * FROM alerts ORDER BY created_at DESC LIMIT 50').all();
-    res.json(rows);
-  } catch (err) {
-    console.error('[GET /api/alerts]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/alerts/:id/read', (req, res) => {
-  try {
-    db.prepare(`UPDATE alerts SET read = 1 WHERE id = ?`).run(req.params.id);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('[POST /api/alerts/:id/read]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/alerts/read-all', (req, res) => {
-  try {
-    db.prepare(`UPDATE alerts SET read = 1 WHERE read = 0`).run();
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('[POST /api/alerts/read-all]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SCRAPER ROUTES
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.post('/api/scrape', async (req, res) => {
-  try {
-    const result = await runScraper(db);
-    res.json(result);
-  } catch (err) {
-    console.error('[POST /api/scrape]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/scrape/log', (req, res) => {
-  try {
-    const rows = db.prepare('SELECT * FROM scrape_log ORDER BY id DESC LIMIT 10').all();
-    res.json(rows);
-  } catch (err) {
-    console.error('[GET /api/scrape/log]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// STATS ROUTE
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.get('/api/stats', (req, res) => {
-  try {
-    const totalSales = db.prepare('SELECT COUNT(*) AS c FROM sales').get().c;
-    const activeCampaigns = db.prepare(`SELECT COUNT(*) AS c FROM campaigns WHERE status = 'active'`).get().c;
-    const pendingDiscoveries = db.prepare(`SELECT COUNT(*) AS c FROM discoveries WHERE status = 'pending'`).get().c;
-    const premiumDiscoveries = db.prepare(`SELECT COUNT(*) AS c FROM discoveries WHERE status = 'pending' AND is_premium = 1`).get().c;
-    const unreadAlerts = db.prepare(`SELECT COUNT(*) AS c FROM alerts WHERE read = 0`).get().c;
-
-    const recentSales = db.prepare(`
-      SELECT id, address, suburb, price, classification, sale_date
-      FROM sales ORDER BY created_at DESC LIMIT 5
-    `).all();
-
-    const topAgents = db.prepare(`
-      SELECT agent1 AS agent, COUNT(*) AS deals
-      FROM sales
-      WHERE agent1 IS NOT NULL AND agent1 != ''
-      GROUP BY agent1
-      ORDER BY deals DESC
-      LIMIT 5
-    `).all();
-
-    res.json({
-      totalSales,
-      activeCampaigns,
-      pendingDiscoveries,
-      premiumDiscoveries,
-      unreadAlerts,
-      recentSales,
-      topAgents,
-    });
-  } catch (err) {
-    console.error('[GET /api/stats]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// EXPORT ROUTE
-// ═══════════════════════════════════════════════════════════════════════════
-
-app.get('/api/export', (req, res) => {
-  try {
-    const { source, classification, status } = req.query;
-
-    let query = 'SELECT * FROM sales WHERE 1=1';
-    const params = [];
-    if (source) { query += ' AND source = ?'; params.push(source); }
-    if (classification) { query += ' AND classification = ?'; params.push(classification); }
-    if (status) { query += ' AND status = ?'; params.push(status); }
-    query += ' ORDER BY created_at DESC';
-
-    const rows = db.prepare(query).all(...params);
-
-    // Build header row
-    const headers = [
-      'Address', 'Suburb', 'Region', 'Classification', 'Status',
-      'Sale Price', 'Price Guide', 'Net Rent', 'Yield %', 'WALE',
-      'Land Area m²', 'Land $/m²', 'Floor Area m²', 'Zoning',
-      'Agent 1', 'Agent 2', 'Vendor', 'Purchaser',
-      'Sale Date', 'Settlement Date', 'Process',
-      'Operator', 'Licensed Places', '$/Place', 'Rent/Place', 'Comments',
-    ];
-
-    // Cell format styles
-    const FMT_CURRENCY  = '"$"#,##0';
-    const FMT_YIELD     = '0.00%';
-    const FMT_DATE      = 'dd-mmm-yyyy';
-    const FMT_AREA      = '#,##0';
-    const FMT_LAND_RATE = '"$"#,##0';
-
-    function dateSerial(dateStr) {
-      if (!dateStr) return null;
-      try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        // Excel date serial: days since 1900-01-01 (with Lotus 1-2-3 leap year bug +1)
-        return Math.floor((d.getTime() / 86400000) + 25569);
-      } catch (_) {
-        return dateStr;
-      }
-    }
-
-    // Build data rows as AOA (array of arrays) for fine-grained cell control
-    const aoa = [headers];
-    for (const row of rows) {
-      aoa.push([
-        row.address,
-        row.suburb,
-        row.region,
-        row.classification,
-        row.status,
-        row.price,
-        row.price_guide,
-        row.net_rent,
-        row.yld,
-        row.wale,
-        row.land_area,
-        row.land_rate,
-        row.floor_area,
-        row.zoning,
-        row.agent1,
-        row.agent2,
-        row.vendor,
-        row.purchaser,
-        dateSerial(row.sale_date),
-        dateSerial(row.settlement_date),
-        row.process,
-        row.operator,
-        row.places,
-        row.price_per_place,
-        row.rent_per_place,
-        row.comments,
-      ]);
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    // Column index → format mapping (0-based, header row 0, data starts row 1)
-    const colFmts = {
-      5:  FMT_CURRENCY,   // Sale Price
-      6:  FMT_CURRENCY,   // Price Guide
-      7:  FMT_CURRENCY,   // Net Rent
-      8:  FMT_YIELD,      // Yield %
-      10: FMT_AREA,       // Land Area m²
-      11: FMT_LAND_RATE,  // Land $/m²
-      12: FMT_AREA,       // Floor Area m²
-      18: FMT_DATE,       // Sale Date
-      19: FMT_DATE,       // Settlement Date
-      23: FMT_CURRENCY,   // $/Place
-      24: FMT_CURRENCY,   // Rent/Place
-    };
-
-    // Apply formats to every data cell in each formatted column
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    for (let R = 1; R <= range.e.r; R++) {
-      for (const [C, fmt] of Object.entries(colFmts)) {
-        const addr = XLSX.utils.encode_cell({ r: R, c: Number(C) });
-        if (ws[addr]) {
-          if (!ws[addr].s) ws[addr].s = {};
-          ws[addr].s.numFmt = fmt;
-          // For date serials, set type to 'n'
-          if (fmt === FMT_DATE && typeof ws[addr].v === 'number') {
-            ws[addr].t = 'n';
-          }
-        }
-      }
-    }
-
-    // Set sensible column widths
-    ws['!cols'] = [
-      { wch: 35 }, { wch: 18 }, { wch: 18 }, { wch: 20 }, { wch: 10 },
-      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 8 },
-      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 20 },
-      { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 20 },
-      { wch: 14 }, { wch: 14 }, { wch: 14 },
-      { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 40 },
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'NSW Sales');
-
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', cellStyles: true });
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="CW_NSW_Sales.xlsx"');
-    res.send(buf);
-  } catch (err) {
-    console.error('[GET /api/export]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CATCH-ALL (SPA)
-// ═══════════════════════════════════════════════════════════════════════════
-
+// SPA fallback
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SCHEDULED SCRAPING
-// ═══════════════════════════════════════════════════════════════════════════
+// ── Cron ──────────────────────────────────────────────────────────────────────
 
-cron.schedule('0 */2 * * *', () => {
-  console.log('[cron] Running scheduled scrape...');
-  runScraper(db).catch(e => console.error('[cron] Scrape error:', e.message));
+cron.schedule('0 */4 * * *', () => {
+  console.log('[cron] Running scheduled scrape');
+  runScraper().catch(console.error);
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// START
-// ═══════════════════════════════════════════════════════════════════════════
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`CW NSW Sales running on port ${PORT}`);
-  // Initial scrape after 10 seconds
-  setTimeout(() => {
-    console.log('[startup] Running initial scrape...');
-    runScraper(db).catch(e => console.error('[startup] Scrape error:', e.message));
-  }, 10000);
+app.listen(PORT, () => {
+  console.log(`NSW Investment Sales DB running on port ${PORT}`);
+  console.log(`Default password: ${APP_PASSWORD === 'CW@Investment2025' ? '(default - set APP_PASSWORD env var)' : '(custom)'}`);
 });
