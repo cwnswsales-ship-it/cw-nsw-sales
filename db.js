@@ -1,1 +1,214 @@
-J3VzZSBzdHJpY3QnOwoKY29uc3QgRGF0YWJhc2UgPSByZXF1aXJlKCdiZXR0ZXItc3FsaXRlMycpOwpjb25zdCBwYXRoID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBmcyA9IHJlcXVpcmUoJ2ZzJyk7CmNvbnN0IHsgdjQ6IHV1aWR2NCB9ID0gcmVxdWlyZSgndXVpZCcpOwoKY29uc3QgREFUQV9ESVIgPSBwcm9jZXNzLmVudi5EQVRBX0RJUiB8fCBwYXRoLmpvaW4oX19kaXJuYW1lLCAnZGF0YScpOwppZiAoIWZzLmV4aXN0c1N5bmMoREFUQV9ESVIpKSBmcy5ta2RpclN5bmMoREFUQV9ESVIsIHsgcmVjdXJzaXZlOiB0cnVlIH0pOwoKY29uc3QgZGIgPSBuZXcgRGF0YWJhc2UocGF0aC5qb2luKERBVEFfRElSLCAnc2FsZXMuZGInKSk7CmRiLnByYWdtYSgnam91cm5hbF9tb2RlID0gV0FMJyk7CmRiLnByYWdtYSgnZm9yZWlnbl9rZXlzID0gT04nKTsKCmRiLmV4ZWMoYAogIENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHNhbGVzICgKICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksCiAgICBhZGRyZXNzIFRFWFQgTk9UIE5VTEwsCiAgICBzdWJ1cmIgVEVYVCwKICAgIHJlZ2lvbiBURVhULAogICAgYXNzZXRfY2xhc3MgVEVYVCwKICAgIHByb2Nlc3MgVEVYVCwKICAgIHN0YXR1cyBURVhUIERFRkFVTFQgJ1NvbGQnLAogICAgcHJpY2UgUkVBTCwKICAgIHByaWNlX2d1aWRlIFJFQUwsCiAgICBuZXRfcmVudCBSRUFMLAogICAgeWllbGRfcGVyY2VudCBSRUFMLAogICAgd2FsZSBSRUFMLAogICAgbGFuZF9hcmVhIFJFQUwsCiAgICBmbG9vcl9hcmVhIFJFQUwsCiAgICB6b25pbmcgVEVYVCwKICAgIGZzciBURVhULAogICAgaGVpZ2h0X2xpbWl0IFRFWFQsCiAgICB2ZW5kb3IgVEVYVCwKICAgIHB1cmNoYXNlciBURVhULAogICAgYWdlbnQxIFRFWFQsCiAgICBhZ2VudDIgVEVYVCwKICAgIGZpcm0xIFRFWFQsCiAgICBmaXJtMiBURVhULAogICAgZXhjaGFuZ2VfZGF0ZSBURVhULAogICAgc2V0dGxlbWVudF9kYXRlIFRFWFQsCiAgICBjYW1wYWlnbl9jbG9zZV9kYXRlIFRFWFQsCiAgICB5ZWFyIElOVEVHRVIsCiAgICBub3RlcyBURVhULAogICAgc291cmNlX3VybCBURVhULAogICAgY3JlYXRlZF9hdCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSksCiAgICB1cGRhdGVkX2F0IFRFWFQgREVGQVVMVCAoZGF0ZXRpbWUoJ25vdycpKQogICk7CgogIENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHRyYWNraW5nICgKICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksCiAgICBhZGRyZXNzIFRFWFQgTk9UIE5VTEwsCiAgICBzdWJ1cmIgVEVYVCwKICAgIHJlZ2lvbiBURVhULAogICAgYXNzZXRfY2xhc3MgVEVYVCwKICAgIHByb2Nlc3MgVEVYVCwKICAgIHN0YXR1cyBURVhUIERFRkFVTFQgJ0FjdGl2ZSBDYW1wYWlnbicsCiAgICBwcmljZV9ndWlkZSBSRUFMLAogICAgbmV0X3JlbnQgUkVBTCwKICAgIGVzdGltYXRlZF95aWVsZCBSRUFMLAogICAgdmVuZG9yIFRFWFQsCiAgICBhZ2VudDEgVEVYVCwKICAgIGFnZW50MiBURVhULAogICAgZmlybTEgVEVYVCwKICAgIGZpcm0yIFRFWFQsCiAgICBjYW1wYWlnbl9jbG9zZV9kYXRlIFRFWFQsCiAgICBleHBlY3RlZF9zZXR0bGVtZW50X2RhdGUgVEVYVCwKICAgIHllYXIgSU5URUdFUiwKICAgIG5vdGVzIFRFWFQsCiAgICBzb3VyY2VfdXJsIFRFWFQsCiAgICBkaXNjb3ZlcnlfaWQgVEVYVCwKICAgIGNyZWF0ZWRfYXQgVEVYVCBERUZBVUxUIChkYXRldGltZSgnbm93JykpLAogICAgdXBkYXRlZF9hdCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSkKICApOwoKICBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBkaXNjb3ZlcmllcyAoCiAgICBpZCBURVhUIFBSSU1BUlkgS0VZLAogICAgYWRkcmVzcyBURVhULAogICAgc3VidXJiIFRFWFQsCiAgICByZWdpb24gVEVYVCwKICAgIGFzc2V0X2NsYXNzIFRFWFQsCiAgICBwcmljZV9ndWlkZSBURVhULAogICAgZGVzY3JpcHRpb24gVEVYVCwKICAgIGFnZW50IFRFWFQsCiAgICBmaXJtIFRFWFQsCiAgICBzb3VyY2UgVEVYVCwKICAgIHNvdXJjZV91cmwgVEVYVCwKICAgIHN0YXR1cyBURVhUIERFRkFVTFQgJ3BlbmRpbmcnLAogICAgc2NyYXBlZF9hdCBURVhUIERFRkFVTFQgKGRhdGV0aW1lKCdub3cnKSksCiAgICByZXZpZXdlZF9hdCBURVhULAogICAgbm90ZXMgVEVYVAogICk7CgogIENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHNjcmFwZV9sb2cgKAogICAgaWQgSU5URUdFUiBQUklNQVJZIEtFWSBBVVRPSU5DUkVNRU5ULAogICAgc291cmNlIFRFWFQsCiAgICBzdGF0dXMgVEVYVCwKICAgIGZvdW5kIElOVEVHRVIgREVGQVVMVCAwLAogICAgYWRkZWQgSU5URUdFUiBERUZBVUxUIDAsCiAgICBlcnJvciBURVhULAogICAgcmFuX2F0IFRFWFQgREVGQVVMVCAoZGF0ZXRpbWUoJ25vdycpKQogICk7CmApOwoKLy8g4pSA4pSAIFNlZWQgRGF0YSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmNvbnN0IHNlZWRDb3VudCA9IGRiLnByZXBhcmUoJ1NFTEVDVCBDT1VOVCgqKSBhcyBjIEZST00gc2FsZXMnKS5nZXQoKS5jOwppZiAoc2VlZENvdW50ID09PSAwKSB7CiAgY29uc3QgaW5zU2FsZSA9IGRiLnByZXBhcmUoYAogICAgSU5TRVJUIElOVE8gc2FsZXMgKGlkLCBhZGRyZXNzLCBzdWJ1cmIsIHJlZ2lvbiwgYXNzZXRfY2xhc3MsIHByb2Nlc3MsIHN0YXR1cywKICAgICAgcHJpY2UsIG5ldF9yZW50LCB5aWVsZF9wZXJjZW50LCBsYW5kX2FyZWEsIGZsb29yX2FyZWEsIHpvbmluZywgZnNyLAogICAgICBleGNoYW5nZV9kYXRlLCB5ZWFyLCBub3RlcykKICAgIFZBTFVFUyAoPywgPywgPywgPywgPywgPywgJ1NvbGQnLCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/KQogIGApOwoKICBjb25zdCBzZWVkU2FsZXMgPSBkYi50cmFuc2FjdGlvbigoKSA9PiB7CiAgICAvLyDilIDilIAgUHJldmlvdXMgcmVjb3JkcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKICAgIGluc1NhbGUucnVuKHV1aWR2NCgpLCAnMTYtMTggTWNLZW9uIFN0cmVldCcsICdNYXJvdWJyYScsICdFYXN0ZXJuIFN1YnVyYnMnLAogICAgICAnUmVzaWRlbnRpYWwnLCAnUHJpdmF0ZSBUcmVhdHknLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCAyMDI0LCAnQXBhcnRtZW50IGJsb2NrJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzIyIEFsaXNvbiBSb2FkJywgJ1JhbmR3aWNrJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdEZXZlbG9wbWVudCBTaXRlJywgJ0VPSScsIG51bGwsIG51bGwsIG51bGwsIDgzNSwgbnVsbCwgbnVsbCwgbnVsbCwgbnVsbCwgMjAyNCwgJ0RldmVsb3BtZW50IHNpdGUgODM1c3FtJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzEwMCBDcm93biBTdHJlZXQnLCAnRGFybGluZ2h1cnN0JywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdDb21tZXJjaWFsIE9mZmljZScsICdQcml2YXRlIFRyZWF0eScsIDMyMDAwMDAsIDEyODAwMCwgNC4wLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCBudWxsLCAyMDI0LCAnQ29tbWVyY2lhbCBvZmZpY2UnKTsKICAgIGluc1NhbGUucnVuKHV1aWR2NCgpLCAnNDIgTW9ycmlzIFN0cmVldCcsICdTdCBNYXJ5cycsICdXZXN0ZXJuIFN5ZG5leScsCiAgICAgICdDaGlsZGNhcmUnLCAnRU9JJywgMTAyODgwMDAsIDU0MDAwMCwgNS4yNSwgbnVsbCwgbnVsbCwgbnVsbCwgbnVsbCwgbnVsbCwgMjAyNCwgJ01vbnRlc3NvcmkgQ2hpbGRjYXJlLCAxMDQgbGljZW5zZWQgcGxhY2VzLCAkOTgsOTIzL3BsYWNlJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzEgQ2FtZXJvbiBBdmVudWUnLCAnV2VzdCBQZW5uYW50IEhpbGxzJywgJ0hpbGxzIERpc3RyaWN0JywKICAgICAgJ0NoaWxkY2FyZScsICdQcml2YXRlIFRyZWF0eScsIDM0MDAwMDAsIDE2NDUwMCwgNC44NCwgbnVsbCwgbnVsbCwgbnVsbCwgbnVsbCwgbnVsbCwgMjAyNCwgJzMwIGxpY2Vuc2VkIHBsYWNlcywgJDExMywzMzMvcGxhY2UnKTsKCiAgICAvLyDilIDilIAgRWFzdGVybiBTdWJ1cmJzIFJldGFpbCBTYWxlcyAoc291cmNlOiBKYWNrIE1vc2VsZXksIENXIFZhbHVhdGlvbnMpIOKUgAogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICcxMDcgUXVlZW4gU3RyZWV0JywgJ1dvb2xsYWhyYScsICdFYXN0ZXJuIFN1YnVyYnMnLAogICAgICAnUmV0YWlsJywgJ0VPSScsIDc1NTAwMDAsIG51bGwsIDMuODMsIDExOC41LCAyMDQsICdNVTEgTWl4ZWQgVXNlJywgJzE6MScsCiAgICAgICcyMDI1LTA4LTAxJywgMjAyNSwgJ1R3by1zdG9yZXkgZnJlZWhvbGQgcmV0YWlsLiBGdWxseSBsZWFzZWQg4oCUIEFxdWVsIGFuZCBXaWxsb21pbmEuIE5ldCBpbmNvbWUgJDI4OSw0NTQgcGEuIDEwOCBFT0kgZW5xdWlyaWVzLiBTb2xkIHRvIGxvY2FsIGludmVzdG9yLicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICczMiBDYW1wYmVsbCBQYXJhZGUnLCAnQm9uZGkgQmVhY2gnLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCA2MDAwMDAwLCBudWxsLCAzLjUwLCAyMzcsIDYwMCwgJ0UxIExvY2FsIENlbnRyZScsICczOjEnLAogICAgICAnMjAyNS0wNS0wMScsIDIwMjUsICdUd28tc3RvcmV5IGZyZWVob2xkIG1peGVkLXVzZS4gR3JvdW5kIGZsb29yIHJldGFpbCArIDMtYmVkIHJlc2lkZW50aWFsIGFwYXJ0bWVudC4gSGVyaXRhZ2UgaXRlbS4gUmVudCBhc3Nlc3NlZCAkMSw0MDAvbcKyIG5ldCBwYS4nKTsKICAgIGluc1NhbGUucnVuKHV1aWR2NCgpLCAnNDUtNDcgTW9uY3VyIFN0cmVldCcsICdXb29sbGFocmEnLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCA0MDAwMDAwLCBudWxsLCA0LjE0LCAyMjMsIDE5OSwgJ1IyIExvdyBEZW5zaXR5IFJlc2lkZW50aWFsJywgJ05vIHNldCBGU1InLAogICAgICAnMjAyNS0wMy0wMScsIDIwMjUsICdUd28tbGV2ZWwgcmV0YWlsLiBUZW5hbnRzOiBTeWRuZXlTbGljZSBhbmQgSW5pZ28gSm9uZXMgJiBDby4gQmVsb3cgbWFya2V0IHBhc3NpbmcgcmVudGFsICQxNTMsODMwIHBhLiBNYXJrZXQgcmVudCAkMSwzMDAvbcKyIGdyb3NzIChHRikuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzU4IFdpbGxpYW0gU3RyZWV0JywgJ1BhZGRpbmd0b24nLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCA0NjUwMDAwLCBudWxsLCAyLjI5LCAxNDksIDE0NSwgJ0UxIExvY2FsIENlbnRyZScsICcxOjEnLAogICAgICAnMjAyNC0xMC0wMScsIDIwMjQsICdUd28tbGV2ZWwgbWl4ZWQtdXNlLiBHcm91bmQgZmxvb3IgcmV0YWlsICsgZmlyc3QgZmxvb3IgcmVzaWRlbnRpYWwuIFZhY2FudCBwb3NzZXNzaW9uLiBNYXJrZXQgcmVudCAkMSw1MDAvbcKyIGdyb3NzIChHRikuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzcwNiBOZXcgU291dGggSGVhZCBSb2FkJywgJ1Jvc2UgQmF5JywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgNTUwMDAwMCwgbnVsbCwgMy4yMCwgMjAyLCAxOTQsICdFMSBMb2NhbCBDZW50cmUnLCAnMjoxJywKICAgICAgJzIwMjMtMTAtMDEnLCAyMDIzLCAnVHdvLWxldmVsIGZyZWVob2xkIHJldGFpbC9jb21tZXJjaWFsLiBUZW5hbnQgb24gaG9sZG92ZXIuIEdyb3NzIGluY29tZSAkOTUsNDgxIHBhIHBsdXMgR1NULicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICcxMzQgTWFjcGhlcnNvbiBTdHJlZXQnLCAnQnJvbnRlJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgMzMwMDAwMCwgbnVsbCwgMy41MiwgMTQxLCAxNjUsICdFMSBMb2NhbCBDZW50cmUnLCAnMToxJywKICAgICAgJzIwMjUtMDgtMDEnLCAyMDI1LCAnVHdvLXN0b3JleSBtaXhlZC11c2UuIEdyb3VuZCBmbG9vciByZXRhaWwgcGhhcm1hY3kgKDUrNXlyIGxlYXNlKSArIHJlc2lkZW50aWFsIGFib3ZlLiBJbmNvbWUgJDIsMDAwL23CsiBncm91bmQgcmV0YWlsLicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICc1ODEgQ3Jvd24gU3RyZWV0JywgJ1N1cnJ5IEhpbGxzJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgMTgzNTAwMCwgMTA2MzMyLCA1LjgwLCA3NiwgMTQwLCAnRTEgTG9jYWwgQ2VudHJlJywgJzEuNToxJywKICAgICAgJzIwMjUtMTAtMDEnLCAyMDI1LCAnVHdvLXN0b3JleSBtaXhlZC11c2UuIFNpbmdsZSB0ZW5hbnQuIE5ldyA1eXIgbGVhc2UgZnJvbSAxIEFwciAyMDI1LiBQYXNzaW5nIG5ldCBpbmNvbWUgJDEwNiwzMzIgcGEgZXhjbCBHU1QuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzE0NyBPeGZvcmQgU3RyZWV0JywgJ0JvbmRpIEp1bmN0aW9uJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgMzkwMDAwMCwgbnVsbCwgNC4xOSwgMTU4LCAyMDksICdFMiBDb21tZXJjaWFsIENlbnRyZScsICc1OjEnLAogICAgICAnMjAyMy0wNy0wMScsIDIwMjMsICdUd28tbGV2ZWwgcmV0YWlsLiAyIGdyb3VuZCBmbG9vciBzaG9wcyArIDFzdCBmbG9vciBjb21tZXJjaWFsLiBTb2xkIHRvIGFkam9pbmluZyBvd25lci4gU3lkbmV5IFdhdGVyIGVhc2VtZW50IGltcGFjdGVkIGNhbXBhaWduLiBNYXJrZXQgcmVudCAkMSw0MDAvbcKyIGdyb3NzLicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICczMyBTdCBQYXVscyBTdHJlZXQnLCAnUmFuZHdpY2snLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCAyMjQwMDAwLCBudWxsLCAzLjg5LCAxNDUsIDE1MCwgJ0UxIE5laWdoYm91cmhvb2QgQ2VudHJlJywgJzE6MScsCiAgICAgICcyMDI2LTAyLTAxJywgMjAyNiwgJ1R3by1zdG9yZXkgbWl4ZWQtdXNlLiBHcm91bmQgZmxvb3IgcmV0YWlsICh+ODBzcW0pICsgMi1iZWQgcmVzaWRlbnRpYWwgKDcwc3FtKS4gTmVhciBSaXR6IENpbmVtYSwgUmFuZHdpY2sgTGlnaHQgUmFpbCwgVU5TVy4gU29sZCBzdWJqZWN0IHRvIHZhY2FudCBwb3NzZXNzaW9uLicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICc0MzMgQ3Jvd24gU3RyZWV0JywgJ1N1cnJ5IEhpbGxzJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgMzAyNTAwMCwgbnVsbCwgNC4yNCwgMTUxLCAxNTEsICdFMSBMb2NhbCBDZW50cmUnLCAnMjoxJywKICAgICAgJzIwMjUtMTEtMDEnLCAyMDI1LCAnVHdvLXN0b3JleSB0ZXJyYWNlLiBHcm91bmQgZmxvb3IgY29tbWVyY2lhbCAoYmFyYmVyc2hvcC9jb2ZmZWUpICsgMi1iZWQgcmVzaWRlbnRpYWwuIDQuM20gZ2xhc3MgZnJvbnRhZ2UuIEluY29tZSBhc3Nlc3NlZCAkMSwwMDAvbcKyIGdyb3VuZCBmbG9vciByZXRhaWwuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzM1OCBCb3RhbnkgUm9hZCcsICdCZWFjb25zZmllbGQnLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCAyOTkwMDAwLCBudWxsLCA0LjEyLCAxOTUsIDMwNiwgJ01VMSBNaXhlZCBVc2UnLCAnMS41OjEnLAogICAgICAnMjAyNS0wOS0wMScsIDIwMjUsICdUaHJlZS1zdG9yZXkgbWl4ZWQtdXNlLiBHcm91bmQgZmxvb3IgcmV0YWlsIChUYXN0ZSBUZXh0dXJlLCA1KzV5ciB0byBBdWcgMjAyNikgKyBzdHVkaW8gYXBhcnRtZW50ICsgMi1iZWQgYXBhcnRtZW50LiBDb21iaW5lZCBwYXNzaW5nIGluY29tZSAkOTEsNjYwIHBhLicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICc1IENhbmJlcnJhIFN0cmVldCcsICdSYW5kd2ljaycsICdFYXN0ZXJuIFN1YnVyYnMnLAogICAgICAnUmV0YWlsJywgJ0VPSScsIDMyNzAwMDAsIG51bGwsIDMuMjUsIDE2NCwgMjA1LCAnRTEgTmVpZ2hib3VyaG9vZCBDZW50cmUnLCAnMToxJywKICAgICAgJzIwMjUtMDctMDEnLCAyMDI1LCAnTXVsdGktbGV2ZWwgbWl4ZWQtdXNlLiBHcm91bmQgZmxvb3IgY29tbWVyY2lhbCArIDIgeCAxLWJlZCByZXNpZGVudGlhbCBhcGFydG1lbnRzLiBEdWFsIHN0cmVldCBmcm9udGFnZXMuIFJlY2VudGx5IHJlbm92YXRlZCB0aHJvdWdob3V0LicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICcyMjkgQnJvbnRlIFJvYWQnLCAnV2F2ZXJsZXknLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCAzNjYwMDAwLCBudWxsLCA0LjU5LCAyOTAsIDI3OCwgJ0UxIExvY2FsIENlbnRyZScsICcxOjEnLAogICAgICAnMjAyNS0wNS0wMScsIDIwMjUsICdUd28tbGV2ZWwgcmV0YWlsIGJ1aWxkaW5nLiA0IHRlbmFuY2llcy4gRnVsbHkgbGVhc2VkIHJldHVybmluZyAkMjEwLDAwMCBwYSBncm9zcy4gTmV0IHJlbnRhbCBkZXJpdmVkIHdpdGggb3V0Z29pbmdzIGFsbG93YW5jZS4nKTsKICAgIGluc1NhbGUucnVuKHV1aWR2NCgpLCAnMTI2ICYgMTI2QSBRdWVlbiBTdHJlZXQnLCAnV29vbGxhaHJhJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnUHJpdmF0ZSBUcmVhdHknLCA3NjM1MDAwLCBudWxsLCA0LjMwLCAzODgsIDI5NywgJ01VMSBNaXhlZCBVc2UnLCAnMToxJywKICAgICAgJzIwMjUtMTItMDEnLCAyMDI1LCAnVHdvIGFkam9pbmluZyBhbGxvdG1lbnRzIHNvbGQgaW4tb25lLWxpbmUuIEdyb3VuZCBmbG9vciByZXRhaWwgKyBmaXJzdCBmbG9vciBvZmZpY2VzL2NvbW1lcmNpYWwuIDEyNiBzb2xkIHdpdGggdmFjYW50IHBvc3Nlc3Npb247IDEyNkEgc29sZCB3aXRoIGxvbmctdGVybSB0ZW5hbnQgS2lkc3R1ZmYuIE1hcmtldCByZW50ICQxLDMwMC9twrIgZ3Jvc3MuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzEzMC0xMzIgQ29vZ2VlIEJheSBSb2FkJywgJ0Nvb2dlZScsICdFYXN0ZXJuIFN1YnVyYnMnLAogICAgICAnUmV0YWlsJywgJ09mZi1NYXJrZXQnLCA3MTAwMDAwLCBudWxsLCA0LjM1LCA2MDEsIDI2OCwgJ0UxIExvY2FsIENlbnRyZScsICcxLjU6MScsCiAgICAgICcyMDI0LTA0LTAxJywgMjAyNCwgJ1N0cmF0YSB0aXRsZSByZXRhaWwgYnVpbGRpbmcuIDIgZ3JvdW5kIGZsb29yIHJldGFpbCBzaG9wcyArIDIgZmlyc3QgZmxvb3IgcmVzaWRlbnRpYWwgZmxhdHMgKyA0IGxvY2stdXAgZ2FyYWdlcy4gT2ZmLW1hcmtldCBzYWxlIG9mIDQgc3RyYXRhIGxvdHMgKDEtNCBvZiBTUDY3NDQxKS4gREEgbG9kZ2VkIGZvciByZWRldmVsb3BtZW50ICgyMSB1bml0cykuJyk7CiAgICBpbnNTYWxlLnJ1bih1dWlkdjQoKSwgJzMxNyBDbG92ZWxseSBSb2FkJywgJ0Nsb3ZlbGx5JywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnRU9JJywgMzgwMDAwMCwgbnVsbCwgMy41NCwgMTkxLCAxODMsICdFMSBMb2NhbCBDZW50cmUnLCAnMToxJywKICAgICAgJzIwMjQtMDMtMDEnLCAyMDI0LCAnVGhyZWUtc3RvcmV5IG1peGVkLXVzZS4gR3JvdW5kIGZsb29yIHJldGFpbCArIDMgeCAyLWJlZCByZXNpZGVudGlhbCBhcGFydG1lbnRzLiBDb21tdW5hbCByb29mdG9wIHRlcnJhY2UuIFBhcnRpYWxseSBsZWFzZWQuIE5ldCBwYXNzaW5nIGluY29tZSAkMTM0LDQwMCBwYS4nKTsKICAgIGluc1NhbGUucnVuKHV1aWR2NCgpLCAnMzk4IE94Zm9yZCBTdHJlZXQnLCAnUGFkZGluZ3RvbicsICdFYXN0ZXJuIFN1YnVyYnMnLAogICAgICAnUmV0YWlsJywgJ0VPSScsIDMxMDUwMDAsIDE4MTUwMCwgNC45NywgMTMwLCAxMjcsICdNVTEgTWl4ZWQgVXNlJywgJzE6MScsCiAgICAgICcyMDI1LTA4LTAxJywgMjAyNSwgJ1NpbmdsZSBzdG9yZXkgcmV0YWlsLiBMZWFzZWQgdG8gR29ybWFuLiBQYXNzaW5nIHJlbnRhbCAkMTgxLDUwMCBwYSBncm9zcy4gTGVhc2UgZXhwaXJpbmcgaW4gMTIgbW9udGhzLiBTYWxlIHNldHRsZWQgMTAgT2N0b2JlciAyMDI1LicpOwogICAgaW5zU2FsZS5ydW4odXVpZHY0KCksICcyOTQgT3hmb3JkIFN0cmVldCcsICdQYWRkaW5ndG9uJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnT2ZmLU1hcmtldCcsIDI3MDAwMDAsIG51bGwsIDMuODcsIDEzMCwgMTIwLCAnTVUxIE1peGVkIFVzZScsICcxOjEnLAogICAgICAnMjAyNS0wNi0wMScsIDIwMjUsICdUd28tbGV2ZWwgcmV0YWlsIGJ1aWxkaW5nLiBHcm91bmQgZmxvb3IgcmV0YWlsICsgZmlyc3QgZmxvb3Igb2ZmaWNlL2FtZW5pdGllcy4gT2ZmLW1hcmtldCB0cmFuc2FjdGlvbi4gVGVuYW5jeSBkZXRhaWxzIHVuZGlzY2xvc2VkLiBNYXJrZXQgcmVudCAkMSw1MDAvbcKyIGdyb3NzIChHRikuJyk7CiAgfSk7CiAgc2VlZFNhbGVzKCk7Cn0KCi8vIOKUgOKUgCBTZWVkIFRyYWNraW5nIChhd2FpdGluZyBzZXR0bGVtZW50KSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKY29uc3QgdHJhY2tTZWVkQ291bnQgPSBkYi5wcmVwYXJlKCdTRUxFQ1QgQ09VTlQoKikgYXMgYyBGUk9NIHRyYWNraW5nJykuZ2V0KCkuYzsKaWYgKHRyYWNrU2VlZENvdW50ID09PSAwKSB7CiAgY29uc3QgaW5zVHJhY2sgPSBkYi5wcmVwYXJlKGAKICAgIElOU0VSVCBJTlRPIHRyYWNraW5nIChpZCwgYWRkcmVzcywgc3VidXJiLCByZWdpb24sIGFzc2V0X2NsYXNzLCBwcm9jZXNzLCBzdGF0dXMsCiAgICAgIHByaWNlX2d1aWRlLCBuZXRfcmVudCwgZXN0aW1hdGVkX3lpZWxkLCBjYW1wYWlnbl9jbG9zZV9kYXRlLCBleHBlY3RlZF9zZXR0bGVtZW50X2RhdGUsCiAgICAgIHllYXIsIG5vdGVzKQogICAgVkFMVUVTICg/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/LCA/KQogIGApOwogIGNvbnN0IHNlZWRUcmFja2luZyA9IGRiLnRyYW5zYWN0aW9uKCgpID0+IHsKICAgIGluc1RyYWNrLnJ1bih1dWlkdjQoKSwgJzM1NCBOZXcgU291dGggSGVhZCBSb2FkJywgJ0RvdWJsZSBCYXknLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdPZmYtTWFya2V0JywgJ0V4Y2hhbmdlZCAtIEF3YWl0aW5nIFNldHRsZW1lbnQnLAogICAgICAxMDMwMDAwMCwgbnVsbCwgMy43NSwgJzIwMjYtMDItMDEnLCBudWxsLCAyMDI2LAogICAgICAnUmVndWxhciBzaGFwZWQgYWxsb3RtZW50LiBUd28tbGV2ZWwgZnJlZWhvbGQgY29tbWVyY2lhbC4gTmV0IGxldHRhYmxlIGFyZWEgMTM3bcKyLiBTaXRlIDIwNG3Csi4gWm9uZWQgRTEgTG9jYWwgQ2VudHJlIC8gRlNSIDI6MS4gUmVudCBhc3Nlc3NlZCAkMSwyMDAvbcKyIG5ldCBwYS4gRXhjaGFuZ2VkIHN1YmplY3QgdG8gc2V0dGxlbWVudC4gU29sZCBvZmYgbWFya2V0LicpOwogICAgaW5zVHJhY2sucnVuKHV1aWR2NCgpLCAnMjM4LTI0MCBDb29nZWUgQmF5IFJvYWQnLCAnQ29vZ2VlJywgJ0Vhc3Rlcm4gU3VidXJicycsCiAgICAgICdSZXRhaWwnLCAnT2ZmLU1hcmtldCcsICdFeGNoYW5nZWQgLSBBd2FpdGluZyBTZXR0bGVtZW50JywKICAgICAgMTE1MDAwMDAsIDM5NzAwMCwgMy40NSwgJzIwMjUtMDgtMDEnLCAnMjAyNi0wNy0wMScsIDIwMjUsCiAgICAgICdQYXJ0IHRocmVlLWxldmVsIHN0cmF0YSB0aXRsZSByZXRhaWwgYnVpbGRpbmcuIDIgZ3JvdW5kIGZsb29yIHJldGFpbCBzaG9wcyArIDIgZmlyc3QgZmxvb3IgcmVzaWRlbnRpYWwgZmxhdHMgKyBnYXJhZ2VzLiBPZmYtbWFya2V0IGluLW9uZS1saW5lIHNhbGUuIFBhc3NpbmcgaW5jb21lICQzOTcsMDAwIHBhIG5ldCBwbHVzIEdTVC4gMTEtbW9udGggZGVsYXllZCBzZXR0bGVtZW50IOKAlCBzZXR0bGVzIEp1bHkgMjAyNi4nKTsKICAgIGluc1RyYWNrLnJ1bih1dWlkdjQoKSwgJzI2MiBPeGZvcmQgU3RyZWV0JywgJ1BhZGRpbmd0b24nLCAnRWFzdGVybiBTdWJ1cmJzJywKICAgICAgJ1JldGFpbCcsICdFT0knLCAnRXhjaGFuZ2VkIC0gQXdhaXRpbmcgU2V0dGxlbWVudCcsCiAgICAgIDM0NDAwMDAsIG51bGwsIDQuNTAsICcyMDI1LTA5LTAxJywgbnVsbCwgMjAyNSwKICAgICAgJ1BhcnQgb25lIGFuZCB0d28tbGV2ZWwgcmV0YWlsIGJ1aWxkaW5nLiBPcGVuIHBsYW4gcmV0YWlsIHNob3AgKyAyLWJlZCByZXNpZGVuY2UgYW5kIHN0dWRpbyBhdCByZWFyLiBIZXJpdGFnZSBjb25zZXJ2YXRpb24gYXJlYS4gWm9uZWQgTVUxIE1peGVkIFVzZSAvIEZTUiAxOjEuIFN1Yi00JSBncm9zcyB5aWVsZC4gTWFya2V0IHJlbnQgJDEsMDAwL23CsiBncm9zcyByZXRhaWwuIFNhbGUgc3ViamVjdCB0byBzZXR0bGVtZW50LicpOwogIH0pOwogIHNlZWRUcmFja2luZygpOwp9Cgptb2R1bGUuZXhwb3J0cyA9IGRiOwo=
+'use strict';
+
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const db = new Database(path.join(DATA_DIR, 'sales.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sales (
+    id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    suburb TEXT,
+    region TEXT,
+    asset_class TEXT,
+    process TEXT,
+    status TEXT DEFAULT 'Sold',
+    price REAL,
+    price_guide REAL,
+    net_rent REAL,
+    yield_percent REAL,
+    wale REAL,
+    land_area REAL,
+    floor_area REAL,
+    zoning TEXT,
+    fsr TEXT,
+    height_limit TEXT,
+    vendor TEXT,
+    purchaser TEXT,
+    agent1 TEXT,
+    agent2 TEXT,
+    firm1 TEXT,
+    firm2 TEXT,
+    exchange_date TEXT,
+    settlement_date TEXT,
+    campaign_close_date TEXT,
+    year INTEGER,
+    notes TEXT,
+    source_url TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS tracking (
+    id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    suburb TEXT,
+    region TEXT,
+    asset_class TEXT,
+    process TEXT,
+    status TEXT DEFAULT 'Active Campaign',
+    price_guide REAL,
+    net_rent REAL,
+    estimated_yield REAL,
+    vendor TEXT,
+    agent1 TEXT,
+    agent2 TEXT,
+    firm1 TEXT,
+    firm2 TEXT,
+    campaign_close_date TEXT,
+    expected_settlement_date TEXT,
+    year INTEGER,
+    notes TEXT,
+    source_url TEXT,
+    discovery_id TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS discoveries (
+    id TEXT PRIMARY KEY,
+    address TEXT,
+    suburb TEXT,
+    region TEXT,
+    asset_class TEXT,
+    price_guide TEXT,
+    description TEXT,
+    agent TEXT,
+    firm TEXT,
+    source TEXT,
+    source_url TEXT,
+    status TEXT DEFAULT 'pending',
+    scraped_at TEXT DEFAULT (datetime('now')),
+    reviewed_at TEXT,
+    notes TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS scrape_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT,
+    status TEXT,
+    found INTEGER DEFAULT 0,
+    added INTEGER DEFAULT 0,
+    error TEXT,
+    ran_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// ── Seed Data ────────────────────────────────────────────────────────────────
+
+const seedCount = db.prepare('SELECT COUNT(*) as c FROM sales').get().c;
+if (seedCount === 0) {
+  const insSale = db.prepare(`
+    INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
+      price, net_rent, yield_percent, land_area, floor_area, zoning, fsr,
+      exchange_date, year, notes)
+    VALUES (?, ?, ?, ?, ?, ?, 'Sold', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const seedSales = db.transaction(() => {
+    // ── Previous records ────────────────────────────────────────────────────
+    insSale.run(uuidv4(), '16-18 McKeon Street', 'Maroubra', 'Eastern Suburbs',
+      'Residential', 'Private Treaty', null, null, null, null, null, null, null, null, 2024, 'Apartment block');
+    insSale.run(uuidv4(), '22 Alison Road', 'Randwick', 'Eastern Suburbs',
+      'Development Site', 'EOI', null, null, null, 835, null, null, null, null, 2024, 'Development site 835sqm');
+    insSale.run(uuidv4(), '100 Crown Street', 'Darlinghurst', 'Eastern Suburbs',
+      'Commercial Office', 'Private Treaty', 3200000, 128000, 4.0, null, null, null, null, null, 2024, 'Commercial office');
+    insSale.run(uuidv4(), '42 Morris Street', 'St Marys', 'Western Sydney',
+      'Childcare', 'EOI', 10288000, 540000, 5.25, null, null, null, null, null, 2024, 'Montessori Childcare, 104 licensed places, $98,923/place');
+    insSale.run(uuidv4(), '1 Cameron Avenue', 'West Pennant Hills', 'Hills District',
+      'Childcare', 'Private Treaty', 3400000, 164500, 4.84, null, null, null, null, null, 2024, '30 licensed places, $113,333/place');
+
+    // ── Eastern Suburbs Retail Sales (source: Jack Moseley, CW Valuations) ─
+    insSale.run(uuidv4(), '107 Queen Street', 'Woollahra', 'Eastern Suburbs',
+      'Retail', 'EOI', 7550000, null, 3.83, 118.5, 204, 'MU1 Mixed Use', '1:1',
+      '2025-08-01', 2025, 'Two-storey freehold retail. Fully leased — Aquel and Willomina. Net income $289,454 pa. 108 EOI enquiries. Sold to local investor.');
+    insSale.run(uuidv4(), '32 Campbell Parade', 'Bondi Beach', 'Eastern Suburbs',
+      'Retail', 'EOI', 6000000, null, 3.50, 237, 600, 'E1 Local Centre', '3:1',
+      '2025-05-01', 2025, 'Two-storey freehold mixed-use. Ground floor retail + 3-bed residential apartment. Heritage item. Rent assessed $1,400/m² net pa.');
+    insSale.run(uuidv4(), '45-47 Moncur Street', 'Woollahra', 'Eastern Suburbs',
+      'Retail', 'EOI', 4000000, null, 4.14, 223, 199, 'R2 Low Density Residential', 'No set FSR',
+      '2025-03-01', 2025, 'Two-level retail. Tenants: SydneySlice and Inigo Jones & Co. Below market passing rental $153,830 pa. Market rent $1,300/m² gross (GF).');
+    insSale.run(uuidv4(), '58 William Street', 'Paddington', 'Eastern Suburbs',
+      'Retail', 'EOI', 4650000, null, 2.29, 149, 145, 'E1 Local Centre', '1:1',
+      '2024-10-01', 2024, 'Two-level mixed-use. Ground floor retail + first floor residential. Vacant possession. Market rent $1,500/m² gross (GF).');
+    insSale.run(uuidv4(), '706 New South Head Road', 'Rose Bay', 'Eastern Suburbs',
+      'Retail', 'EOI', 5500000, null, 3.20, 202, 194, 'E1 Local Centre', '2:1',
+      '2023-10-01', 2023, 'Two-level freehold retail/commercial. Tenant on holdover. Gross income $95,481 pa plus GST.');
+    insSale.run(uuidv4(), '134 Macpherson Street', 'Bronte', 'Eastern Suburbs',
+      'Retail', 'EOI', 3300000, null, 3.52, 141, 165, 'E1 Local Centre', '1:1',
+      '2025-08-01', 2025, 'Two-storey mixed-use. Ground floor retail pharmacy (5+5yr lease) + residential above. Income $2,000/m² ground retail.');
+    insSale.run(uuidv4(), '581 Crown Street', 'Surry Hills', 'Eastern Suburbs',
+      'Retail', 'EOI', 1835000, 106332, 5.80, 76, 140, 'E1 Local Centre', '1.5:1',
+      '2025-10-01', 2025, 'Two-storey mixed-use. Single tenant. New 5yr lease from 1 Apr 2025. Passing net income $106,332 pa excl GST.');
+    insSale.run(uuidv4(), '147 Oxford Street', 'Bondi Junction', 'Eastern Suburbs',
+      'Retail', 'EOI', 3900000, null, 4.19, 158, 209, 'E2 Commercial Centre', '5:1',
+      '2023-07-01', 2023, 'Two-level retail. 2 ground floor shops + 1st floor commercial. Sold to adjoining owner. Sydney Water easement impacted campaign. Market rent $1,400/m² gross.');
+    insSale.run(uuidv4(), '33 St Pauls Street', 'Randwick', 'Eastern Suburbs',
+      'Retail', 'EOI', 2240000, null, 3.89, 145, 150, 'E1 Neighbourhood Centre', '1:1',
+      '2026-02-01', 2026, 'Two-storey mixed-use. Ground floor retail (~80sqm) + 2-bed residential (70sqm). Near Ritz Cinema, Randwick Light Rail, UNSW. Sold subject to vacant possession.');
+    insSale.run(uuidv4(), '433 Crown Street', 'Surry Hills', 'Eastern Suburbs',
+      'Retail', 'EOI', 3025000, null, 4.24, 151, 151, 'E1 Local Centre', '2:1',
+      '2025-11-01', 2025, 'Two-storey terrace. Ground floor commercial (barbershop/coffee) + 2-bed residential. 4.3m glass frontage. Income assessed $1,000/m² ground floor retail.');
+    insSale.run(uuidv4(), '358 Botany Road', 'Beaconsfield', 'Eastern Suburbs',
+      'Retail', 'EOI', 2990000, null, 4.12, 195, 306, 'MU1 Mixed Use', '1.5:1',
+      '2025-09-01', 2025, 'Three-storey mixed-use. Ground floor retail (Taste Texture, 5+5yr to Aug 2026) + studio apartment + 2-bed apartment. Combined passing income $91,660 pa.');
+    insSale.run(uuidv4(), '5 Canberra Street', 'Randwick', 'Eastern Suburbs',
+      'Retail', 'EOI', 3270000, null, 3.25, 164, 205, 'E1 Neighbourhood Centre', '1:1',
+      '2025-07-01', 2025, 'Multi-level mixed-use. Ground floor commercial + 2 x 1-bed residential apartments. Dual street frontages. Recently renovated throughout.');
+    insSale.run(uuidv4(), '229 Bronte Road', 'Waverley', 'Eastern Suburbs',
+      'Retail', 'EOI', 3660000, null, 4.59, 290, 278, 'E1 Local Centre', '1:1',
+      '2025-05-01', 2025, 'Two-level retail building. 4 tenancies. Fully leased returning $210,000 pa gross. Net rental derived with outgoings allowance.');
+    insSale.run(uuidv4(), '126 & 126A Queen Street', 'Woollahra', 'Eastern Suburbs',
+      'Retail', 'Private Treaty', 7635000, null, 4.30, 388, 297, 'MU1 Mixed Use', '1:1',
+      '2025-12-01', 2025, 'Two adjoining allotments sold in-one-line. Ground floor retail + first floor offices/commercial. 126 sold with vacant possession; 126A sold with long-term tenant Kidstuff. Market rent $1,300/m² gross.');
+    insSale.run(uuidv4(), '130-132 Coogee Bay Road', 'Coogee', 'Eastern Suburbs',
+      'Retail', 'Off-Market', 7100000, null, 4.35, 601, 268, 'E1 Local Centre', '1.5:1',
+      '2024-04-01', 2024, 'Strata title retail building. 2 ground floor retail shops + 2 first floor residential flats + 4 lock-up garages. Off-market sale of 4 strata lots (1-4 of SP67441). DA lodged for redevelopment (21 units).');
+    insSale.run(uuidv4(), '317 Clovelly Road', 'Clovelly', 'Eastern Suburbs',
+      'Retail', 'EOI', 3800000, null, 3.54, 191, 183, 'E1 Local Centre', '1:1',
+      '2024-03-01', 2024, 'Three-storey mixed-use. Ground floor retail + 3 x 2-bed residential apartments. Communal rooftop terrace. Partially leased. Net passing income $134,400 pa.');
+    insSale.run(uuidv4(), '398 Oxford Street', 'Paddington', 'Eastern Suburbs',
+      'Retail', 'EOI', 3105000, 181500, 4.97, 130, 127, 'MU1 Mixed Use', '1:1',
+      '2025-08-01', 2025, 'Single storey retail. Leased to Gorman. Passing rental $181,500 pa gross. Lease expiring in 12 months. Sale settled 10 October 2025.');
+    insSale.run(uuidv4(), '294 Oxford Street', 'Paddington', 'Eastern Suburbs',
+      'Retail', 'Off-Market', 2700000, null, 3.87, 130, 120, 'MU1 Mixed Use', '1:1',
+      '2025-06-01', 2025, 'Two-level retail building. Ground floor retail + first floor office/amenities. Off-market transaction. Tenancy details undisclosed. Market rent $1,500/m² gross (GF).');
+  });
+  seedSales();
+}
+
+// ── Seed Tracking (awaiting settlement) ─────────────────────────────────────
+const trackSeedCount = db.prepare('SELECT COUNT(*) as c FROM tracking').get().c;
+if (trackSeedCount === 0) {
+  const insTrack = db.prepare(`
+    INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
+      price_guide, net_rent, estimated_yield, campaign_close_date, expected_settlement_date,
+      year, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const seedTracking = db.transaction(() => {
+    insTrack.run(uuidv4(), '354 New South Head Road', 'Double Bay', 'Eastern Suburbs',
+      'Retail', 'Off-Market', 'Exchanged - Awaiting Settlement',
+      10300000, null, 3.75, '2026-02-01', null, 2026,
+      'Regular shaped allotment. Two-level freehold commercial. Net lettable area 137m². Site 204m². Zoned E1 Local Centre / FSR 2:1. Rent assessed $1,200/m² net pa. Exchanged subject to settlement. Sold off market.');
+    insTrack.run(uuidv4(), '238-240 Coogee Bay Road', 'Coogee', 'Eastern Suburbs',
+      'Retail', 'Off-Market', 'Exchanged - Awaiting Settlement',
+      11500000, 397000, 3.45, '2025-08-01', '2026-07-01', 2025,
+      'Part three-level strata title retail building. 2 ground floor retail shops + 2 first floor residential flats + garages. Off-market in-one-line sale. Passing income $397,000 pa net plus GST. 11-month delayed settlement — settles July 2026.');
+    insTrack.run(uuidv4(), '262 Oxford Street', 'Paddington', 'Eastern Suburbs',
+      'Retail', 'EOI', 'Exchanged - Awaiting Settlement',
+      3440000, null, 4.50, '2025-09-01', null, 2025,
+      'Part one and two-level retail building. Open plan retail shop + 2-bed residence and studio at rear. Heritage conservation area. Zoned MU1 Mixed Use / FSR 1:1. Sub-4% gross yield. Market rent $1,000/m² gross retail. Sale subject to settlement.');
+  });
+  seedTracking();
+}
+
+module.exports = db;
