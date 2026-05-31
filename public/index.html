@@ -250,11 +250,6 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
         Tracking
       </div>
-      <div class="nav-item" data-section="validate" onclick="showSection('validate')">
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-        Validate
-        <span class="badge hidden" id="validate-badge">0</span>
-      </div>
     </div>
     <div class="sidebar-footer">
       <button class="logout-btn" onclick="logout()">Sign Out</button>
@@ -269,12 +264,6 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <div>
           <h1>Dashboard</h1>
           <div class="sub">NSW Investment Sales Overview</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-secondary btn-sm" onclick="triggerScrape(this)">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
-            Run Scraper
-          </button>
         </div>
       </div>
       <div class="dash-content">
@@ -291,10 +280,6 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           <div class="dash-panel">
             <div class="dash-panel-header">By Region</div>
             <div class="dash-panel-body" id="dash-by-region"></div>
-          </div>
-          <div class="dash-panel">
-            <div class="dash-panel-header">Scraper Status</div>
-            <div class="dash-panel-body" id="dash-scraper"></div>
           </div>
         </div>
       </div>
@@ -433,32 +418,6 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       </div>
     </section>
 
-    <!-- ── Validate ───────────────────────────────────────────────── -->
-    <section id="section-validate" class="hidden">
-      <div class="page-header">
-        <div>
-          <h1>Validate</h1>
-          <div class="sub">Review scraped listings before adding to Tracking</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-secondary btn-sm" onclick="triggerScrape(this)">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
-            Run Scraper
-          </button>
-        </div>
-      </div>
-      <div class="validate-content">
-        <div class="validate-toolbar">
-          <div class="tab-group">
-            <button class="tab-btn active" id="vtab-pending" onclick="setVTab('pending')">Pending</button>
-            <button class="tab-btn" id="vtab-approved" onclick="setVTab('approved')">Approved</button>
-            <button class="tab-btn" id="vtab-dismissed" onclick="setVTab('dismissed')">Dismissed</button>
-          </div>
-          <span class="text-muted" id="validate-count" style="font-size:13px"></span>
-        </div>
-        <div class="cards-grid" id="validate-cards"></div>
-      </div>
-    </section>
 
   </div><!-- /main-content -->
 </div><!-- /app -->
@@ -490,7 +449,6 @@ const S = {
   sfYears: new Set(), tfYears: new Set(),
   sfYearOpts: [], tfYearOpts: [],
   modalSubmit: null,
-  vtab: 'pending',
 };
 
 const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Medical/Healthcare',
@@ -553,7 +511,6 @@ async function checkAuth() {
 async function initApp() {
   showSection('dashboard');
   loadDashboard();
-  loadValidateBadge();
   initYearMS('sf');
   initYearMS('tf');
 }
@@ -583,7 +540,6 @@ function showSection(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'sales') { loadSalesYears(); loadSales(); }
   if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
-  if (name === 'validate') loadValidate();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -596,7 +552,6 @@ async function loadDashboard() {
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat-card"><div class="stat-num">${data.totalSales}</div><div class="stat-label">Total Sales</div></div>
     <div class="stat-card green"><div class="stat-num">${data.totalTracking}</div><div class="stat-label">Tracking</div></div>
-    <div class="stat-card blue"><div class="stat-num">${data.pendingValidate}</div><div class="stat-label">Pending Validation</div></div>
   `;
 
   document.getElementById('dash-recent-sales').innerHTML = data.recentSales.length
@@ -623,12 +578,6 @@ async function loadDashboard() {
         </div>`).join('')
     : '<div class="scraper-status">No data</div>';
 
-  const ls = data.lastScrape;
-  document.getElementById('dash-scraper').innerHTML = ls
-    ? `<div class="scraper-status"><div class="dot ${ls.status==='ok'?'':'err'}"></div>Last run: ${fmtDate(ls.ran_at)} — Found ${ls.found}, added ${ls.added}</div>`
-    : '<div class="scraper-status"><div class="dot warn"></div>Scraper not yet run</div>';
-
-  updateValidateBadge(data.pendingValidate);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -753,6 +702,7 @@ function renderSales(data) {
       <td>${fmtDate(s.settlement_date)}</td>
       <td class="td-truncate" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes||'–'}</td>
       <td class="td-actions">
+        ${s.source_url ? `<a href="${s.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditSale('${s.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSale('${s.id}')" title="Delete">🗑</button>
       </td>
@@ -862,6 +812,7 @@ function renderTracking(data) {
       <td class="td-truncate" title="${(t.notes||'').replace(/"/g,'&quot;')}">${t.notes||'–'}</td>
       <td class="td-actions">
         <button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Mark as Sold">Sold</button>
+        ${t.source_url ? `<a href="${t.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditTracking('${t.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTracking('${t.id}')" title="Delete">🗑</button>
       </td>
@@ -948,128 +899,6 @@ function convertForm(t={}) {
   </form>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// VALIDATE
-// ═══════════════════════════════════════════════════════════════
-async function loadValidate() {
-  const data = await GET('/validate?status=' + S.vtab);
-  if (!data) return;
-  document.getElementById('validate-count').textContent = `${data.length} item${data.length!==1?'s':''}`;
-  renderValidateCards(data);
-  updateValidateBadge();
-}
-
-async function loadValidateBadge() {
-  const data = await GET('/validate?status=pending');
-  if (data) updateValidateBadge(data.length);
-}
-
-function updateValidateBadge(count) {
-  const badge = document.getElementById('validate-badge');
-  if (count === undefined) {
-    GET('/validate?status=pending').then(d => { if(d) updateValidateBadge(d.length); });
-    return;
-  }
-  badge.textContent = count;
-  badge.classList.toggle('hidden', count === 0);
-}
-
-function setVTab(tab) {
-  S.vtab = tab;
-  ['pending','approved','dismissed'].forEach(t => {
-    document.getElementById('vtab-' + t).classList.toggle('active', t === tab);
-  });
-  loadValidate();
-}
-
-function renderValidateCards(data) {
-  const el = document.getElementById('validate-cards');
-  if (!data.length) {
-    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>No ${S.vtab} items</h3><p>${S.vtab==='pending'?'Run the scraper to find new listings':'Nothing here yet'}</p></div>`;
-    return;
-  }
-  el.innerHTML = data.map(d => `
-    <div class="disc-card">
-      <div class="disc-card-header">
-        <div>
-          <div class="disc-card-addr">${d.address||'Unknown address'}</div>
-          <div class="disc-card-suburb">${[d.suburb,d.region].filter(Boolean).join(' · ')||'–'}</div>
-        </div>
-        ${assetBadge(d.asset_class)}
-      </div>
-      <div class="disc-card-body">
-        <div class="disc-meta">
-          ${d.price_guide?`<div class="disc-meta-item"><strong>${d.price_guide}</strong></div>`:''}
-          ${d.agent?`<div class="disc-meta-item">Agent: <strong>${d.agent}</strong></div>`:''}
-          ${d.firm?`<div class="disc-meta-item">Firm: <strong>${d.firm}</strong></div>`:''}
-          ${d.source?`<div class="disc-meta-item">Source: <strong>${d.source}</strong></div>`:''}
-        </div>
-        ${d.description?`<div class="disc-desc">${d.description}</div>`:''}
-        <div class="disc-source">
-          ${d.scraped_at?`Scraped: ${fmtDate(d.scraped_at)}`:''}
-          ${d.source_url?` · <a href="${d.source_url}" target="_blank" rel="noopener" style="color:var(--accent)">View listing</a>`:''}
-        </div>
-      </div>
-      ${S.vtab === 'pending' ? `
-      <div class="disc-card-footer">
-        <button class="btn btn-success btn-sm" onclick="approveDiscovery('${d.id}','${esc(d.address||'')}','${esc(d.suburb||'')}','${esc(d.region||'')}','${esc(d.asset_class||'')}','${esc(d.price_guide||'')}','${esc(d.agent||'')}','${esc(d.firm||'')}')">+ Add to Tracking</button>
-        <button class="btn btn-secondary btn-sm" onclick="dismissDiscovery('${d.id}')">Dismiss</button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDiscovery('${d.id}')" title="Delete">🗑</button>
-      </div>` : ''}
-    </div>`).join('');
-}
-
-function approveDiscovery(id, address, suburb, region, assetClass, priceGuide, agent, firm) {
-  const prefill = { address, suburb, region, asset_class: assetClass, price_guide: priceGuide ? priceGuide.replace(/[^0-9.]/g,'') : '', agent1: agent, firm1: firm };
-  openModal('Add to Tracking', trackingFormFromDiscovery(prefill, id), async () => {
-    const body = getFormData('approve-form');
-    if (!body.address) return alert('Address is required');
-    const data = await POST('/validate/' + id + '/approve', body);
-    if (data && !data.error) { closeModal(); loadValidate(); }
-  }, 'Add to Tracking');
-}
-
-function trackingFormFromDiscovery(t={}, discoveryId) {
-  return `<form id="approve-form" class="form-grid" onsubmit="return false">
-    <input type="hidden" name="discovery_id" value="${discoveryId}">
-    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(t.address)}" required></div>
-    <div class="form-group"><label>Suburb</label><input name="suburb" value="${esc(t.suburb)}"></div>
-    <div class="form-group"><label>Region</label>${sel('region', REGIONS, t.region)}</div>
-    <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, t.asset_class)}</div>
-    <div class="form-group"><label>Process</label>${sel('process', PROCESSES, '')}</div>
-    <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, 'Active Campaign')}</div>
-    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${t.price_guide||''}"></div>
-    <div class="form-group"><label>Agent</label><input name="agent1" value="${esc(t.agent1)}"></div>
-    <div class="form-group full"><label>Firm</label><input name="firm1" value="${esc(t.firm1)}"></div>
-    <div class="form-group full"><label>Notes</label><textarea name="notes"></textarea></div>
-  </form>`;
-}
-
-async function dismissDiscovery(id) {
-  await POST('/validate/' + id + '/dismiss');
-  loadValidate();
-}
-
-async function deleteDiscovery(id) {
-  if (!confirm('Permanently delete this discovery?')) return;
-  await DEL('/validate/' + id);
-  loadValidate();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SCRAPER
-// ═══════════════════════════════════════════════════════════════
-async function triggerScrape(btn) {
-  const orig = btn.textContent;
-  btn.textContent = 'Scraping...';
-  btn.disabled = true;
-  await POST('/scraper/run');
-  btn.textContent = orig;
-  btn.disabled = false;
-  loadValidateBadge();
-  if (document.getElementById('section-validate').style.display !== 'none') loadValidate();
-  if (document.getElementById('section-dashboard').style.display !== 'none') loadDashboard();
-}
 
 // ═══════════════════════════════════════════════════════════════
 // MODAL
