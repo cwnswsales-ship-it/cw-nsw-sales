@@ -5,10 +5,8 @@ const cors        = require('cors');
 const compression = require('compression');
 const path        = require('path');
 const crypto      = require('crypto');
-const cron        = require('node-cron');
 const { v4: uuidv4 } = require('uuid');
 const db          = require('./db');
-const { runScraper } = require('./scraper');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -70,12 +68,10 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.get('/api/stats', requireAuth, (req, res) => {
   const totalSales      = db.prepare("SELECT COUNT(*) as c FROM sales").get().c;
   const totalTracking   = db.prepare("SELECT COUNT(*) as c FROM tracking WHERE status != 'Converted to Sale'").get().c;
-  const pendingValidate = db.prepare("SELECT COUNT(*) as c FROM discoveries WHERE status = 'pending'").get().c;
   const recentSales     = db.prepare("SELECT id, address, suburb, asset_class, price, yield_percent, agent1, settlement_date FROM sales ORDER BY created_at DESC LIMIT 5").all();
-  const lastScrape      = db.prepare("SELECT ran_at, source, found, added, status FROM scrape_log ORDER BY ran_at DESC LIMIT 1").get();
   const byAsset         = db.prepare("SELECT asset_class, COUNT(*) as count FROM sales WHERE asset_class IS NOT NULL GROUP BY asset_class ORDER BY count DESC LIMIT 6").all();
   const byRegion        = db.prepare("SELECT region, COUNT(*) as count FROM sales WHERE region IS NOT NULL GROUP BY region ORDER BY count DESC LIMIT 6").all();
-  res.json({ totalSales, totalTracking, pendingValidate, recentSales, lastScrape, byAsset, byRegion });
+  res.json({ totalSales, totalTracking, recentSales, byAsset, byRegion });
 });
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
@@ -284,20 +280,6 @@ app.delete('/api/validate/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Scraper ───────────────────────────────────────────────────────────────────
-
-app.post('/api/scraper/run', requireAuth, async (req, res) => {
-  try {
-    const results = await runScraper();
-    res.json({ ok: true, results });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/scraper/logs', requireAuth, (req, res) => {
-  res.json(db.prepare('SELECT * FROM scrape_log ORDER BY ran_at DESC LIMIT 20').all());
-});
 
 // ── Filter Options ────────────────────────────────────────────────────────────
 
@@ -316,12 +298,6 @@ app.get('*', (req, res) => {
   }
 });
 
-// ── Cron ──────────────────────────────────────────────────────────────────────
-
-cron.schedule('0 */4 * * *', () => {
-  console.log('[cron] Running scheduled scrape');
-  runScraper().catch(console.error);
-});
 
 app.listen(PORT, () => {
   console.log(`NSW Investment Sales DB running on port ${PORT}`);
