@@ -127,6 +127,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
 .b-fastfood{background:#fce7f3;color:#9d174d}
 .b-service{background:#ecfccb;color:#3f6212}
 .b-pub{background:#ede9fe;color:#4c1d95}
+.b-strataretail{background:#dcfce7;color:#166534}
+.b-strataoffice{background:#e0f2fe;color:#075985}
 .b-residential{background:#f1f5f9;color:#475569}
 .b-default{background:#f1f5f9;color:#475569}
 .b-sold{background:#d1fae5;color:#065f46}
@@ -320,7 +322,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <select class="filter-select" id="sf-asset" onchange="loadSales()">
           <option value="">All Asset Classes</option>
           <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
+          <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
           <option>Residential</option><option>Commercial</option>
         </select>
@@ -385,7 +388,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <select class="filter-select" id="tf-asset" onchange="loadTracking()">
           <option value="">All Asset Classes</option>
           <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
+          <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
           <option>Residential</option><option>Commercial</option>
         </select>
@@ -454,7 +458,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <select class="filter-select" id="an-asset" onchange="renderAnalytics()">
           <option value="">All Asset Classes</option>
           <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
+          <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
           <option>Residential</option><option>Commercial</option>
         </select>
@@ -521,8 +526,8 @@ const S = {
   modalSubmit: null,
 };
 
-const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Medical/Healthcare',
-  'Development Site','Fast Food/QSR','Service Station','Pub/Hotel','Residential','Commercial'];
+const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Strata Retail','Strata Office','Medical/Healthcare','Development Site',
+  'Fast Food/QSR','Service Station','Pub/Hotel','Residential','Commercial'];
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
 const REGIONS = ['CBD/City','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
@@ -1102,7 +1107,8 @@ function debounce(fn, ms) {
 function assetBadge(cls) {
   const map = {
     'Childcare':'b-childcare','Medical/Healthcare':'b-medical','Industrial':'b-industrial',
-    'Retail':'b-retail','Development Site':'b-devsite','Commercial Office':'b-office',
+    'Retail':'b-retail','Strata Retail':'b-strataretail','Strata Office':'b-strataoffice',
+    'Development Site':'b-devsite','Commercial Office':'b-office',
     'Fast Food/QSR':'b-fastfood','Service Station':'b-service','Pub/Hotel':'b-pub',
     'Residential':'b-residential','Commercial':'b-default'
   };
