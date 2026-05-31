@@ -51,6 +51,8 @@ function requireAuth(req, res, next) {
   res.status(401).json({ error: 'Unauthorized' });
 }
 
+app.get('/health', (req, res) => res.json({ ok: true }));
+
 app.post('/api/auth/login', (req, res) => {
   const { password } = req.body || {};
   if (!password || password !== APP_PASSWORD) {
