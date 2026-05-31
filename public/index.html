@@ -3,1603 +3,1216 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>CW NSW Sales Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>NSW Investment Sales | Cushman & Wakefield</title>
 <style>
-:root{
-  --red:#E1251B;--ink:#231F20;--dark:#3a3a3a;--mid:#6D6E71;--light:#D1D3D4;
-  --pale:#F5F5F5;--white:#fff;--border:#E8E8E8;--green:#15803D;--amber:#B45309;
-  --blue:#1565C0;--sidebar:188px;
-  --red-p:rgba(225,37,27,.1);--green-p:rgba(21,128,61,.1);--amber-p:rgba(180,83,9,.1);--blue-p:rgba(21,101,192,.1);
+:root {
+  --navy: #0d2137;
+  --navy2: #1a3a5c;
+  --accent: #e8732a;
+  --accent2: #f59e0b;
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --sidebar-w: 220px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow',sans-serif;background:var(--pale);color:var(--ink);font-size:14px;height:100vh;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 
-/* HEADER */
-.hdr{background:var(--ink);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.1rem;position:fixed;top:0;left:0;right:0;z-index:300;border-bottom:3px solid var(--red)}
-.hdr-logo{display:flex;align-items:center;gap:.65rem}
-.logo-mark{width:30px;height:30px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#fff;font-size:1rem;letter-spacing:-.02em}
-.logo-t1{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;line-height:1}
-.logo-t2{font-size:.5rem;color:rgba(255,255,255,.4);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
-.hdr-acts{display:flex;gap:.3rem;align-items:center}
-.hdr-sep{width:1px;height:22px;background:rgba(255,255,255,.12);flex-shrink:0}
-.bell-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);padding:.3rem;position:relative;display:flex;align-items:center;justify-content:center;border-radius:2px}
-.bell-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
-.bell-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
-.bell-badge{position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border-radius:10px;font-size:.5rem;font-weight:700;padding:.05rem .28rem;line-height:1.4;min-width:14px;text-align:center}
+/* ── Login ─────────────────────────────────────────────────────── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%)}
+.login-card{background:var(--card);border-radius:16px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-logo{font-size:32px;font-weight:900;color:var(--navy);letter-spacing:-1px;margin-bottom:8px}
+.login-logo span{color:var(--accent)}
+.login-subtitle{color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.5}
+.login-card h2{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:16px;outline:none;transition:.2s}
+.login-input:focus{border-color:var(--accent)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
+.login-btn:hover{background:#d4662a}
+.login-error{color:var(--danger);font-size:13px;margin-top:12px}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:.25rem;padding:.36rem .72rem;border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;white-space:nowrap}
-.btn-primary{background:var(--red);color:#fff;border-color:var(--red)}.btn-primary:hover{background:#c41e15}
-.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:#126632}
-.btn-out{background:transparent;color:var(--ink);border-color:var(--border)}.btn-out:hover{border-color:var(--ink)}
-.btn-ghost{background:transparent;color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.2)}.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.5)}
-.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#c41e15}
-.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#92400e}
-.btn-sm{padding:.24rem .55rem;font-size:.68rem}
-.btn-xs{padding:.15rem .38rem;font-size:.62rem}
-.btn:disabled{opacity:.4;cursor:not-allowed}
+/* ── Layout ────────────────────────────────────────────────────── */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar-w);background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:100}
+#main-content{margin-left:var(--sidebar-w);flex:1;min-width:0}
 
-/* LAYOUT */
-.app{display:flex;height:calc(100vh - 52px);margin-top:52px;overflow:hidden}
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.sidebar-brand{padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+.sidebar-logo span{color:var(--accent)}
+.sidebar-tagline{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 0}
+.nav-section{padding:8px 20px 4px;font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:rgba(255,255,255,.7);font-size:14px;font-weight:500;transition:.2s;border-left:3px solid transparent;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--accent)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.badge{background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:auto}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.logout-btn{width:100%;padding:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:7px;cursor:pointer;font-size:13px;transition:.2s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
-/* SIDEBAR */
-nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--dark);display:flex;flex-direction:column;overflow-y:auto;padding:.5rem 0;flex-shrink:0}
-.nav-sec{padding:.65rem .85rem .18rem;font-size:.5rem;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.18em;font-weight:700}
-.ni{display:flex;align-items:center;gap:.42rem;padding:.48rem .85rem;color:rgba(255,255,255,.45);cursor:pointer;font-size:.74rem;font-weight:500;border-left:2.5px solid transparent;transition:all .1s;user-select:none}
-.ni:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05)}
-.ni.on{color:#fff;border-left-color:var(--red);background:rgba(225,37,27,.15)}
-.ni svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
-.nb{background:var(--red);color:#fff;border-radius:10px;padding:.04rem .3rem;font-size:.54rem;font-weight:700;margin-left:auto;line-height:1.5;min-width:16px;text-align:center}
-.nb.grn{background:var(--green)}.nb.amb{background:var(--amber)}.nb.blue{background:var(--blue)}
+/* ── Page Header ─────────────────────────────────────────────────── */
+.page-header{background:var(--card);border-bottom:1px solid var(--border);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.page-header h1{font-size:20px;font-weight:700;color:var(--text)}
+.page-header .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center}
 
-/* MAIN */
-.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
-.view{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
-.view.on{display:flex}
+/* ── Buttons ────────────────────────────────────────────────────── */
+.btn{padding:8px 16px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#d4662a}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{filter:brightness(.9)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{filter:brightness(.9)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:6px;border-radius:6px}
 
-/* PAGE HEADER */
-.ph{background:var(--white);border-bottom:1px solid var(--border);padding:.65rem 1.2rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0}
-.ph h1{font-family:'Barlow Condensed',sans-serif;font-size:1.12rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink)}
-.ph-sub{font-size:.72rem;color:var(--mid)}
-.ph-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
+/* ── Filters Bar ────────────────────────────────────────────────── */
+.filters-bar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter-input{padding:7px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:#fff;color:var(--text);min-width:140px;transition:.2s}
+.filter-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,115,42,.1)}
+.filter-select{padding:7px 28px 7px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;min-width:130px}
+.filter-select:focus{border-color:var(--accent)}
+.filter-count{font-size:13px;color:var(--muted);margin-left:4px}
 
-/* TOOLBAR */
-.tb{padding:.5rem 1.2rem;display:flex;gap:.38rem;align-items:center;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
-.srch{position:relative;flex:1;min-width:150px;max-width:240px}
-.srch input{width:100%;padding:.3rem .46rem .3rem 1.7rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.74rem;background:var(--pale);color:var(--ink)}
-.srch input:focus{outline:none;border-color:var(--ink)}
-.srch-ic{position:absolute;left:.46rem;top:50%;transform:translateY(-50%);color:var(--mid);width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;pointer-events:none}
-.filt{padding:.3rem .42rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.72rem;background:var(--pale);color:var(--ink);cursor:pointer}
-.filt:focus{outline:none;border-color:var(--ink)}
-.tb-r{margin-left:auto;display:flex;gap:.3rem;align-items:center}
-.cnt{font-size:.66rem;color:var(--mid);white-space:nowrap}
+/* Multi-select year */
+.ms-wrap{position:relative}
+.ms-btn{padding:7px 28px 7px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:#fff;color:var(--text);cursor:pointer;min-width:120px;text-align:left;position:relative;white-space:nowrap}
+.ms-btn::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px}
+.ms-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;min-width:140px;padding:6px 0;display:none}
+.ms-dropdown.open{display:block}
+.ms-option{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--text);transition:.15s}
+.ms-option:hover{background:var(--bg)}
+.ms-option input{accent-color:var(--accent)}
+.ms-clear{padding:6px 14px 8px;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:2px}
+.ms-clear:hover{color:var(--danger)}
+.filters-bar .btn-sm{white-space:nowrap}
 
-/* TABLE */
-.tw{flex:1;overflow:auto;min-height:0}
-table{width:100%;border-collapse:collapse;font-size:.76rem}
-thead th{background:var(--ink);color:#fff;padding:.48rem .72rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;position:sticky;top:0;z-index:10}
-thead th:first-child{border-left:3px solid var(--red)}
-tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .08s}
-tbody tr:hover{background:rgba(225,37,27,.04)}
-tbody tr.even{background:#fafafa}
-tbody tr.even:hover{background:rgba(225,37,27,.04)}
-td{padding:.48rem .72rem;vertical-align:middle}
-.td-addr{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.td-sm{font-size:.68rem;color:var(--mid)}
+/* ── Table ──────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg);padding:10px 12px;text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--text)}
+thead th.sort-asc::after{content:' ↑'}
+thead th.sort-desc::after{content:' ↓'}
+tbody tr{border-bottom:1px solid var(--border);transition:.15s}
+tbody tr:hover{background:#f8fafc}
+tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
+.td-addr{font-weight:600;min-width:200px;max-width:250px}
+.td-addr small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:1px}
+.td-mono{font-family:monospace;font-size:13px}
+.td-actions{white-space:nowrap;text-align:right}
+.td-truncate{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state svg{width:48px;height:48px;margin:0 auto 16px;display:block;opacity:.3}
+.empty-state h3{font-size:16px;color:var(--text);margin-bottom:6px}
 
-/* BADGES */
-.badge{display:inline-flex;align-items:center;padding:.1rem .34rem;border-radius:2px;font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.b-active{background:var(--blue-p);color:var(--blue)}
-.b-sold{background:var(--green-p);color:var(--green)}
-.b-settlement{background:var(--amber-p);color:var(--amber)}
-.b-withdrawn{background:rgba(109,110,113,.12);color:var(--mid)}
-.b-pending{background:var(--amber-p);color:var(--amber)}
-.b-premium{background:rgba(225,37,27,.12);color:var(--red)}
-.b-new{background:var(--green-p);color:var(--green)}
-.b-change{background:var(--amber-p);color:var(--amber)}
-.src-badge{display:inline-flex;align-items:center;padding:.08rem .3rem;border-radius:2px;font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--pale);color:var(--mid);border:1px solid var(--border)}
+/* ── Badges ─────────────────────────────────────────────────────── */
+.badge-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-childcare{background:#ede9fe;color:#5b21b6}
+.b-medical{background:#cffafe;color:#155e75}
+.b-industrial{background:#fef3c7;color:#92400e}
+.b-retail{background:#d1fae5;color:#065f46}
+.b-devsite{background:#ffedd5;color:#9a3412}
+.b-office{background:#dbeafe;color:#1e40af}
+.b-fastfood{background:#fce7f3;color:#9d174d}
+.b-service{background:#ecfccb;color:#3f6212}
+.b-pub{background:#ede9fe;color:#4c1d95}
+.b-residential{background:#f1f5f9;color:#475569}
+.b-default{background:#f1f5f9;color:#475569}
+.b-sold{background:#d1fae5;color:#065f46}
+.b-active{background:#fef3c7;color:#92400e}
+.b-offer{background:#dbeafe;color:#1e40af}
+.b-exchanged{background:#ffedd5;color:#9a3412}
+.b-withdrawn{background:#fee2e2;color:#991b1b}
+.b-eoi{background:#e0f2fe;color:#0369a1}
+.b-auction{background:#fee2e2;color:#991b1b}
+.b-treaty{background:#d1fae5;color:#065f46}
+.b-offmarket{background:#f1f5f9;color:#475569}
+.b-tender{background:#ede9fe;color:#5b21b6}
 
-/* EMPTY / LOADING */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;color:var(--mid);text-align:center;gap:.5rem}
-.empty strong{font-size:.9rem;color:var(--ink)}
-.empty span{font-size:.78rem}
-.loading{text-align:center;padding:3rem;color:var(--mid);font-size:.82rem}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.3rem}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── Dashboard ───────────────────────────────────────────────────── */
+.dash-content{padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border-radius:12px;padding:20px 22px;border:1px solid var(--border);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.stat-card.green::before{background:var(--success)}
+.stat-card.blue::before{background:var(--info)}
+.stat-card.purple::before{background:#8b5cf6}
+.stat-num{font-size:32px;font-weight:800;color:var(--text);line-height:1}
+.stat-label{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
+.dash-panel{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.dash-panel-header{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.dash-panel-body{padding:0}
+.dash-row{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);font-size:13px}
+.dash-row:last-child{border-bottom:none}
+.dash-row-left{font-weight:500;color:var(--text)}
+.dash-row-right{color:var(--muted);font-size:12px}
+.scraper-status{display:flex;align-items:center;gap:8px;padding:12px 20px;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0}
+.dot.warn{background:var(--accent2)}
+.dot.err{background:var(--danger)}
 
-/* DASHBOARD */
-.db-scroll{flex:1;overflow-y:auto;padding:1.1rem 1.2rem}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.7rem;margin-bottom:1.1rem}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.9rem 1rem;border-top:3px solid var(--light);position:relative;overflow:hidden}
-.stat-card.red{border-top-color:var(--red)}.stat-card.green{border-top-color:var(--green)}.stat-card.amber{border-top-color:var(--amber)}.stat-card.blue{border-top-color:var(--blue)}
-.stat-label{font-size:.57rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.3rem;font-weight:700}
-.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:2.1rem;font-weight:700;line-height:1;color:var(--ink)}
-.stat-sub{font-size:.63rem;color:var(--mid);margin-top:.22rem}
-.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem}
-.db-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem}
-.db-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem}
-.db-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);font-weight:700}
-.db-row{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--pale);font-size:.78rem;gap:.5rem}
-.db-row:last-child{border-bottom:none}
-.db-row-l{color:var(--mid);font-size:.72rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.db-row-v{font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;white-space:nowrap}
-.disc-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.75rem .85rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
-.disc-card-info{flex:1;min-width:0}
-.disc-card-addr{font-weight:600;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.disc-card-meta{font-size:.68rem;color:var(--mid);margin-top:.15rem}
-.disc-card-acts{display:flex;gap:.3rem;flex-shrink:0}
-.camp-strip{display:flex;gap:.55rem;overflow-x:auto;padding-bottom:.3rem;flex-shrink:0}
-.camp-chip{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.6rem .8rem;min-width:160px;flex-shrink:0}
-.camp-chip-addr{font-weight:600;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
-.camp-chip-meta{font-size:.65rem;color:var(--mid);margin-top:.1rem}
-.days-badge{display:inline-flex;align-items:center;padding:.08rem .3rem;border-radius:2px;font-size:.58rem;font-weight:700;white-space:nowrap}
-.days-red{background:var(--red-p);color:var(--red)}
-.days-amber{background:var(--amber-p);color:var(--amber)}
-.days-green{background:var(--green-p);color:var(--green)}
-.days-mid{background:rgba(109,110,113,.1);color:var(--mid)}
+/* ── Validate Cards ──────────────────────────────────────────────── */
+.validate-content{padding:28px}
+.validate-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.tab-group{display:flex;background:var(--card);border-radius:8px;border:1px solid var(--border);overflow:hidden}
+.tab-btn{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.2s;border-right:1px solid var(--border)}
+.tab-btn:last-child{border-right:none}
+.tab-btn.active{background:var(--accent);color:#fff}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.disc-card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column}
+.disc-card-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.disc-card-addr{font-weight:600;font-size:14px;line-height:1.3}
+.disc-card-suburb{font-size:12px;color:var(--muted);margin-top:2px}
+.disc-card-body{padding:14px 16px;flex:1}
+.disc-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:10px}
+.disc-meta-item{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.disc-meta-item strong{color:var(--text)}
+.disc-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.disc-card-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.disc-source{font-size:11px;color:var(--muted);margin-top:8px}
 
-/* DISCOVERY CARDS */
-.disc-grid{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.55rem}
-.d-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:.85rem 1rem;display:flex;align-items:flex-start;gap:.8rem;position:relative}
-.d-card.premium{border-left:3px solid var(--red)}
-.d-card-body{flex:1;min-width:0}
-.d-card-addr{font-weight:700;font-size:.88rem;margin-bottom:.2rem}
-.d-card-sub{font-size:.72rem;color:var(--mid);margin-bottom:.4rem}
-.d-card-row{display:flex;flex-wrap:wrap;gap:.3rem .8rem;font-size:.72rem;color:var(--mid);margin-bottom:.45rem}
-.d-card-row span b{color:var(--ink);font-weight:600}
-.d-card-acts{display:flex;gap:.35rem;flex-wrap:wrap}
-.d-card-badges{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem}
-.scrape-status{display:flex;align-items:center;gap:.55rem;font-size:.72rem;color:var(--mid);padding:.5rem 1.2rem;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
-.scrape-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
-.scrape-dot.stale{background:var(--amber)}.scrape-dot.unknown{background:var(--mid)}
+/* ── Modal ───────────────────────────────────────────────────────── */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;display:none}
+#modal-overlay.open{display:flex}
+#modal-box{background:var(--card);border-radius:14px;width:100%;max-width:680px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header h2{font-size:18px;font-weight:700}
+.modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:7px;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{background:var(--border);color:var(--text)}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
 
-/* PREMIUM VIEW */
-.prem-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem;padding:1rem 1.2rem;flex-shrink:0}
+/* ── Form ────────────────────────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);outline:none;background:#fff;transition:.2s;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,115,42,.1)}
+.form-group textarea{resize:vertical;min-height:72px}
+.form-section{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;grid-column:1/-1;padding-top:8px;border-top:1px solid var(--border);margin-top:4px}
 
-/* EXPORT VIEW */
-.exp-wrap{flex:1;overflow-y:auto;padding:1.2rem}
-.exp-card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:1.2rem;max-width:520px}
-.exp-card h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem;color:var(--ink)}
-.exp-section{margin-bottom:1rem}
-.exp-section label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.28rem}
-.exp-section select,.exp-section input{width:100%;padding:.36rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
-.exp-section select:focus,.exp-section input:focus{outline:none;border-color:var(--ink)}
-.exp-count{background:var(--pale);border-radius:3px;padding:.85rem 1rem;margin:1rem 0;text-align:center}
-.exp-count-n{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;color:var(--ink)}
-.exp-count-l{font-size:.72rem;color:var(--mid)}
-.exp-note{font-size:.7rem;color:var(--mid);padding:.6rem;background:var(--pale);border-radius:2px;border-left:2px solid var(--border)}
-
-/* MODAL */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
-.overlay.on{display:flex}
-.modal{background:var(--white);border-radius:3px;width:640px;max-width:98vw;margin:auto;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.22)}
-.modal.wide{width:780px}
-.modal-hdr{background:var(--ink);color:#fff;padding:.85rem 1.1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:3px 3px 0 0;border-bottom:3px solid var(--red)}
-.modal-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.modal-close{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:1.3rem;line-height:1;padding:.1rem .3rem}
-.modal-close:hover{color:#fff}
-.modal-body{padding:1.1rem;overflow-y:auto;flex:1;max-height:75vh}
-.modal-footer{padding:.75rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.4rem;justify-content:flex-end;flex-shrink:0}
-.form-section{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-.form-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.form-section-title{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.7rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
-
-/* FORM */
-.fg{margin-bottom:.68rem}
-.fg label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-bottom:.26rem}
-.fg input,.fg select,.fg textarea{width:100%;padding:.36rem .5rem;border:1px solid var(--border);border-radius:2px;font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);background:var(--white)}
-.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--ink)}
-.fg input[readonly]{background:var(--pale);color:var(--mid)}
-.fg textarea{resize:vertical;min-height:64px}
-.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.fg-row.three{grid-template-columns:1fr 1fr 1fr}
-.fg-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
-.form-hint{font-size:.64rem;color:var(--mid);margin-top:.18rem}
-
-/* PAGINATION */
-.pager{display:flex;align-items:center;gap:.4rem;padding:.5rem 1.2rem;background:var(--white);border-top:1px solid var(--border);flex-shrink:0}
-.pager-btn{padding:.26rem .6rem;border:1px solid var(--border);border-radius:2px;font-size:.72rem;cursor:pointer;background:var(--white);color:var(--ink)}
-.pager-btn:hover:not(:disabled){border-color:var(--ink)}
-.pager-btn:disabled{opacity:.4;cursor:not-allowed}
-.pager-info{font-size:.7rem;color:var(--mid)}
-
-/* ALERTS PANEL */
-.alerts-panel{position:fixed;top:52px;right:0;bottom:0;width:340px;background:var(--white);border-left:1px solid var(--border);z-index:400;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s ease;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
-.alerts-panel.open{transform:translateX(0)}
-.alerts-panel-hdr{padding:.85rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.alerts-panel-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.alerts-list{flex:1;overflow-y:auto}
-.alert-item{padding:.65rem 1rem;border-bottom:1px solid var(--border);font-size:.76rem;display:flex;gap:.5rem;align-items:flex-start}
-.alert-item.unread{background:rgba(225,37,27,.04)}
-.alert-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-top:.35rem;flex-shrink:0}
-.alert-read-dot{width:6px;height:6px;border-radius:50%;background:var(--border);margin-top:.35rem;flex-shrink:0}
-.alert-msg{flex:1;line-height:1.4}
-.alert-time{font-size:.63rem;color:var(--mid);margin-top:.2rem}
-.alerts-footer{padding:.65rem 1rem;border-top:1px solid var(--border);flex-shrink:0}
-
-/* TOAST */
-.toast-wrap{position:fixed;bottom:1.2rem;right:1.2rem;z-index:900;display:flex;flex-direction:column;gap:.4rem}
-.toast{background:var(--ink);color:#fff;padding:.55rem .9rem;border-radius:3px;font-size:.78rem;border-left:3px solid var(--green);animation:toast-in .2s ease;max-width:300px;pointer-events:none}
-.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--amber)}.toast.info{border-left-color:var(--blue)}
-@keyframes toast-in{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
-
-/* DISC TOGGLE */
-.seg-ctrl{display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
-.seg-btn{padding:.28rem .6rem;font-size:.68rem;font-weight:600;font-family:'Barlow',sans-serif;cursor:pointer;border:none;background:var(--pale);color:var(--mid);text-transform:uppercase;letter-spacing:.04em;border-right:1px solid var(--border)}
-.seg-btn:last-child{border-right:none}
-.seg-btn.on{background:var(--ink);color:#fff}
-
-/* MISC */
-a{color:var(--ink);text-decoration:none}a:hover{text-decoration:underline}
-.agent-link{color:var(--blue);cursor:pointer}.agent-link:hover{text-decoration:underline}
-.section-title{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:.55rem;padding-bottom:.28rem;border-bottom:1px solid var(--border)}
-
-@media(max-width:768px){
-  nav{display:none}
-  .db-grid{grid-template-columns:1fr}
-  .fg-row.three,.fg-row.four{grid-template-columns:1fr 1fr}
-  .modal{width:99vw;max-height:95vh}
-  .alerts-panel{width:100%}
-}
+/* ── Utilities ───────────────────────────────────────────────────── */
+.hidden{display:none!important}
+.text-right{text-align:right}
+.text-muted{color:var(--muted)}
+.fw-600{font-weight:600}
+.mt-8{margin-top:8px}
+.scraper-btn-wrap{margin-left:auto}
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="hdr">
-  <div class="hdr-logo">
-    <div class="logo-mark">CW</div>
-    <div>
-      <div class="logo-t1">NSW Sales Intelligence</div>
-      <div class="logo-t2">Cushman &amp; Wakefield</div>
-    </div>
-  </div>
-  <div class="hdr-acts">
-    <button class="btn btn-ghost btn-sm" onclick="showView('view-export')">↓ Export</button>
-    <div class="hdr-sep"></div>
-    <button class="bell-btn" onclick="toggleAlerts()" title="Alerts">
-      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span class="bell-badge" id="bell-badge" style="display:none">0</span>
-    </button>
-  </div>
-</header>
-
-<!-- APP -->
-<div class="app">
-
-<!-- SIDEBAR -->
-<nav>
-  <div class="nav-sec">Overview</div>
-  <div class="ni on" id="ni-dash" onclick="showView('view-dash')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    Dashboard
-  </div>
-  <div class="nav-sec">Sales</div>
-  <div class="ni" id="ni-sales" onclick="showView('view-sales')">
-    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    Sales Database
-    <span class="nb grn" id="nb-sales">0</span>
-  </div>
-  <div class="ni" id="ni-campaigns" onclick="showView('view-campaigns')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    Campaigns
-    <span class="nb" id="nb-campaigns">0</span>
-  </div>
-  <div class="ni" id="ni-premium" onclick="showView('view-premium')">
-    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    Premium
-  </div>
-  <div class="nav-sec">Discovery</div>
-  <div class="ni" id="ni-discoveries" onclick="showView('view-discoveries')">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Discoveries
-    <span class="nb amb" id="nb-discoveries">0</span>
-  </div>
-  <div class="nav-sec">Tools</div>
-  <div class="ni" id="ni-export" onclick="showView('view-export')">
-    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Export
-  </div>
-</nav>
-
-<!-- MAIN -->
-<div class="main">
-
-<!-- DASHBOARD -->
-<div class="view on" id="view-dash">
-  <div class="ph">
-    <h1>Dashboard</h1>
-    <span class="ph-sub">NSW Investment Sales</span>
-    <div class="ph-r"><button class="btn btn-out btn-sm" onclick="loadAll()">↻ Refresh</button></div>
-  </div>
-  <div class="db-scroll" id="dash-content"><div class="loading"><span class="spinner"></span>Loading…</div></div>
-</div>
-
-<!-- SALES DATABASE -->
-<div class="view" id="view-sales">
-  <div class="ph">
-    <h1>Sales Database</h1>
-    <div class="ph-r">
-      <button class="btn btn-primary btn-sm" onclick="openSaleModal(null)">+ Add Sale</button>
-    </div>
-  </div>
-  <div class="tb">
-    <select class="filt" id="sf-source" onchange="renderSales()">
-      <option value="">All Databases</option>
-      <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
-    </select>
-    <select class="filt" id="sf-class" onchange="renderSales()">
-      <option value="">All Asset Classes</option>
-      <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
-      <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
-      <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
-      <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
-      <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
-      <option>Strata Retail</option><option>Town Centre</option>
-    </select>
-    <select class="filt" id="sf-status" onchange="renderSales()">
-      <option value="">All Status</option><option>Active</option><option>Sold</option><option>Withdrawn</option>
-    </select>
-    <select class="filt" id="sf-year" onchange="renderSales()"><option value="">All Years</option></select>
-    <div class="srch">
-      <svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="sf-q" placeholder="Search address, suburb…" oninput="renderSales()">
-    </div>
-    <span class="cnt" id="sales-cnt"></span>
-  </div>
-  <div class="tw" id="sales-table-wrap">
-    <table id="sales-table">
-      <thead><tr>
-        <th>Address</th><th>Suburb</th><th>Asset Class / Operator</th><th>Status</th>
-        <th>Sale Price</th><th>Yield</th><th>WALE</th><th>Agent 1</th><th>Sale Date</th><th></th>
-      </tr></thead>
-      <tbody id="sales-tbody"></tbody>
-    </table>
-  </div>
-  <div class="pager" id="sales-pager"></div>
-</div>
-
-<!-- CAMPAIGNS -->
-<div class="view" id="view-campaigns">
-  <div class="ph">
-    <h1>Campaign Tracker</h1>
-    <div class="ph-r">
-      <button class="btn btn-primary btn-sm" onclick="openCampaignModal(null)">+ Add Campaign</button>
-    </div>
-  </div>
-  <div class="tb">
-    <select class="filt" id="cf-status" onchange="renderCampaigns()">
-      <option value="">All Status</option><option>Active</option><option>Settlement</option>
-      <option>Settled</option><option>Withdrawn</option>
-    </select>
-    <div class="srch">
-      <svg class="srch-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="cf-q" placeholder="Search campaigns…" oninput="renderCampaigns()">
-    </div>
-    <span class="cnt" id="camp-cnt"></span>
-  </div>
-  <div class="tw">
-    <table>
-      <thead><tr>
-        <th>Address</th><th>Suburb</th><th>Type</th><th>Process</th>
-        <th>Close Date</th><th>Price Guide</th><th>Agent 1</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody id="camp-tbody"></tbody>
-    </table>
+<!-- ── Login ────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">C<span>&</span>W</div>
+    <h2>NSW Investment Sales</h2>
+    <p class="login-subtitle">Cushman &amp; Wakefield<br>Investment Sales Database</p>
+    <input class="login-input" type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">Sign In</button>
+    <p class="login-error hidden" id="login-error">Incorrect password. Please try again.</p>
   </div>
 </div>
 
-<!-- DISCOVERIES -->
-<div class="view" id="view-discoveries">
-  <div class="ph">
-    <h1>Discoveries</h1>
-    <div class="ph-r">
-      <button class="btn btn-primary btn-sm" id="scan-btn" onclick="runScan()">⟳ Scan Now</button>
+<!-- ── App ──────────────────────────────────────────────────────────── -->
+<div id="app" class="hidden">
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">C<span style="color:var(--accent)">&</span>W</div>
+      <div class="sidebar-tagline">NSW Investment Sales</div>
     </div>
-  </div>
-  <div class="scrape-status">
-    <div class="scrape-dot unknown" id="scrape-dot"></div>
-    <span id="scrape-status-txt">Loading scrape status…</span>
-  </div>
-  <div class="tb" style="gap:.5rem">
-    <div class="seg-ctrl">
-      <button class="seg-btn on" id="dseg-pending" onclick="setDiscSeg('pending')">Pending</button>
-      <button class="seg-btn" id="dseg-premium" onclick="setDiscSeg('premium')">Premium Only</button>
-      <button class="seg-btn" id="dseg-all" onclick="setDiscSeg('all')">All</button>
-    </div>
-    <span class="cnt" id="disc-cnt"></span>
-  </div>
-  <div class="disc-grid" id="disc-grid"><div class="loading"><span class="spinner"></span>Loading…</div></div>
-</div>
-
-<!-- PREMIUM -->
-<div class="view" id="view-premium">
-  <div class="ph">
-    <h1>Premium Investments</h1>
-    <div class="ph-r"><button class="btn btn-out btn-sm" onclick="renderPremium()">↻ Refresh</button></div>
-  </div>
-  <div class="prem-stats" id="prem-stats"></div>
-  <div class="tw">
-    <table>
-      <thead><tr>
-        <th>Address</th><th>Suburb</th><th>Type</th><th>Operator/Tenant</th>
-        <th>Sale Price</th><th>Net Rent</th><th>Yield</th><th>WALE</th><th>$/Place</th><th>Agent</th><th>Sale Date</th>
-      </tr></thead>
-      <tbody id="prem-tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- EXPORT -->
-<div class="view" id="view-export">
-  <div class="ph"><h1>Export Data</h1></div>
-  <div class="exp-wrap">
-    <div class="exp-card">
-      <h3>Download Sales Data</h3>
-      <div class="exp-section">
-        <label>Source Database</label>
-        <select id="exp-source" onchange="updateExportCount()">
-          <option value="">All Databases</option>
-          <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
-        </select>
+    <div class="sidebar-nav">
+      <div class="nav-section">Navigation</div>
+      <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 1116 0A8 8 0 012 10zm8-4a1 1 0 100 2 1 1 0 000-2zm-1 4a1 1 0 112 0v3a1 1 0 11-2 0v-3z"/></svg>
+        Dashboard
       </div>
-      <div class="exp-section">
-        <label>Status</label>
-        <select id="exp-status" onchange="updateExportCount()">
-          <option value="">All Status</option><option>Active</option><option>Sold</option><option>Withdrawn</option>
-        </select>
+      <div class="nav-item" data-section="sales" onclick="showSection('sales')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        Sales
       </div>
-      <div class="exp-section">
-        <label>Asset Class</label>
-        <select id="exp-class" onchange="updateExportCount()">
+      <div class="nav-item" data-section="tracking" onclick="showSection('tracking')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+        Tracking
+      </div>
+      <div class="nav-item" data-section="validate" onclick="showSection('validate')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        Validate
+        <span class="badge hidden" id="validate-badge">0</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <div id="main-content">
+
+    <!-- ── Dashboard ─────────────────────────────────────────────── -->
+    <section id="section-dashboard" class="hidden">
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <div class="sub">NSW Investment Sales Overview</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="triggerScrape(this)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+            Run Scraper
+          </button>
+        </div>
+      </div>
+      <div class="dash-content">
+        <div class="stats-row" id="dash-stats"></div>
+        <div class="dash-grid">
+          <div class="dash-panel">
+            <div class="dash-panel-header">Recent Sales</div>
+            <div class="dash-panel-body" id="dash-recent-sales"></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">By Asset Class</div>
+            <div class="dash-panel-body" id="dash-by-asset"></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">By Region</div>
+            <div class="dash-panel-body" id="dash-by-region"></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Scraper Status</div>
+            <div class="dash-panel-body" id="dash-scraper"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Sales ─────────────────────────────────────────────────── -->
+    <section id="section-sales" class="hidden">
+      <div class="page-header">
+        <div>
+          <h1>Sales</h1>
+          <div class="sub" id="sales-count">Finalised investment sales</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="exportSales()">Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddSale()">+ Add Sale</button>
+        </div>
+      </div>
+      <div class="filters-bar" id="sales-filters">
+        <input class="filter-input" id="sf-search" placeholder="Search address, suburb, agent..." oninput="debounce(loadSales,400)()">
+        <select class="filter-select" id="sf-asset" onchange="loadSales()">
           <option value="">All Asset Classes</option>
-          <option>Childcare Centre</option><option>Fast Food</option><option>Medical</option>
-          <option>Retail Net Lease</option><option>Service Station</option><option>Development Site</option>
-          <option>Commercial</option><option>Industrial</option><option>Retail</option>
+          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
+          <option>Residential</option><option>Commercial</option>
         </select>
-      </div>
-      <div class="fg-row" style="margin-bottom:.5rem">
-        <div class="exp-section">
-          <label>From Date</label>
-          <input type="date" id="exp-from" onchange="updateExportCount()">
+        <select class="filter-select" id="sf-process" onchange="loadSales()">
+          <option value="">All Processes</option>
+          <option>EOI</option><option>Auction</option><option>Private Treaty</option>
+          <option>Off-Market</option><option>Tender</option><option>Sale by Negotiation</option>
+        </select>
+        <select class="filter-select" id="sf-region" onchange="loadSales()">
+          <option value="">All Regions</option>
+          <option>CBD/City</option><option>Eastern Suburbs</option><option>Inner West</option>
+          <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
+          <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
+        </select>
+        <input class="filter-input" id="sf-suburb" placeholder="Filter by suburb" oninput="debounce(loadSales,400)()" style="min-width:130px">
+        <div class="ms-wrap" id="sf-years-wrap">
+          <button class="ms-btn" id="sf-years-btn" onclick="toggleMS('sf')">All Years</button>
+          <div class="ms-dropdown" id="sf-years-dd"></div>
         </div>
-        <div class="exp-section">
-          <label>To Date</label>
-          <input type="date" id="exp-to" onchange="updateExportCount()">
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('sf')">Clear</button>
       </div>
-      <div class="exp-count">
-        <div class="exp-count-n" id="exp-count">—</div>
-        <div class="exp-count-l">records match</div>
+      <div class="table-wrap">
+        <table id="sales-table">
+          <thead>
+            <tr>
+              <th onclick="sortTable('sales','address')">Address</th>
+              <th onclick="sortTable('sales','asset_class')">Asset Class</th>
+              <th onclick="sortTable('sales','process')">Process</th>
+              <th onclick="sortTable('sales','price')">Price</th>
+              <th onclick="sortTable('sales','price_guide')">Price Guide</th>
+              <th onclick="sortTable('sales','net_rent')">Net Rent</th>
+              <th onclick="sortTable('sales','yield_percent')">Yield %</th>
+              <th onclick="sortTable('sales','wale')">WALE</th>
+              <th onclick="sortTable('sales','land_area')">Land m²</th>
+              <th onclick="sortTable('sales','agent1')">Agent / Firm</th>
+              <th onclick="sortTable('sales','vendor')">Vendor</th>
+              <th onclick="sortTable('sales','purchaser')">Purchaser</th>
+              <th onclick="sortTable('sales','exchange_date')">Exchange</th>
+              <th onclick="sortTable('sales','settlement_date')">Settlement</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sales-tbody"></tbody>
+        </table>
       </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:.55rem" onclick="doExport()">↓ Download Excel</button>
-      <div class="exp-note" style="margin-top:.75rem">Prices include $ symbol · Dates in dd-mmm-yyyy format · Yields as percentages</div>
-    </div>
-  </div>
-</div>
+    </section>
 
-</div><!-- /main -->
+    <!-- ── Tracking ───────────────────────────────────────────────── -->
+    <section id="section-tracking" class="hidden">
+      <div class="page-header">
+        <div>
+          <h1>Tracking</h1>
+          <div class="sub" id="tracking-count">Active campaigns subject to settlement</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddTracking()">+ Add Property</button>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <input class="filter-input" id="tf-search" placeholder="Search address, agent, vendor..." oninput="debounce(loadTracking,400)()">
+        <select class="filter-select" id="tf-asset" onchange="loadTracking()">
+          <option value="">All Asset Classes</option>
+          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
+          <option>Residential</option><option>Commercial</option>
+        </select>
+        <select class="filter-select" id="tf-process" onchange="loadTracking()">
+          <option value="">All Processes</option>
+          <option>EOI</option><option>Auction</option><option>Private Treaty</option>
+          <option>Off-Market</option><option>Tender</option><option>Sale by Negotiation</option>
+        </select>
+        <select class="filter-select" id="tf-status" onchange="loadTracking()">
+          <option value="">All Statuses</option>
+          <option>Active Campaign</option><option>Under Offer</option>
+          <option>Exchanged - Awaiting Settlement</option><option>Withdrawn</option>
+        </select>
+        <select class="filter-select" id="tf-region" onchange="loadTracking()">
+          <option value="">All Regions</option>
+          <option>CBD/City</option><option>Eastern Suburbs</option><option>Inner West</option>
+          <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
+          <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
+        </select>
+        <input class="filter-input" id="tf-suburb" placeholder="Filter by suburb" oninput="debounce(loadTracking,400)()" style="min-width:130px">
+        <div class="ms-wrap" id="tf-years-wrap">
+          <button class="ms-btn" id="tf-years-btn" onclick="toggleMS('tf')">All Years</button>
+          <div class="ms-dropdown" id="tf-years-dd"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('tf')">Clear</button>
+      </div>
+      <div class="table-wrap">
+        <table id="tracking-table">
+          <thead>
+            <tr>
+              <th onclick="sortTable('tracking','address')">Address</th>
+              <th onclick="sortTable('tracking','asset_class')">Asset Class</th>
+              <th onclick="sortTable('tracking','process')">Process</th>
+              <th onclick="sortTable('tracking','status')">Status</th>
+              <th onclick="sortTable('tracking','price_guide')">Price Guide</th>
+              <th onclick="sortTable('tracking','net_rent')">Net Rent</th>
+              <th onclick="sortTable('tracking','estimated_yield')">Est. Yield</th>
+              <th onclick="sortTable('tracking','agent1')">Agent / Firm</th>
+              <th onclick="sortTable('tracking','vendor')">Vendor</th>
+              <th onclick="sortTable('tracking','campaign_close_date')">Close Date</th>
+              <th onclick="sortTable('tracking','expected_settlement_date')">Exp. Settlement</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tracking-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Validate ───────────────────────────────────────────────── -->
+    <section id="section-validate" class="hidden">
+      <div class="page-header">
+        <div>
+          <h1>Validate</h1>
+          <div class="sub">Review scraped listings before adding to Tracking</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="triggerScrape(this)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+            Run Scraper
+          </button>
+        </div>
+      </div>
+      <div class="validate-content">
+        <div class="validate-toolbar">
+          <div class="tab-group">
+            <button class="tab-btn active" id="vtab-pending" onclick="setVTab('pending')">Pending</button>
+            <button class="tab-btn" id="vtab-approved" onclick="setVTab('approved')">Approved</button>
+            <button class="tab-btn" id="vtab-dismissed" onclick="setVTab('dismissed')">Dismissed</button>
+          </div>
+          <span class="text-muted" id="validate-count" style="font-size:13px"></span>
+        </div>
+        <div class="cards-grid" id="validate-cards"></div>
+      </div>
+    </section>
+
+  </div><!-- /main-content -->
 </div><!-- /app -->
 
-<!-- ALERTS PANEL -->
-<div class="alerts-panel" id="alerts-panel">
-  <div class="alerts-panel-hdr">
-    <h3>Alerts</h3>
-    <div style="display:flex;gap:.4rem;align-items:center">
-      <button class="btn btn-out btn-xs" onclick="markAllAlertsRead()">Mark All Read</button>
-      <button class="btn btn-out btn-xs" onclick="toggleAlerts()">✕</button>
+<!-- ── Modal ─────────────────────────────────────────────────────────── -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-title">Modal</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
     </div>
-  </div>
-  <div class="alerts-list" id="alerts-list"><div class="loading">Loading…</div></div>
-  <div class="alerts-footer" style="font-size:.68rem;color:var(--mid)">Click an alert to view details</div>
-</div>
-
-<!-- TOAST CONTAINER -->
-<div class="toast-wrap" id="toast-wrap"></div>
-
-<!-- MODAL: ADD/EDIT SALE -->
-<div class="overlay" id="sale-overlay">
-  <div class="modal wide">
-    <div class="modal-hdr">
-      <h2 id="sale-modal-title">Add Sale</h2>
-      <button class="modal-close" onclick="closeSaleModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="sm-id">
-
-      <div class="form-section">
-        <div class="form-section-title">Location</div>
-        <div class="fg"><label>Address *</label><input id="sm-address" placeholder="e.g. 123 George Street"></div>
-        <div class="fg-row">
-          <div class="fg"><label>Suburb</label><input id="sm-suburb"></div>
-          <div class="fg"><label>Region</label>
-            <select id="sm-region">
-              <option value="">Select region…</option>
-              <option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
-              <option>North Shore</option><option>Sydney CBD</option><option>West</option>
-              <option>Western Sydney</option><option>Central Coast</option><option>Hunter</option>
-              <option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option>
-              <option>Southern Tablelands</option>
-            </select>
-          </div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Zoning</label><input id="sm-zoning" placeholder="e.g. R4"></div>
-          <div class="fg"><label>FSR</label><input id="sm-fsr" placeholder="e.g. 3:1"></div>
-          <div class="fg"><label>Height (m)</label><input id="sm-height" type="number" min="0"></div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-section-title">Classification</div>
-        <div class="fg-row">
-          <div class="fg"><label>Source Database</label>
-            <select id="sm-source">
-              <option value="">Select…</option>
-              <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
-            </select>
-          </div>
-          <div class="fg"><label>Asset Class</label>
-            <select id="sm-class" onchange="onClassChange()">
-              <option value="">Select…</option>
-              <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
-              <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
-              <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
-              <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
-              <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
-              <option>Strata Retail</option><option>Town Centre</option>
-            </select>
-          </div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Status</label>
-            <select id="sm-status">
-              <option>Active</option><option>Sold</option><option>Withdrawn</option>
-            </select>
-          </div>
-          <div class="fg"><label>Process</label>
-            <select id="sm-process">
-              <option value="">Select…</option>
-              <option>Auction</option><option>EOI</option><option>Off Market</option>
-              <option>Private Treaty</option><option>Tender</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Premium section (conditionally shown) -->
-      <div class="form-section" id="sm-premium-section" style="display:none">
-        <div class="form-section-title" style="color:var(--red)">Premium Investment Details</div>
-        <div class="fg-row">
-          <div class="fg"><label>Operator / Tenant</label><input id="sm-operator" placeholder="e.g. G8 Education"></div>
-          <div class="fg" id="sm-places-wrap" style="display:none">
-            <label>Licensed Places (CC)</label><input id="sm-places" type="number" min="0" placeholder="e.g. 90">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-section-title">Financials</div>
-        <div class="fg-row">
-          <div class="fg"><label>Sale Price ($)</label><input id="sm-price" type="number" min="0" oninput="autoCalc()"></div>
-          <div class="fg"><label>Price Guide ($)</label><input id="sm-guide" type="number" min="0"></div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Net Rent ($/yr)</label><input id="sm-rent" type="number" min="0" oninput="autoCalc()"></div>
-          <div class="fg"><label>Outgoings ($/yr)</label><input id="sm-outgoings" type="number" min="0"></div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Yield % (auto-calc)</label><input id="sm-yield" readonly placeholder="auto"></div>
-          <div class="fg"><label>Land $/m² (auto-calc)</label><input id="sm-landpsm" readonly placeholder="auto"></div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>WALE (yrs)</label><input id="sm-wale" type="number" step="0.1" min="0"></div>
-          <div class="fg"><label>RC Status</label><input id="sm-rcstatus" placeholder="e.g. Pending"></div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-section-title">Areas</div>
-        <div class="fg-row">
-          <div class="fg"><label>Land Area (m²)</label><input id="sm-landarea" type="number" min="0" oninput="autoCalc()"></div>
-          <div class="fg"><label>Floor Area (m²)</label><input id="sm-floorarea" type="number" min="0"></div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-section-title">Dates</div>
-        <div class="fg-row">
-          <div class="fg"><label>Sale Date</label><input id="sm-saledate" type="date"></div>
-          <div class="fg"><label>Settlement Date</label><input id="sm-settledate" type="date"></div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Campaign Close Date</label><input id="sm-closedate" type="date"></div>
-          <div class="fg"><label>Date Listed</label><input id="sm-listed" type="date"></div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-section-title">Parties</div>
-        <div class="fg-row">
-          <div class="fg"><label>Agent 1</label><input id="sm-agent1"></div>
-          <div class="fg"><label>Agent 2</label><input id="sm-agent2"></div>
-        </div>
-        <div class="fg-row">
-          <div class="fg"><label>Vendor</label><input id="sm-vendor"></div>
-          <div class="fg"><label>Purchaser</label><input id="sm-purchaser"></div>
-        </div>
-      </div>
-
-      <div class="fg"><label>Comments</label><textarea id="sm-comments" rows="3"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeSaleModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSale()">Save Sale</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: ADD/EDIT CAMPAIGN -->
-<div class="overlay" id="camp-overlay">
-  <div class="modal">
-    <div class="modal-hdr">
-      <h2 id="camp-modal-title">Add Campaign</h2>
-      <button class="modal-close" onclick="closeCampModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="cm-id">
-      <div class="fg"><label>Address *</label><input id="cm-address"></div>
-      <div class="fg-row">
-        <div class="fg"><label>Suburb</label><input id="cm-suburb"></div>
-        <div class="fg"><label>Region</label>
-          <select id="cm-region">
-            <option value="">Select…</option>
-            <option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
-            <option>North Shore</option><option>Sydney CBD</option><option>West</option>
-            <option>Western Sydney</option><option>Central Coast</option><option>Hunter</option>
-            <option>Macarthur</option><option>Riverina</option><option>Southern Highlands</option>
-            <option>Southern Tablelands</option>
-          </select>
-        </div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Source</label>
-          <select id="cm-source">
-            <option value="">Select…</option>
-            <option>Metro</option><option>NSW Land</option><option>Premium Investment</option>
-          </select>
-        </div>
-        <div class="fg"><label>Asset Class</label>
-          <select id="cm-class">
-            <option value="">Select…</option>
-            <option>Apartment Block</option><option>Brownfield Infill</option><option>Childcare Centre</option>
-            <option>Co-Living/Boarding House</option><option>Commercial</option><option>Development Site</option>
-            <option>Fast Food</option><option>Greenfield</option><option>Hotel/Pub</option><option>Industrial</option>
-            <option>Medical</option><option>Middle Markets</option><option>Retail</option><option>Retail Net Lease</option>
-            <option>Retail/Mixed Use</option><option>Service Station</option><option>Shop Top</option>
-            <option>Strata Retail</option><option>Town Centre</option>
-          </select>
-        </div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Process</label>
-          <select id="cm-process">
-            <option value="">Select…</option>
-            <option>Auction</option><option>EOI</option><option>Off Market</option>
-            <option>Private Treaty</option><option>Tender</option>
-          </select>
-        </div>
-        <div class="fg"><label>Zoning</label><input id="cm-zoning"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Date Listed</label><input id="cm-listed" type="date"></div>
-        <div class="fg"><label>Close Date</label><input id="cm-close" type="date"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Price Guide ($)</label><input id="cm-guide" type="number" min="0"></div>
-        <div class="fg"><label>Net Income ($/yr)</label><input id="cm-income" type="number" min="0"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Land Area (m²)</label><input id="cm-landarea" type="number" min="0"></div>
-        <div class="fg"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Agent 1</label><input id="cm-agent1"></div>
-        <div class="fg"><label>Agent 2</label><input id="cm-agent2"></div>
-      </div>
-      <div class="fg"><label>Vendor</label><input id="cm-vendor"></div>
-      <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeCampModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCampaign()">Save Campaign</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: MARK SOLD -->
-<div class="overlay" id="sold-overlay">
-  <div class="modal">
-    <div class="modal-hdr">
-      <h2>Mark Campaign Sold</h2>
-      <button class="modal-close" onclick="closeSoldModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="sold-camp-id">
-      <div class="fg-row">
-        <div class="fg"><label>Sale Price * ($)</label><input id="sold-price" type="number" min="0" required></div>
-        <div class="fg"><label>Sold Date *</label><input id="sold-date" type="date" required></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Settlement Date</label><input id="sold-settle" type="date"></div>
-        <div class="fg"><label>Net Rent ($/yr)</label><input id="sold-rent" type="number" min="0"></div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Vendor</label><input id="sold-vendor"></div>
-        <div class="fg"><label>Purchaser</label><input id="sold-purchaser"></div>
-      </div>
-      <div class="fg"><label>Result Notes</label><textarea id="sold-notes" rows="3"></textarea></div>
-      <div class="fg" style="margin-top:.5rem">
-        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.78rem;font-weight:400">
-          <input type="checkbox" id="sold-create-sale" checked> Also create a Sale record in the database
-        </label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeSoldModal()">Cancel</button>
-      <button class="btn btn-amber" onclick="markSold()">Mark as Settlement</button>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-submit" onclick="submitModal()">Save</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let state = {
-  sales: [], campaigns: [], discoveries: [], alerts: [], stats: {},
-  activeView: 'view-dash',
-  salesPage: 1, salesPageSize: 50,
-  discSeg: 'pending',
-  alertsOpen: false
+// ═══════════════════════════════════════════════════════════════
+// STATE & CONFIG
+// ═══════════════════════════════════════════════════════════════
+const S = {
+  token: localStorage.getItem('auth_token'),
+  salesData: [], trackingData: [],
+  salesSort: { col: 'created_at', dir: 'desc' },
+  trackingSort: { col: 'created_at', dir: 'desc' },
+  sfYears: new Set(), tfYears: new Set(),
+  sfYearOpts: [], tfYearOpts: [],
+  modalSubmit: null,
+  vtab: 'pending',
 };
 
-// ─── FORMATTERS ──────────────────────────────────────────────────────────────
-const f$ = v => v ? '$' + Math.round(v).toLocaleString('en-AU') : '—';
-const fYld = v => v ? (v < 1 ? (v * 100).toFixed(2) : parseFloat(v).toFixed(2)) + '%' : '—';
-const fD = v => {
-  if (!v) return '—';
-  try { return new Date(v + (v.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'}); }
-  catch(e) { return v; }
-};
-const fNum = v => v ? Number(v).toLocaleString('en-AU') : '—';
-const daysTo = v => {
-  if (!v) return null;
-  const t = new Date();
-  const local = new Date(t.getFullYear(), t.getMonth(), t.getDate());
-  const [y,m,d] = v.split('-').map(Number);
-  return Math.round((new Date(y, m-1, d) - local) / 86400000);
-};
-const daysBadge = v => {
-  if (v === null) return '';
-  const cls = v < 0 ? 'days-mid' : v <= 7 ? 'days-red' : v <= 14 ? 'days-amber' : 'days-green';
-  const lbl = v < 0 ? `${Math.abs(v)}d ago` : v === 0 ? 'Today' : `${v}d`;
-  return `<span class="days-badge ${cls}">${lbl}</span>`;
-};
-const statusBadge = s => {
-  if (!s) return '';
-  const m = {active:'b-active',sold:'b-sold',settlement:'b-settlement',withdrawn:'b-withdrawn',pending:'b-pending'};
-  const k = s.toLowerCase();
-  return `<span class="badge ${m[k]||'b-pending'}">${s}</span>`;
-};
+const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Medical/Healthcare',
+  'Development Site','Fast Food/QSR','Service Station','Pub/Hotel','Residential','Commercial'];
+const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
+const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
+const REGIONS = ['CBD/City','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
+  'Western Sydney','Hills District','Southern Sydney','South West Sydney'];
 
-// ─── API ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════
 async function api(method, path, body) {
   try {
-    const res = await fetch(path, {
-      method,
-      headers: {'Content-Type': 'application/json'},
-      body: body ? JSON.stringify(body) : undefined
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(txt || `HTTP ${res.status}`);
-    }
-    const ct = res.headers.get('content-type') || '';
-    if (ct.includes('json')) return res.json();
-    return res.text();
-  } catch(e) {
-    throw e;
-  }
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch('/api' + path, opts);
+    if (r.status === 401) { logout(); return null; }
+    return r.json();
+  } catch(e) { console.error(e); return null; }
+}
+const GET  = p      => api('GET', p);
+const POST = (p, b) => api('POST', p, b);
+const PUT  = (p, b) => api('PUT', p, b);
+const DEL  = p      => api('DELETE', p);
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+async function login() {
+  const pw = document.getElementById('pw-input').value;
+  const err = document.getElementById('login-error');
+  err.classList.add('hidden');
+  const data = await api('POST', '/auth/login', { password: pw });
+  if (!data || data.error) { err.classList.remove('hidden'); return; }
+  S.token = data.token;
+  localStorage.setItem('auth_token', S.token);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
 }
 
-// ─── TOAST ───────────────────────────────────────────────────────────────────
-function toast(msg, type = 'info') {
-  const wrap = document.getElementById('toast-wrap');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+function logout() {
+  localStorage.removeItem('auth_token');
+  S.token = null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('pw-input').value = '';
 }
 
-// ─── NAVIGATION ──────────────────────────────────────────────────────────────
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
-  const view = document.getElementById(id);
-  if (view) view.classList.add('on');
-  const ni = document.getElementById('ni-' + id.replace('view-', ''));
-  if (ni) ni.classList.add('on');
-  state.activeView = id;
-  if (id === 'view-dash') renderDash();
-  if (id === 'view-sales') renderSales();
-  if (id === 'view-campaigns') renderCampaigns();
-  if (id === 'view-discoveries') renderDiscoveries();
-  if (id === 'view-premium') renderPremium();
-  if (id === 'view-export') updateExportCount();
+async function checkAuth() {
+  if (!S.token) return false;
+  const data = await GET('/auth/me');
+  return data && data.ok;
 }
 
-// ─── LOAD ALL ─────────────────────────────────────────────────────────────────
-async function loadAll() {
-  try {
-    const [sales, campaigns, discoveries, alerts, stats] = await Promise.all([
-      api('GET', '/api/sales').catch(() => []),
-      api('GET', '/api/campaigns').catch(() => []),
-      api('GET', '/api/discoveries').catch(() => []),
-      api('GET', '/api/alerts').catch(() => []),
-      api('GET', '/api/stats').catch(() => ({}))
-    ]);
-    state.sales = Array.isArray(sales) ? sales : (sales.data || []);
-    state.campaigns = Array.isArray(campaigns) ? campaigns : (campaigns.data || []);
-    state.discoveries = Array.isArray(discoveries) ? discoveries : (discoveries.data || []);
-    state.alerts = Array.isArray(alerts) ? alerts : (alerts.data || []);
-    state.stats = stats || {};
-    updateBadges();
-    renderCurrentView();
-    loadScrapeStatus();
-  } catch(e) {
-    toast('Failed to load data: ' + e.message, 'err');
-  }
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function initApp() {
+  showSection('dashboard');
+  loadDashboard();
+  loadValidateBadge();
+  initYearMS('sf');
+  initYearMS('tf');
 }
 
-function renderCurrentView() {
-  const v = state.activeView;
-  if (v === 'view-dash') renderDash();
-  else if (v === 'view-sales') renderSales();
-  else if (v === 'view-campaigns') renderCampaigns();
-  else if (v === 'view-discoveries') renderDiscoveries();
-  else if (v === 'view-premium') renderPremium();
-}
-
-function updateBadges() {
-  document.getElementById('nb-sales').textContent = state.sales.length;
-  const activeCamps = state.campaigns.filter(c => c.status === 'Active' || c.status === 'active').length;
-  document.getElementById('nb-campaigns').textContent = activeCamps;
-  const pending = state.discoveries.filter(d => !d.dismissed && (d.status === 'pending' || !d.tracked)).length;
-  document.getElementById('nb-discoveries').textContent = pending;
-  const unread = state.alerts.filter(a => !a.read).length;
-  const bell = document.getElementById('bell-badge');
-  bell.textContent = unread;
-  bell.style.display = unread > 0 ? 'block' : 'none';
-  renderAlertsList();
-}
-
-// ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function renderDash() {
-  const el = document.getElementById('dash-content');
-  const s = state.stats;
-  const sales = state.sales;
-  const camps = state.campaigns;
-  const discs = state.discoveries;
-  const alerts = state.alerts;
-
-  const pendingDiscs = discs.filter(d => !d.dismissed && !d.tracked);
-  const premiumDiscs = pendingDiscs.filter(d => d.is_premium);
-  const unread = alerts.filter(a => !a.read).length;
-  const activeCamps = camps.filter(c => (c.status||'').toLowerCase() === 'active');
-  const dueIn14 = activeCamps.filter(c => { const d = daysTo(c.close_date); return d !== null && d >= 0 && d <= 14; });
-  const recentSales = [...sales].sort((a,b) => (b.sale_date||'').localeCompare(a.sale_date||'')).slice(0,5);
-
-  el.innerHTML = `
-    <div class="stats-grid">
-      <div class="stat-card red">
-        <div class="stat-label">Total Sales</div>
-        <div class="stat-val">${sales.length}</div>
-        <div class="stat-sub">in database</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="stat-label">Active Campaigns</div>
-        <div class="stat-val">${activeCamps.length}</div>
-        <div class="stat-sub">campaigns running</div>
-      </div>
-      <div class="stat-card amber">
-        <div class="stat-label">Pending Discoveries</div>
-        <div class="stat-val">${pendingDiscs.length}${premiumDiscs.length ? ` <span style="font-size:.9rem;color:var(--red)">(${premiumDiscs.length} premium)</span>` : ''}</div>
-        <div class="stat-sub">awaiting review</div>
-      </div>
-      <div class="stat-card green">
-        <div class="stat-label">Unread Alerts</div>
-        <div class="stat-val">${unread}</div>
-        <div class="stat-sub">notifications</div>
-      </div>
-    </div>
-
-    <div class="db-grid" style="margin-bottom:.7rem">
-      <div class="db-card">
-        <div class="db-card-hdr">
-          <h3>New Discoveries</h3>
-          <button class="btn btn-out btn-xs" onclick="showView('view-discoveries')">View All</button>
-        </div>
-        ${pendingDiscs.length === 0
-          ? '<div style="font-size:.76rem;color:var(--mid);padding:.5rem 0">No pending discoveries</div>'
-          : pendingDiscs.slice(0,5).map(d => `
-            <div class="disc-card">
-              <div class="disc-card-info">
-                <div class="disc-card-addr">${d.address || '—'}</div>
-                <div class="disc-card-meta">${d.suburb||''} · ${d.asset_class||d.type||''} · ${d.is_premium?'<span style="color:var(--red);font-weight:600">PREMIUM</span>':''}</div>
-              </div>
-              <div class="disc-card-acts">
-                <button class="btn btn-green btn-xs" onclick="trackDiscovery('${d.id}',this)">ACCEPT</button>
-                <button class="btn btn-out btn-xs" onclick="dismissDiscovery('${d.id}',this)">DISMISS</button>
-              </div>
-            </div>`).join('')}
-      </div>
-
-      <div class="db-card">
-        <div class="db-card-hdr">
-          <h3>Recent Sales</h3>
-          <button class="btn btn-out btn-xs" onclick="showView('view-sales')">View All</button>
-        </div>
-        ${recentSales.length === 0
-          ? '<div style="font-size:.76rem;color:var(--mid);padding:.5rem 0">No sales recorded</div>'
-          : recentSales.map(s => `
-            <div class="db-row">
-              <div class="db-row-l">${s.address||'—'}<br><span style="font-size:.63rem">${s.suburb||''}</span></div>
-              <div style="text-align:right">
-                <div class="db-row-v">${f$(s.sale_price)}</div>
-                <div style="font-size:.63rem;color:var(--mid)">${fD(s.sale_date)}</div>
-              </div>
-            </div>`).join('')}
-      </div>
-    </div>
-
-    <div class="db-card" style="margin-bottom:.7rem">
-      <div class="db-card-hdr">
-        <h3>Active Campaigns — Closing in 14 Days</h3>
-        <button class="btn btn-out btn-xs" onclick="showView('view-campaigns')">All Campaigns</button>
-      </div>
-      ${dueIn14.length === 0
-        ? '<div style="font-size:.76rem;color:var(--mid)">No campaigns closing in the next 14 days</div>'
-        : `<div class="camp-strip">${dueIn14.map(c => {
-            const d = daysTo(c.close_date);
-            return `<div class="camp-chip" onclick="openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
-              <div class="camp-chip-addr">${c.address||'—'}</div>
-              <div class="camp-chip-meta">${c.suburb||''} · ${daysBadge(d)}</div>
-              <div class="camp-chip-meta" style="margin-top:.3rem">${f$(c.price_guide)}</div>
-            </div>`;}).join('')}</div>`}
-    </div>
-  `;
-}
-
-// ─── SALES TABLE ──────────────────────────────────────────────────────────────
-function getFilteredSales() {
-  let rows = state.sales;
-  const src = document.getElementById('sf-source')?.value || '';
-  const cls = document.getElementById('sf-class')?.value || '';
-  const sts = document.getElementById('sf-status')?.value || '';
-  const yr = document.getElementById('sf-year')?.value || '';
-  const q = (document.getElementById('sf-q')?.value || '').toLowerCase().trim();
-  if (src) rows = rows.filter(r => r.source === src || r.source_database === src);
-  if (cls) rows = rows.filter(r => r.asset_class === cls || r.classification === cls);
-  if (sts) rows = rows.filter(r => (r.status||'').toLowerCase() === sts.toLowerCase());
-  if (yr) rows = rows.filter(r => r.sale_date && r.sale_date.startsWith(yr));
-  if (q) rows = rows.filter(r =>
-    (r.address||'').toLowerCase().includes(q) ||
-    (r.suburb||'').toLowerCase().includes(q) ||
-    (r.asset_class||r.classification||'').toLowerCase().includes(q) ||
-    (r.agent_1||r.agent1||'').toLowerCase().includes(q)
-  );
-  return rows;
-}
-
-function renderSales() {
-  const yearSel = document.getElementById('sf-year');
-  if (yearSel && yearSel.options.length <= 1) {
-    const years = [...new Set(state.sales.map(s => s.sale_date?.slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
-    years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o); });
-  }
-  const rows = getFilteredSales();
-  const total = rows.length;
-  const pageSize = state.salesPageSize;
-  const maxPage = Math.max(1, Math.ceil(total / pageSize));
-  if (state.salesPage > maxPage) state.salesPage = 1;
-  const page = state.salesPage;
-  const slice = rows.slice((page-1)*pageSize, page*pageSize);
-
-  document.getElementById('sales-cnt').textContent = `${total} record${total !== 1 ? 's' : ''}`;
-
-  const tbody = document.getElementById('sales-tbody');
-  if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><strong>No records found</strong><span>Adjust filters or add a sale</span></div></td></tr>`;
-  } else {
-    tbody.innerHTML = slice.map((r, i) => {
-      const ac = r.asset_class || r.classification || '—';
-      const op = r.operator || r.tenant || '';
-      const agent = r.agent_1 || r.agent1 || '—';
-      return `<tr class="${i%2===1?'even':''}" onclick="openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">
-        <td class="td-addr" title="${r.address||''}">${r.address||'—'}</td>
-        <td>${r.suburb||'—'}</td>
-        <td>${ac}${op?`<br><span class="td-sm">${op}</span>`:''}</td>
-        <td>${statusBadge(r.status)}</td>
-        <td style="font-weight:600">${f$(r.sale_price)}</td>
-        <td>${fYld(r.yield_pct)}</td>
-        <td>${r.wale ? r.wale + 'y' : '—'}</td>
-        <td><span class="agent-link">${agent}</span></td>
-        <td>${fD(r.sale_date)}</td>
-        <td><button class="btn btn-out btn-xs" onclick="event.stopPropagation();openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">Edit</button></td>
-      </tr>`;
-    }).join('');
-  }
-
-  // Pager
-  const pager = document.getElementById('sales-pager');
-  pager.innerHTML = `
-    <button class="pager-btn" onclick="changeSalesPage(-1)" ${page<=1?'disabled':''}>← Prev</button>
-    <span class="pager-info">Page ${page} of ${maxPage} · ${total} records</span>
-    <button class="pager-btn" onclick="changeSalesPage(1)" ${page>=maxPage?'disabled':''}>Next →</button>
-  `;
-}
-
-function changeSalesPage(dir) {
-  state.salesPage += dir;
-  renderSales();
-}
-
-// ─── CAMPAIGNS ────────────────────────────────────────────────────────────────
-function renderCampaigns() {
-  const sts = document.getElementById('cf-status')?.value || '';
-  const q = (document.getElementById('cf-q')?.value || '').toLowerCase().trim();
-  let rows = state.campaigns;
-  if (sts) rows = rows.filter(c => (c.status||'').toLowerCase() === sts.toLowerCase());
-  if (q) rows = rows.filter(c =>
-    (c.address||'').toLowerCase().includes(q) ||
-    (c.suburb||'').toLowerCase().includes(q) ||
-    (c.agent_1||c.agent1||'').toLowerCase().includes(q)
-  );
-  document.getElementById('camp-cnt').textContent = `${rows.length} campaign${rows.length!==1?'s':''}`;
-  const tbody = document.getElementById('camp-tbody');
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><strong>No campaigns found</strong><span>Add a campaign to get started</span></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = rows.map((c,i) => {
-    const d = daysTo(c.close_date);
-    const agent = c.agent_1 || c.agent1 || '—';
-    return `<tr class="${i%2===1?'even':''}" onclick="openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
-      <td class="td-addr" title="${c.address||''}">${c.address||'—'}</td>
-      <td>${c.suburb||'—'}</td>
-      <td>${c.asset_class||c.type||'—'}</td>
-      <td>${c.process||'—'}</td>
-      <td>${c.close_date ? `${fD(c.close_date)} ${daysBadge(d)}` : '—'}</td>
-      <td>${f$(c.price_guide)}</td>
-      <td><span class="agent-link">${agent}</span></td>
-      <td>${statusBadge(c.status)}</td>
-      <td style="display:flex;gap:.3rem;padding:.35rem .4rem">
-        <button class="btn btn-out btn-xs" onclick="event.stopPropagation();openCampaignModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">Edit</button>
-        ${(c.status||'').toLowerCase() === 'active' ? `<button class="btn btn-amber btn-xs" onclick="event.stopPropagation();openSoldModal('${c.id}')">Mark Sold</button>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── DISCOVERIES ─────────────────────────────────────────────────────────────
-function setDiscSeg(seg) {
-  state.discSeg = seg;
-  ['pending','premium','all'].forEach(s => {
-    document.getElementById('dseg-'+s).classList.toggle('on', s === seg);
-  });
-  renderDiscoveries();
-}
-
-async function loadScrapeStatus() {
-  try {
-    const log = await api('GET', '/api/scrape/log');
-    const dot = document.getElementById('scrape-dot');
-    const txt = document.getElementById('scrape-status-txt');
-    if (log && log.last_run) {
-      const d = new Date(log.last_run);
-      const hrs = (Date.now() - d) / 3600000;
-      dot.className = 'scrape-dot ' + (hrs < 2 ? '' : hrs < 24 ? 'stale' : 'stale');
-      txt.textContent = `Last scan: ${fD(log.last_run.slice(0,10))} · ${log.results_count||0} results · Status: ${log.status||'OK'}`;
+window.addEventListener('load', async () => {
+  if (S.token) {
+    const ok = await checkAuth();
+    if (ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').classList.remove('hidden');
+      initApp();
     } else {
-      dot.className = 'scrape-dot unknown';
-      txt.textContent = 'No scan recorded yet';
+      S.token = null;
+      localStorage.removeItem('auth_token');
     }
-  } catch(e) {
-    document.getElementById('scrape-status-txt').textContent = 'Scrape status unavailable';
   }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showSection(name) {
+  document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.remove('hidden');
+  document.querySelector('.nav-item[data-section="' + name + '"]').classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'sales') { loadSalesYears(); loadSales(); }
+  if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
+  if (name === 'validate') loadValidate();
 }
 
-async function runScan() {
-  const btn = document.getElementById('scan-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Scanning…';
-  try {
-    const result = await api('POST', '/api/scrape');
-    toast(`Scan complete · ${result.count||0} new discoveries`, 'info');
-    await loadAll();
-    loadScrapeStatus();
-  } catch(e) {
-    toast('Scan failed: ' + e.message, 'err');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '⟳ Scan Now';
-  }
-}
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  const data = await GET('/stats');
+  if (!data) return;
 
-function renderDiscoveries() {
-  const seg = state.discSeg;
-  let rows = state.discoveries;
-  if (seg === 'pending') rows = rows.filter(d => !d.dismissed && !d.tracked);
-  else if (seg === 'premium') rows = rows.filter(d => d.is_premium && !d.dismissed);
-  document.getElementById('disc-cnt').textContent = `${rows.length} listing${rows.length!==1?'s':''}`;
-  const grid = document.getElementById('disc-grid');
-  if (rows.length === 0) {
-    grid.innerHTML = `<div class="empty"><strong>No discoveries</strong><span>${seg==='pending'?'All caught up! Run a scan to find new listings.':'No listings match this filter.'}</span></div>`;
-    return;
-  }
-  const srcColors = {CRE:'#1565C0',RealCommercial:'#15803D',Stonebridge:'#B45309',BurgessRawson:'#E1251B'};
-  grid.innerHTML = rows.map(d => {
-    const src = d.source_name || d.source || '';
-    const srcColor = srcColors[src] || '';
-    const isNew = d.listing_type === 'new' || !d.listing_type;
-    const isChange = d.listing_type === 'change' || d.listing_type === 'status_change';
-    return `<div class="d-card${d.is_premium?' premium':''}">
-      <div class="d-card-body">
-        <div class="d-card-badges">
-          ${d.is_premium ? '<span class="badge b-premium">PREMIUM</span>' : ''}
-          ${isChange ? '<span class="badge b-change">STATUS CHANGE</span>' : '<span class="badge b-new">NEW LISTING</span>'}
-          ${src ? `<span class="src-badge" style="${srcColor?`color:${srcColor};border-color:${srcColor}30`:''}">${src}</span>` : ''}
-        </div>
-        <div class="d-card-addr">${d.address||'—'}</div>
-        <div class="d-card-sub">${[d.suburb, d.asset_class||d.type].filter(Boolean).join(' · ')}</div>
-        <div class="d-card-row">
-          ${d.price||d.price_guide ? `<span>Price: <b>${f$(d.price||d.price_guide)}</b></span>` : ''}
-          ${d.yield_pct ? `<span>Yield: <b>${fYld(d.yield_pct)}</b></span>` : ''}
-          ${d.agent ? `<span>Agent: <b>${d.agent}</b></span>` : ''}
-        </div>
-        <div class="d-card-acts">
-          ${!d.tracked ? `<button class="btn btn-green btn-sm" onclick="trackDiscovery('${d.id}',this)">TRACK</button>` : '<span class="badge b-active">Tracked</span>'}
-          ${!d.dismissed ? `<button class="btn btn-out btn-sm" onclick="dismissDiscovery('${d.id}',this)">DISMISS</button>` : '<span class="badge b-withdrawn">Dismissed</span>'}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function trackDiscovery(id, btn) {
-  btn.disabled = true;
-  try {
-    await api('POST', `/api/discoveries/${id}/track`);
-    const d = state.discoveries.find(x => String(x.id) === String(id));
-    if (d) d.tracked = true;
-    toast('Added to campaigns', 'info');
-    renderDiscoveries();
-    updateBadges();
-  } catch(e) {
-    toast('Failed: ' + e.message, 'err');
-    btn.disabled = false;
-  }
-}
-
-async function dismissDiscovery(id, btn) {
-  btn.disabled = true;
-  try {
-    await api('POST', `/api/discoveries/${id}/dismiss`);
-    const d = state.discoveries.find(x => String(x.id) === String(id));
-    if (d) d.dismissed = true;
-    renderDiscoveries();
-    updateBadges();
-  } catch(e) {
-    toast('Failed: ' + e.message, 'err');
-    btn.disabled = false;
-  }
-}
-
-// ─── PREMIUM ──────────────────────────────────────────────────────────────────
-const PREMIUM_CLASSES = ['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'];
-
-function renderPremium() {
-  const rows = state.sales.filter(s =>
-    s.source === 'Premium Investment' || s.source_database === 'Premium Investment' ||
-    PREMIUM_CLASSES.includes(s.asset_class) || PREMIUM_CLASSES.includes(s.classification)
-  );
-  const withYield = rows.filter(r => r.yield_pct);
-  const withWale = rows.filter(r => r.wale);
-  const avgYield = withYield.length ? withYield.reduce((a,r) => a + parseFloat(r.yield_pct), 0) / withYield.length : null;
-  const avgWale = withWale.length ? withWale.reduce((a,r) => a + parseFloat(r.wale), 0) / withWale.length : null;
-  const cc = rows.filter(r => (r.asset_class||r.classification) === 'Childcare Centre' && r.sale_price && r.licensed_places);
-  const avgPpsm = cc.length ? cc.reduce((a,r) => a + r.sale_price / r.licensed_places, 0) / cc.length : null;
-
-  document.getElementById('prem-stats').innerHTML = `
-    <div class="stat-card red"><div class="stat-label">Total Premium</div><div class="stat-val">${rows.length}</div><div class="stat-sub">sales</div></div>
-    <div class="stat-card amber"><div class="stat-label">Avg Yield</div><div class="stat-val" style="font-size:1.5rem">${avgYield ? fYld(avgYield) : '—'}</div><div class="stat-sub">across ${withYield.length} records</div></div>
-    <div class="stat-card blue"><div class="stat-label">Avg WALE</div><div class="stat-val" style="font-size:1.5rem">${avgWale ? avgWale.toFixed(1)+'y' : '—'}</div><div class="stat-sub">across ${withWale.length} records</div></div>
-    <div class="stat-card green"><div class="stat-label">Avg $/Place (CC)</div><div class="stat-val" style="font-size:1.5rem">${avgPpsm ? f$(avgPpsm) : '—'}</div><div class="stat-sub">${cc.length} childcare records</div></div>
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${data.totalSales}</div><div class="stat-label">Total Sales</div></div>
+    <div class="stat-card green"><div class="stat-num">${data.totalTracking}</div><div class="stat-label">Tracking</div></div>
+    <div class="stat-card blue"><div class="stat-num">${data.pendingValidate}</div><div class="stat-label">Pending Validation</div></div>
   `;
 
-  const tbody = document.getElementById('prem-tbody');
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty"><strong>No premium records</strong><span>Sales with premium asset classes will appear here</span></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = rows.map((r,i) => {
-    const ac = r.asset_class || r.classification || '—';
-    const ppplace = (ac === 'Childcare Centre' && r.sale_price && r.licensed_places) ? f$(r.sale_price / r.licensed_places) : '—';
-    return `<tr class="${i%2===1?'even':''}" onclick="openSaleModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">
-      <td class="td-addr">${r.address||'—'}</td>
-      <td>${r.suburb||'—'}</td>
-      <td>${ac}</td>
-      <td>${r.operator||r.tenant||'—'}</td>
-      <td style="font-weight:600">${f$(r.sale_price)}</td>
-      <td>${f$(r.net_rent)}</td>
-      <td>${fYld(r.yield_pct)}</td>
-      <td>${r.wale ? r.wale + 'y' : '—'}</td>
-      <td>${ppplace}</td>
-      <td><span class="agent-link">${r.agent_1||r.agent1||'—'}</span></td>
-      <td>${fD(r.sale_date)}</td>
-    </tr>`;
-  }).join('');
+  document.getElementById('dash-recent-sales').innerHTML = data.recentSales.length
+    ? data.recentSales.map(s => `
+        <div class="dash-row">
+          <div class="dash-row-left">${s.address}<br><small style="color:var(--muted);font-weight:400">${s.suburb||''} · ${s.asset_class||''}</small></div>
+          <div class="dash-row-right">${s.price ? '$'+fmt(s.price) : s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '–'}</div>
+        </div>`).join('')
+    : '<div class="scraper-status">No sales recorded yet</div>';
+
+  document.getElementById('dash-by-asset').innerHTML = data.byAsset.length
+    ? data.byAsset.map(r => `
+        <div class="dash-row">
+          <div class="dash-row-left">${assetBadge(r.asset_class)}</div>
+          <div class="dash-row-right fw-600">${r.count}</div>
+        </div>`).join('')
+    : '<div class="scraper-status">No data</div>';
+
+  document.getElementById('dash-by-region').innerHTML = data.byRegion.length
+    ? data.byRegion.map(r => `
+        <div class="dash-row">
+          <div class="dash-row-left">${r.region}</div>
+          <div class="dash-row-right fw-600">${r.count}</div>
+        </div>`).join('')
+    : '<div class="scraper-status">No data</div>';
+
+  const ls = data.lastScrape;
+  document.getElementById('dash-scraper').innerHTML = ls
+    ? `<div class="scraper-status"><div class="dot ${ls.status==='ok'?'':'err'}"></div>Last run: ${fmtDate(ls.ran_at)} — Found ${ls.found}, added ${ls.added}</div>`
+    : '<div class="scraper-status"><div class="dot warn"></div>Scraper not yet run</div>';
+
+  updateValidateBadge(data.pendingValidate);
 }
 
-// ─── EXPORT ───────────────────────────────────────────────────────────────────
-function updateExportCount() {
-  const src = document.getElementById('exp-source')?.value || '';
-  const sts = document.getElementById('exp-status')?.value || '';
-  const cls = document.getElementById('exp-class')?.value || '';
-  const from = document.getElementById('exp-from')?.value || '';
-  const to = document.getElementById('exp-to')?.value || '';
-  let rows = state.sales;
-  if (src) rows = rows.filter(r => r.source === src || r.source_database === src);
-  if (sts) rows = rows.filter(r => (r.status||'').toLowerCase() === sts.toLowerCase());
-  if (cls) rows = rows.filter(r => r.asset_class === cls || r.classification === cls);
-  if (from) rows = rows.filter(r => r.sale_date && r.sale_date >= from);
-  if (to) rows = rows.filter(r => r.sale_date && r.sale_date <= to);
-  document.getElementById('exp-count').textContent = rows.length;
+// ═══════════════════════════════════════════════════════════════
+// YEAR MULTI-SELECT
+// ═══════════════════════════════════════════════════════════════
+function initYearMS(prefix) {
+  const years = [2026,2025,2024,2023,2022,2021,2020,2019,2018];
+  const ddEl  = document.getElementById(prefix + '-years-dd');
+  renderYearDD(prefix, years, ddEl);
 }
 
-function doExport() {
-  const params = new URLSearchParams({
-    source: document.getElementById('exp-source')?.value || '',
-    status: document.getElementById('exp-status')?.value || '',
-    classification: document.getElementById('exp-class')?.value || '',
-    from: document.getElementById('exp-from')?.value || '',
-    to: document.getElementById('exp-to')?.value || ''
+function renderYearDD(prefix, years, ddEl) {
+  const set = prefix === 'sf' ? S.sfYears : S.tfYears;
+  ddEl.innerHTML = `<div class="ms-clear" onclick="clearYears('${prefix}')">Clear selection</div>` +
+    years.map(y => `<label class="ms-option"><input type="checkbox" value="${y}" ${set.has(y)?'checked':''}
+      onchange="toggleYear('${prefix}',${y})"> ${y}</label>`).join('');
+}
+
+function toggleMS(prefix) {
+  const dd = document.getElementById(prefix + '-years-dd');
+  dd.classList.toggle('open');
+  // Load years from DB
+  GET('/options?table=' + (prefix==='sf'?'sales':'tracking')).then(data => {
+    if (!data) return;
+    const years = data.years.length ? data.years : [2026,2025,2024,2023,2022,2021,2020];
+    renderYearDD(prefix, years, dd);
   });
-  window.location.href = `/api/export?${params}`;
 }
 
-// ─── ALERTS ───────────────────────────────────────────────────────────────────
-function toggleAlerts() {
-  state.alertsOpen = !state.alertsOpen;
-  document.getElementById('alerts-panel').classList.toggle('open', state.alertsOpen);
-  if (state.alertsOpen) renderAlertsList();
+function toggleYear(prefix, year) {
+  const set = prefix === 'sf' ? S.sfYears : S.tfYears;
+  if (set.has(year)) set.delete(year); else set.add(year);
+  updateYearBtn(prefix);
+  if (prefix === 'sf') loadSales(); else loadTracking();
 }
 
-function renderAlertsList() {
-  const list = document.getElementById('alerts-list');
-  if (!list) return;
-  const alerts = state.alerts;
-  if (alerts.length === 0) {
-    list.innerHTML = '<div style="padding:1.5rem;text-align:center;font-size:.76rem;color:var(--mid)">No alerts</div>';
+function clearYears(prefix) {
+  if (prefix === 'sf') { S.sfYears.clear(); } else { S.tfYears.clear(); }
+  updateYearBtn(prefix);
+  const dd = document.getElementById(prefix + '-years-dd');
+  dd.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+  if (prefix === 'sf') loadSales(); else loadTracking();
+}
+
+function updateYearBtn(prefix) {
+  const set   = prefix === 'sf' ? S.sfYears : S.tfYears;
+  const btnEl = document.getElementById(prefix + '-years-btn');
+  btnEl.textContent = set.size === 0 ? 'All Years' : [...set].sort().join(', ');
+}
+
+document.addEventListener('click', e => {
+  ['sf','tf'].forEach(prefix => {
+    const wrap = document.getElementById(prefix + '-years-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById(prefix + '-years-dd').classList.remove('open');
+    }
+  });
+});
+
+async function loadSalesYears() { /* years auto-loaded on MS open */ }
+async function loadTrackingYears() { /* years auto-loaded on MS open */ }
+
+// ═══════════════════════════════════════════════════════════════
+// SALES
+// ═══════════════════════════════════════════════════════════════
+async function loadSales() {
+  const params = buildParams('sf');
+  const data = await GET('/sales?' + params);
+  if (!data) return;
+  S.salesData = data;
+  renderSales(data);
+  document.getElementById('sales-count').textContent = `${data.length} sale${data.length!==1?'s':''} recorded`;
+}
+
+function buildParams(prefix) {
+  const p = new URLSearchParams();
+  const get = id => (document.getElementById(id)||{}).value||'';
+  if (prefix === 'sf') {
+    const s = get('sf-search'), ac = get('sf-asset'), pr = get('sf-process'),
+          re = get('sf-region'), su = get('sf-suburb');
+    if (s)  p.set('search', s);
+    if (ac) p.set('asset_class', ac);
+    if (pr) p.set('process', pr);
+    if (re) p.set('region', re);
+    if (su) p.set('suburb', su);
+    S.sfYears.forEach(y => p.append('years', y));
+  } else {
+    const s = get('tf-search'), ac = get('tf-asset'), pr = get('tf-process'),
+          st = get('tf-status'), re = get('tf-region'), su = get('tf-suburb');
+    if (s)  p.set('search', s);
+    if (ac) p.set('asset_class', ac);
+    if (pr) p.set('process', pr);
+    if (st) p.set('status', st);
+    if (re) p.set('region', re);
+    if (su) p.set('suburb', su);
+    S.tfYears.forEach(y => p.append('years', y));
+  }
+  return p.toString();
+}
+
+function renderSales(data) {
+  const tbody = document.getElementById('sales-tbody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state"><h3>No sales found</h3><p>Adjust your filters or add a new sale</p></div></td></tr>`;
     return;
   }
-  list.innerHTML = alerts.map(a => `
-    <div class="alert-item ${!a.read?'unread':''}">
-      <div class="${!a.read?'alert-dot':'alert-read-dot'}"></div>
-      <div>
-        <div class="alert-msg">${a.message||a.msg||'Alert'}</div>
-        <div class="alert-time">${fD(a.created_at?.slice(0,10))}</div>
+  tbody.innerHTML = data.map(s => `
+    <tr>
+      <td class="td-addr">${s.address}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
+      <td>${assetBadge(s.asset_class)}</td>
+      <td>${processBadge(s.process)}</td>
+      <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}</td>
+      <td class="td-mono">${s.price_guide ? '$'+fmt(s.price_guide) : '–'}</td>
+      <td class="td-mono">${s.net_rent ? '$'+fmt(s.net_rent) : '–'}</td>
+      <td class="td-mono">${s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '–'}</td>
+      <td>${s.wale ? s.wale+'yr' : '–'}</td>
+      <td>${s.land_area ? fmt(s.land_area)+'m²' : '–'}</td>
+      <td>${[s.agent1,s.firm1].filter(Boolean).join('<br><small style="color:var(--muted)">') + (s.firm1?'</small>':'')}</td>
+      <td>${s.vendor||'–'}</td>
+      <td>${s.purchaser||'–'}</td>
+      <td>${fmtDate(s.exchange_date)}</td>
+      <td>${fmtDate(s.settlement_date)}</td>
+      <td class="td-truncate" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes||'–'}</td>
+      <td class="td-actions">
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditSale('${s.id}')" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSale('${s.id}')" title="Delete">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddSale() {
+  openModal('Add Sale', saleForm({}), async () => {
+    const body = getFormData('sale-form');
+    if (!body.address) return alert('Address is required');
+    const data = await POST('/sales', body);
+    if (data && !data.error) { closeModal(); loadSales(); }
+  });
+}
+
+async function openEditSale(id) {
+  const sale = S.salesData.find(s => s.id === id);
+  if (!sale) return;
+  openModal('Edit Sale', saleForm(sale), async () => {
+    const body = getFormData('sale-form');
+    if (!body.address) return alert('Address is required');
+    const data = await PUT('/sales/' + id, body);
+    if (data && !data.error) { closeModal(); loadSales(); }
+  });
+}
+
+async function deleteSale(id) {
+  if (!confirm('Delete this sale record? This cannot be undone.')) return;
+  await DEL('/sales/' + id);
+  loadSales();
+}
+
+function saleForm(s={}) {
+  return `<form id="sale-form" class="form-grid" onsubmit="return false">
+    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(s.address)}" required placeholder="123 Street Name, Suburb NSW 2000"></div>
+    <div class="form-group"><label>Suburb</label><input name="suburb" value="${esc(s.suburb)}"></div>
+    <div class="form-group"><label>Region</label>${sel('region', REGIONS, s.region)}</div>
+    <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, s.asset_class)}</div>
+    <div class="form-group"><label>Process</label>${sel('process', PROCESSES, s.process)}</div>
+    <div class="form-section">Financials</div>
+    <div class="form-group"><label>Price ($)</label><input name="price" type="number" step="1000" value="${s.price||''}"></div>
+    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}"></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${s.net_rent||''}"></div>
+    <div class="form-group"><label>Yield %</label><input name="yield_percent" type="number" step="0.01" value="${s.yield_percent||''}"></div>
+    <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
+    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${s.land_area||''}"></div>
+    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
+    <div class="form-section">Parties</div>
+    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}"></div>
+    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(s.firm1)}"></div>
+    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(s.agent2)}"></div>
+    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(s.firm2)}"></div>
+    <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(s.vendor)}"></div>
+    <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(s.purchaser)}"></div>
+    <div class="form-section">Dates</div>
+    <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date" value="${s.exchange_date||''}"></div>
+    <div class="form-group"><label>Settlement Date</label><input name="settlement_date" type="date" value="${s.settlement_date||''}"></div>
+    <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${s.campaign_close_date||''}"></div>
+    <div class="form-group"><label>Year</label><input name="year" type="number" value="${s.year||new Date().getFullYear()}" min="2015" max="2030"></div>
+    <div class="form-section">Property Details</div>
+    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(s.zoning)}"></div>
+    <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(s.fsr)}"></div>
+    <div class="form-group"><label>Height Limit</label><input name="height_limit" value="${esc(s.height_limit)}"></div>
+    <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(s.notes)}</textarea></div>
+    <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(s.source_url)}"></div>
+  </form>`;
+}
+
+function exportSales() {
+  const params = buildParams('sf');
+  const rows = [['Address','Suburb','Region','Asset Class','Process','Price','Price Guide','Net Rent','Yield %','WALE','Land m²','Floor m²','Agent 1','Firm 1','Agent 2','Firm 2','Vendor','Purchaser','Exchange Date','Settlement Date','Notes']];
+  S.salesData.forEach(s => rows.push([s.address,s.suburb,s.region,s.asset_class,s.process,s.price,s.price_guide,s.net_rent,s.yield_percent,s.wale,s.land_area,s.floor_area,s.agent1,s.firm1,s.agent2,s.firm2,s.vendor,s.purchaser,s.exchange_date,s.settlement_date,s.notes]));
+  downloadCSV(rows, 'nsw-investment-sales.csv');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRACKING
+// ═══════════════════════════════════════════════════════════════
+async function loadTracking() {
+  const params = buildParams('tf');
+  const data = await GET('/tracking?' + params);
+  if (!data) return;
+  S.trackingData = data;
+  renderTracking(data);
+  document.getElementById('tracking-count').textContent = `${data.length} propert${data.length!==1?'ies':'y'} being tracked`;
+}
+
+function renderTracking(data) {
+  const tbody = document.getElementById('tracking-tbody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><h3>No properties tracked</h3><p>Add properties from Validate or manually</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td class="td-addr">${t.address}<small>${[t.suburb,t.region].filter(Boolean).join(' · ')}</small></td>
+      <td>${assetBadge(t.asset_class)}</td>
+      <td>${processBadge(t.process)}</td>
+      <td>${trackStatusBadge(t.status)}</td>
+      <td class="td-mono">${t.price_guide ? '$'+fmt(t.price_guide) : '–'}</td>
+      <td class="td-mono">${t.net_rent ? '$'+fmt(t.net_rent) : '–'}</td>
+      <td class="td-mono">${t.estimated_yield ? t.estimated_yield.toFixed(2)+'%' : '–'}</td>
+      <td>${[t.agent1,t.firm1].filter(Boolean).join('<br><small style="color:var(--muted)">') + (t.firm1?'</small>':'')}</td>
+      <td>${t.vendor||'–'}</td>
+      <td>${fmtDate(t.campaign_close_date)}</td>
+      <td>${fmtDate(t.expected_settlement_date)}</td>
+      <td class="td-truncate" title="${(t.notes||'').replace(/"/g,'&quot;')}">${t.notes||'–'}</td>
+      <td class="td-actions">
+        <button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Mark as Sold">Sold</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditTracking('${t.id}')" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTracking('${t.id}')" title="Delete">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddTracking(prefill={}) {
+  openModal('Add to Tracking', trackingForm(prefill), async () => {
+    const body = getFormData('tracking-form');
+    if (!body.address) return alert('Address is required');
+    const data = await POST('/tracking', {...body, ...prefill});
+    if (data && !data.error) { closeModal(); loadTracking(); }
+  });
+}
+
+async function openEditTracking(id) {
+  const t = S.trackingData.find(x => x.id === id);
+  if (!t) return;
+  openModal('Edit Tracking', trackingForm(t), async () => {
+    const body = getFormData('tracking-form');
+    if (!body.address) return alert('Address is required');
+    const data = await PUT('/tracking/' + id, body);
+    if (data && !data.error) { closeModal(); loadTracking(); }
+  });
+}
+
+async function deleteTracking(id) {
+  if (!confirm('Remove this property from tracking?')) return;
+  await DEL('/tracking/' + id);
+  loadTracking();
+}
+
+function openConvertToSale(id) {
+  const t = S.trackingData.find(x => x.id === id);
+  if (!t) return;
+  openModal('Mark as Sold — ' + t.address, convertForm(t), async () => {
+    const body = getFormData('convert-form');
+    if (!body.price) return alert('Sale price is required');
+    const data = await POST('/tracking/' + id + '/sell', body);
+    if (data && !data.error) { closeModal(); loadTracking(); }
+  }, 'Confirm Sale');
+}
+
+function trackingForm(t={}) {
+  return `<form id="tracking-form" class="form-grid" onsubmit="return false">
+    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(t.address)}" required></div>
+    <div class="form-group"><label>Suburb</label><input name="suburb" value="${esc(t.suburb)}"></div>
+    <div class="form-group"><label>Region</label>${sel('region', REGIONS, t.region)}</div>
+    <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, t.asset_class)}</div>
+    <div class="form-group"><label>Process</label>${sel('process', PROCESSES, t.process)}</div>
+    <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, t.status||'Active Campaign')}</div>
+    <div class="form-section">Financials</div>
+    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${t.price_guide||''}"></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${t.net_rent||''}"></div>
+    <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" type="number" step="0.01" value="${t.estimated_yield||''}"></div>
+    <div class="form-section">Parties</div>
+    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}"></div>
+    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}"></div>
+    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(t.agent2)}"></div>
+    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(t.firm2)}"></div>
+    <div class="form-group full"><label>Vendor</label><input name="vendor" value="${esc(t.vendor)}"></div>
+    <div class="form-section">Dates</div>
+    <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${t.campaign_close_date||''}"></div>
+    <div class="form-group"><label>Exp. Settlement Date</label><input name="expected_settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
+    <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(t.notes)}</textarea></div>
+    <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(t.source_url)}"></div>
+  </form>`;
+}
+
+function convertForm(t={}) {
+  return `<form id="convert-form" class="form-grid" onsubmit="return false">
+    <div class="form-group full" style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;color:var(--muted)">
+      Converting <strong style="color:var(--text)">${t.address}</strong> to a finalised sale. Fill in confirmed details below.
+    </div>
+    <div class="form-group"><label>Sale Price ($) *</label><input name="price" type="number" step="1000" required></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${t.net_rent||''}"></div>
+    <div class="form-group"><label>Yield %</label><input name="yield_percent" type="number" step="0.01"></div>
+    <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1"></div>
+    <div class="form-group"><label>Purchaser</label><input name="purchaser"></div>
+    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1"></div>
+    <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date"></div>
+    <div class="form-group"><label>Settlement Date</label><input name="settlement_date" type="date"></div>
+    <div class="form-group full"><label>Additional Notes</label><textarea name="notes"></textarea></div>
+  </form>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDATE
+// ═══════════════════════════════════════════════════════════════
+async function loadValidate() {
+  const data = await GET('/validate?status=' + S.vtab);
+  if (!data) return;
+  document.getElementById('validate-count').textContent = `${data.length} item${data.length!==1?'s':''}`;
+  renderValidateCards(data);
+  updateValidateBadge();
+}
+
+async function loadValidateBadge() {
+  const data = await GET('/validate?status=pending');
+  if (data) updateValidateBadge(data.length);
+}
+
+function updateValidateBadge(count) {
+  const badge = document.getElementById('validate-badge');
+  if (count === undefined) {
+    GET('/validate?status=pending').then(d => { if(d) updateValidateBadge(d.length); });
+    return;
+  }
+  badge.textContent = count;
+  badge.classList.toggle('hidden', count === 0);
+}
+
+function setVTab(tab) {
+  S.vtab = tab;
+  ['pending','approved','dismissed'].forEach(t => {
+    document.getElementById('vtab-' + t).classList.toggle('active', t === tab);
+  });
+  loadValidate();
+}
+
+function renderValidateCards(data) {
+  const el = document.getElementById('validate-cards');
+  if (!data.length) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>No ${S.vtab} items</h3><p>${S.vtab==='pending'?'Run the scraper to find new listings':'Nothing here yet'}</p></div>`;
+    return;
+  }
+  el.innerHTML = data.map(d => `
+    <div class="disc-card">
+      <div class="disc-card-header">
+        <div>
+          <div class="disc-card-addr">${d.address||'Unknown address'}</div>
+          <div class="disc-card-suburb">${[d.suburb,d.region].filter(Boolean).join(' · ')||'–'}</div>
+        </div>
+        ${assetBadge(d.asset_class)}
       </div>
+      <div class="disc-card-body">
+        <div class="disc-meta">
+          ${d.price_guide?`<div class="disc-meta-item"><strong>${d.price_guide}</strong></div>`:''}
+          ${d.agent?`<div class="disc-meta-item">Agent: <strong>${d.agent}</strong></div>`:''}
+          ${d.firm?`<div class="disc-meta-item">Firm: <strong>${d.firm}</strong></div>`:''}
+          ${d.source?`<div class="disc-meta-item">Source: <strong>${d.source}</strong></div>`:''}
+        </div>
+        ${d.description?`<div class="disc-desc">${d.description}</div>`:''}
+        <div class="disc-source">
+          ${d.scraped_at?`Scraped: ${fmtDate(d.scraped_at)}`:''}
+          ${d.source_url?` · <a href="${d.source_url}" target="_blank" rel="noopener" style="color:var(--accent)">View listing</a>`:''}
+        </div>
+      </div>
+      ${S.vtab === 'pending' ? `
+      <div class="disc-card-footer">
+        <button class="btn btn-success btn-sm" onclick="approveDiscovery('${d.id}','${esc(d.address||'')}','${esc(d.suburb||'')}','${esc(d.region||'')}','${esc(d.asset_class||'')}','${esc(d.price_guide||'')}','${esc(d.agent||'')}','${esc(d.firm||'')}')">+ Add to Tracking</button>
+        <button class="btn btn-secondary btn-sm" onclick="dismissDiscovery('${d.id}')">Dismiss</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDiscovery('${d.id}')" title="Delete">🗑</button>
+      </div>` : ''}
     </div>`).join('');
 }
 
-async function markAllAlertsRead() {
-  try {
-    await api('POST', '/api/alerts/read-all');
-    state.alerts.forEach(a => a.read = true);
-    updateBadges();
-    toast('All alerts marked as read');
-  } catch(e) {
-    toast('Failed: ' + e.message, 'err');
-  }
+function approveDiscovery(id, address, suburb, region, assetClass, priceGuide, agent, firm) {
+  const prefill = { address, suburb, region, asset_class: assetClass, price_guide: priceGuide ? priceGuide.replace(/[^0-9.]/g,'') : '', agent1: agent, firm1: firm };
+  openModal('Add to Tracking', trackingFormFromDiscovery(prefill, id), async () => {
+    const body = getFormData('approve-form');
+    if (!body.address) return alert('Address is required');
+    const data = await POST('/validate/' + id + '/approve', body);
+    if (data && !data.error) { closeModal(); loadValidate(); }
+  }, 'Add to Tracking');
 }
 
-// ─── SALE MODAL ───────────────────────────────────────────────────────────────
-function openSaleModal(sale) {
-  const isEdit = sale && (sale.id || sale.id === 0);
-  document.getElementById('sale-modal-title').textContent = isEdit ? 'Edit Sale' : 'Add Sale';
-  const fields = ['id','address','suburb','region','source','class','zoning','fsr','height',
-    'status','process','price','guide','rent','outgoings','yield','landpsm','wale','rcstatus',
-    'landarea','floorarea','saledate','settledate','closedate','listed','agent1','agent2',
-    'vendor','purchaser','comments','operator','places','premiumSection'];
-  // Reset
-  fields.forEach(f => {
-    const el = document.getElementById('sm-'+f);
-    if (el && el.tagName !== 'DIV') el.value = '';
-  });
-  document.getElementById('sm-premium-section').style.display = 'none';
-  document.getElementById('sm-places-wrap').style.display = 'none';
-
-  if (isEdit) {
-    const s = sale;
-    setVal('sm-id', s.id);
-    setVal('sm-address', s.address);
-    setVal('sm-suburb', s.suburb);
-    setVal('sm-region', s.region);
-    setVal('sm-source', s.source || s.source_database);
-    setVal('sm-class', s.asset_class || s.classification);
-    setVal('sm-zoning', s.zoning);
-    setVal('sm-fsr', s.fsr);
-    setVal('sm-height', s.height);
-    setVal('sm-status', s.status);
-    setVal('sm-process', s.process);
-    setVal('sm-price', s.sale_price);
-    setVal('sm-guide', s.price_guide);
-    setVal('sm-rent', s.net_rent);
-    setVal('sm-outgoings', s.outgoings);
-    setVal('sm-wale', s.wale);
-    setVal('sm-rcstatus', s.rc_status || s.rcstatus);
-    setVal('sm-landarea', s.land_area || s.landarea);
-    setVal('sm-floorarea', s.floor_area || s.floorarea);
-    setVal('sm-saledate', s.sale_date);
-    setVal('sm-settledate', s.settlement_date);
-    setVal('sm-closedate', s.close_date || s.campaign_close_date);
-    setVal('sm-listed', s.date_listed);
-    setVal('sm-agent1', s.agent_1 || s.agent1);
-    setVal('sm-agent2', s.agent_2 || s.agent2);
-    setVal('sm-vendor', s.vendor);
-    setVal('sm-purchaser', s.purchaser);
-    setVal('sm-comments', s.comments);
-    setVal('sm-operator', s.operator || s.tenant);
-    setVal('sm-places', s.licensed_places);
-    onClassChange();
-    autoCalc();
-  }
-  document.getElementById('sale-overlay').classList.add('on');
+function trackingFormFromDiscovery(t={}, discoveryId) {
+  return `<form id="approve-form" class="form-grid" onsubmit="return false">
+    <input type="hidden" name="discovery_id" value="${discoveryId}">
+    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(t.address)}" required></div>
+    <div class="form-group"><label>Suburb</label><input name="suburb" value="${esc(t.suburb)}"></div>
+    <div class="form-group"><label>Region</label>${sel('region', REGIONS, t.region)}</div>
+    <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, t.asset_class)}</div>
+    <div class="form-group"><label>Process</label>${sel('process', PROCESSES, '')}</div>
+    <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, 'Active Campaign')}</div>
+    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${t.price_guide||''}"></div>
+    <div class="form-group"><label>Agent</label><input name="agent1" value="${esc(t.agent1)}"></div>
+    <div class="form-group full"><label>Firm</label><input name="firm1" value="${esc(t.firm1)}"></div>
+    <div class="form-group full"><label>Notes</label><textarea name="notes"></textarea></div>
+  </form>`;
 }
 
-function setVal(id, val) {
-  const el = document.getElementById(id);
-  if (el && val !== undefined && val !== null) el.value = val;
+async function dismissDiscovery(id) {
+  await POST('/validate/' + id + '/dismiss');
+  loadValidate();
 }
 
-function closeSaleModal() {
-  document.getElementById('sale-overlay').classList.remove('on');
+async function deleteDiscovery(id) {
+  if (!confirm('Permanently delete this discovery?')) return;
+  await DEL('/validate/' + id);
+  loadValidate();
 }
 
-const PREMIUM_ASSET_CLASSES = ['Childcare Centre','Fast Food','Medical','Retail Net Lease','Service Station'];
-
-function onClassChange() {
-  const cls = document.getElementById('sm-class').value;
-  const isPrem = PREMIUM_ASSET_CLASSES.includes(cls);
-  const isCC = cls === 'Childcare Centre';
-  document.getElementById('sm-premium-section').style.display = isPrem ? 'block' : 'none';
-  document.getElementById('sm-places-wrap').style.display = isCC ? 'block' : 'none';
+// ═══════════════════════════════════════════════════════════════
+// SCRAPER
+// ═══════════════════════════════════════════════════════════════
+async function triggerScrape(btn) {
+  const orig = btn.textContent;
+  btn.textContent = 'Scraping...';
+  btn.disabled = true;
+  await POST('/scraper/run');
+  btn.textContent = orig;
+  btn.disabled = false;
+  loadValidateBadge();
+  if (document.getElementById('section-validate').style.display !== 'none') loadValidate();
+  if (document.getElementById('section-dashboard').style.display !== 'none') loadDashboard();
 }
 
-function autoCalc() {
-  const price = parseFloat(document.getElementById('sm-price').value) || 0;
-  const rent = parseFloat(document.getElementById('sm-rent').value) || 0;
-  const area = parseFloat(document.getElementById('sm-landarea').value) || 0;
-  const yldEl = document.getElementById('sm-yield');
-  const lpsEl = document.getElementById('sm-landpsm');
-  if (price && rent) yldEl.value = ((rent / price) * 100).toFixed(2) + '%';
-  else yldEl.value = '';
-  if (price && area) lpsEl.value = f$(price / area);
-  else lpsEl.value = '';
+// ═══════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════
+function openModal(title, bodyHTML, onSubmit, submitLabel='Save') {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-submit').textContent = submitLabel;
+  S.modalSubmit = onSubmit;
+  document.getElementById('modal-overlay').classList.add('open');
 }
 
-async function saveSale() {
-  const addr = document.getElementById('sm-address').value.trim();
-  if (!addr) { toast('Address is required', 'err'); return; }
-  const id = document.getElementById('sm-id').value;
-  const price = parseFloat(document.getElementById('sm-price').value) || null;
-  const rent = parseFloat(document.getElementById('sm-rent').value) || null;
-  const yldRaw = price && rent ? rent / price : null;
-  const body = {
-    address: addr,
-    suburb: document.getElementById('sm-suburb').value,
-    region: document.getElementById('sm-region').value,
-    source_database: document.getElementById('sm-source').value,
-    asset_class: document.getElementById('sm-class').value,
-    zoning: document.getElementById('sm-zoning').value,
-    fsr: document.getElementById('sm-fsr').value,
-    height: parseFloat(document.getElementById('sm-height').value) || null,
-    status: document.getElementById('sm-status').value,
-    process: document.getElementById('sm-process').value,
-    sale_price: price,
-    price_guide: parseFloat(document.getElementById('sm-guide').value) || null,
-    net_rent: rent,
-    outgoings: parseFloat(document.getElementById('sm-outgoings').value) || null,
-    yield_pct: yldRaw,
-    wale: parseFloat(document.getElementById('sm-wale').value) || null,
-    rc_status: document.getElementById('sm-rcstatus').value,
-    land_area: parseFloat(document.getElementById('sm-landarea').value) || null,
-    floor_area: parseFloat(document.getElementById('sm-floorarea').value) || null,
-    sale_date: document.getElementById('sm-saledate').value || null,
-    settlement_date: document.getElementById('sm-settledate').value || null,
-    close_date: document.getElementById('sm-closedate').value || null,
-    date_listed: document.getElementById('sm-listed').value || null,
-    agent_1: document.getElementById('sm-agent1').value,
-    agent_2: document.getElementById('sm-agent2').value,
-    vendor: document.getElementById('sm-vendor').value,
-    purchaser: document.getElementById('sm-purchaser').value,
-    comments: document.getElementById('sm-comments').value,
-    operator: document.getElementById('sm-operator').value,
-    licensed_places: parseInt(document.getElementById('sm-places').value) || null
-  };
-  try {
-    if (id) {
-      await api('PUT', `/api/sales/${id}`, body);
-      const idx = state.sales.findIndex(s => String(s.id) === String(id));
-      if (idx >= 0) state.sales[idx] = {...state.sales[idx], ...body, id};
-      toast('Sale updated', 'info');
-    } else {
-      const created = await api('POST', '/api/sales', body);
-      if (created && created.id) state.sales.unshift({...body, id: created.id});
-      toast('Sale added', 'info');
-    }
-    closeSaleModal();
-    updateBadges();
-    renderCurrentView();
-  } catch(e) {
-    toast('Save failed: ' + e.message, 'err');
-  }
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  S.modalSubmit = null;
 }
 
-// ─── CAMPAIGN MODAL ───────────────────────────────────────────────────────────
-function openCampaignModal(camp) {
-  const isEdit = camp && (camp.id || camp.id === 0);
-  document.getElementById('camp-modal-title').textContent = isEdit ? 'Edit Campaign' : 'Add Campaign';
-  ['id','address','suburb','region','source','class','process','zoning','listed','close',
-   'guide','income','landarea','agent1','agent2','vendor','notes'].forEach(f => {
-    const el = document.getElementById('cm-'+f);
-    if (el) el.value = '';
-  });
-  if (isEdit) {
-    const c = camp;
-    setVal('cm-id', c.id);
-    setVal('cm-address', c.address);
-    setVal('cm-suburb', c.suburb);
-    setVal('cm-region', c.region);
-    setVal('cm-source', c.source || c.source_database);
-    setVal('cm-class', c.asset_class || c.type);
-    setVal('cm-process', c.process);
-    setVal('cm-zoning', c.zoning);
-    setVal('cm-listed', c.date_listed);
-    setVal('cm-close', c.close_date);
-    setVal('cm-guide', c.price_guide);
-    setVal('cm-income', c.net_income || c.net_rent);
-    setVal('cm-landarea', c.land_area);
-    setVal('cm-agent1', c.agent_1 || c.agent1);
-    setVal('cm-agent2', c.agent_2 || c.agent2);
-    setVal('cm-vendor', c.vendor);
-    setVal('cm-notes', c.notes);
-  }
-  document.getElementById('camp-overlay').classList.add('on');
+function submitModal() {
+  if (S.modalSubmit) S.modalSubmit();
 }
 
-function closeCampModal() {
-  document.getElementById('camp-overlay').classList.remove('on');
-}
-
-async function saveCampaign() {
-  const addr = document.getElementById('cm-address').value.trim();
-  if (!addr) { toast('Address is required', 'err'); return; }
-  const id = document.getElementById('cm-id').value;
-  const body = {
-    address: addr,
-    suburb: document.getElementById('cm-suburb').value,
-    region: document.getElementById('cm-region').value,
-    source_database: document.getElementById('cm-source').value,
-    asset_class: document.getElementById('cm-class').value,
-    process: document.getElementById('cm-process').value,
-    zoning: document.getElementById('cm-zoning').value,
-    date_listed: document.getElementById('cm-listed').value || null,
-    close_date: document.getElementById('cm-close').value || null,
-    price_guide: parseFloat(document.getElementById('cm-guide').value) || null,
-    net_income: parseFloat(document.getElementById('cm-income').value) || null,
-    land_area: parseFloat(document.getElementById('cm-landarea').value) || null,
-    agent_1: document.getElementById('cm-agent1').value,
-    agent_2: document.getElementById('cm-agent2').value,
-    vendor: document.getElementById('cm-vendor').value,
-    notes: document.getElementById('cm-notes').value,
-    status: 'Active'
-  };
-  try {
-    if (id) {
-      await api('PUT', `/api/campaigns/${id}`, body);
-      const idx = state.campaigns.findIndex(c => String(c.id) === String(id));
-      if (idx >= 0) state.campaigns[idx] = {...state.campaigns[idx], ...body, id};
-      toast('Campaign updated');
-    } else {
-      const created = await api('POST', '/api/campaigns', body);
-      if (created && created.id) state.campaigns.unshift({...body, id: created.id});
-      toast('Campaign added');
-    }
-    closeCampModal();
-    updateBadges();
-    renderCurrentView();
-  } catch(e) {
-    toast('Save failed: ' + e.message, 'err');
-  }
-}
-
-// ─── SOLD MODAL ───────────────────────────────────────────────────────────────
-function openSoldModal(campId) {
-  ['price','date','settle','rent','vendor','purchaser','notes'].forEach(f => {
-    const el = document.getElementById('sold-'+f);
-    if (el) el.value = '';
-  });
-  document.getElementById('sold-camp-id').value = campId;
-  document.getElementById('sold-create-sale').checked = true;
-  document.getElementById('sold-overlay').classList.add('on');
-}
-
-function closeSoldModal() {
-  document.getElementById('sold-overlay').classList.remove('on');
-}
-
-async function markSold() {
-  const price = parseFloat(document.getElementById('sold-price').value);
-  const soldDate = document.getElementById('sold-date').value;
-  if (!price) { toast('Sale price is required', 'err'); return; }
-  if (!soldDate) { toast('Sold date is required', 'err'); return; }
-  const campId = document.getElementById('sold-camp-id').value;
-  const createSale = document.getElementById('sold-create-sale').checked;
-  const body = {
-    status: 'settlement',
-    sale_price: price,
-    sale_date: soldDate,
-    settlement_date: document.getElementById('sold-settle').value || null,
-    net_rent: parseFloat(document.getElementById('sold-rent').value) || null,
-    vendor: document.getElementById('sold-vendor').value,
-    purchaser: document.getElementById('sold-purchaser').value,
-    result_notes: document.getElementById('sold-notes').value,
-    create_sale_record: createSale
-  };
-  try {
-    await api('PUT', `/api/campaigns/${campId}`, body);
-    const idx = state.campaigns.findIndex(c => String(c.id) === String(campId));
-    if (idx >= 0) state.campaigns[idx] = {...state.campaigns[idx], status: 'settlement'};
-    toast('Marked as settlement', 'info');
-    closeSoldModal();
-    updateBadges();
-    if (createSale) await loadAll(); // reload to get new sale record
-    else renderCurrentView();
-  } catch(e) {
-    toast('Failed: ' + e.message, 'err');
-  }
-}
-
-// ─── KEYBOARD / CLICK OUTSIDE ─────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.overlay.on').forEach(o => o.classList.remove('on'));
-    if (state.alertsOpen) { state.alertsOpen = false; document.getElementById('alerts-panel').classList.remove('open'); }
-  }
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
 });
 
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); });
-});
+// ═══════════════════════════════════════════════════════════════
+// SORTING
+// ═══════════════════════════════════════════════════════════════
+function sortTable(table, col) {
+  const sort = table === 'sales' ? S.salesSort : S.trackingSort;
+  if (sort.col === col) sort.dir = sort.dir === 'asc' ? 'desc' : 'asc';
+  else { sort.col = col; sort.dir = 'asc'; }
 
-// ─── POLL ─────────────────────────────────────────────────────────────────────
-setInterval(loadAll, 60000);
+  const data = table === 'sales' ? S.salesData : S.trackingData;
+  data.sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (va === null || va === undefined) va = '';
+    if (vb === null || vb === undefined) vb = '';
+    if (typeof va === 'number') return sort.dir === 'asc' ? va - vb : vb - va;
+    return sort.dir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-loadAll();
+  if (table === 'sales') renderSales(data);
+  else renderTracking(data);
+
+  // Update header indicators
+  const tableEl = document.getElementById(table + '-table');
+  tableEl.querySelectorAll('th').forEach(th => { th.classList.remove('sort-asc','sort-desc'); });
+  const ths = tableEl.querySelectorAll('th');
+  const cols = table === 'sales'
+    ? ['address','asset_class','process','price','price_guide','net_rent','yield_percent','wale','land_area','agent1','vendor','purchaser','exchange_date','settlement_date','notes','']
+    : ['address','asset_class','process','status','price_guide','net_rent','estimated_yield','agent1','vendor','campaign_close_date','expected_settlement_date','notes',''];
+  const idx = cols.indexOf(col);
+  if (idx >= 0 && ths[idx]) ths[idx].classList.add('sort-' + sort.dir);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLEAR FILTERS
+// ═══════════════════════════════════════════════════════════════
+function clearFilters(prefix) {
+  const ids = prefix === 'sf'
+    ? ['sf-search','sf-asset','sf-process','sf-region','sf-suburb']
+    : ['tf-search','tf-asset','tf-process','tf-status','tf-region','tf-suburb'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  clearYears(prefix);
+  if (prefix === 'sf') loadSales(); else loadTracking();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmt(n) {
+  if (!n && n !== 0) return '–';
+  return Number(n).toLocaleString('en-AU');
+}
+
+function fmtDate(d) {
+  if (!d) return '–';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+  } catch { return d; }
+}
+
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function sel(name, options, selected='') {
+  return `<select name="${name}"><option value="">Select...</option>${options.map(o=>`<option value="${o}"${o===selected?' selected':''}>${o}</option>`).join('')}</select>`;
+}
+
+function getFormData(formId) {
+  const form = document.getElementById(formId);
+  const data = {};
+  new FormData(form).forEach((v,k) => { data[k] = v || null; });
+  // Convert numeric fields
+  ['price','price_guide','net_rent','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
+    if (data[f]) data[f] = parseFloat(data[f]) || null;
+  });
+  return data;
+}
+
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(c => {
+    const s = c == null ? '' : String(c);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+function debounce(fn, ms) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
+// Badge helpers
+function assetBadge(cls) {
+  const map = {
+    'Childcare':'b-childcare','Medical/Healthcare':'b-medical','Industrial':'b-industrial',
+    'Retail':'b-retail','Development Site':'b-devsite','Commercial Office':'b-office',
+    'Fast Food/QSR':'b-fastfood','Service Station':'b-service','Pub/Hotel':'b-pub',
+    'Residential':'b-residential','Commercial':'b-default'
+  };
+  if (!cls) return '<span class="badge-pill b-default">–</span>';
+  return `<span class="badge-pill ${map[cls]||'b-default'}">${cls}</span>`;
+}
+
+function processBadge(p) {
+  const map = {'EOI':'b-eoi','Auction':'b-auction','Private Treaty':'b-treaty','Off-Market':'b-offmarket','Tender':'b-tender'};
+  if (!p) return '–';
+  return `<span class="badge-pill ${map[p]||'b-default'}">${p}</span>`;
+}
+
+function trackStatusBadge(s) {
+  const map = {'Active Campaign':'b-active','Under Offer':'b-offer','Exchanged - Awaiting Settlement':'b-exchanged','Withdrawn':'b-withdrawn','Converted to Sale':'b-sold'};
+  if (!s) return '–';
+  return `<span class="badge-pill ${map[s]||'b-default'}">${s}</span>`;
+}
 </script>
 </body>
 </html>

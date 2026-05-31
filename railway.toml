@@ -3,10 +3,7 @@ builder = "dockerfile"
 
 [deploy]
 startCommand = "node server.js"
-healthcheckPath = "/api/stats"
-healthcheckTimeout = 30
+healthcheckPath = "/health"
+healthcheckTimeout = 120
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-
-[[volumes]]
-mountPath = "/app/data"
