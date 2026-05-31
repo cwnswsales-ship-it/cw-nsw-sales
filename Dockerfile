@@ -1,8 +1,1 @@
-FROM node:20-slim
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production
-COPY . .
-RUN mkdir -p data public
-EXPOSE 3000
-CMD ["node", "server.js"]
+RlJPTSBub2RlOjIwLXNsaW0KUlVOIGFwdC1nZXQgdXBkYXRlICYmIGFwdC1nZXQgaW5zdGFsbCAteSBweXRob24zIG1ha2UgZysrICYmIHJtIC1yZiAvdmFyL2xpYi9hcHQvbGlzdHMvKgpXT1JLRElSIC9hcHAKQ09QWSBwYWNrYWdlKi5qc29uIC4vClJVTiBucG0gaW5zdGFsbCAtLXByb2R1Y3Rpb24KQ09QWSAuIC4KUlVOIG1rZGlyIC1wIGRhdGEgcHVibGljCkVYUE9TRSAzMDAwCkNNRCBbIm5vZGUiLCAic2VydmVyLmpzIl0K
