@@ -1291,6 +1291,16 @@ let analyticsRawData = [];
 const analyticsCharts = {};
 
 async function loadAnalytics() {
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.plugins.tooltip.backgroundColor = '#0d2137';
+    Chart.defaults.plugins.tooltip.titleColor = '#fff';
+    Chart.defaults.plugins.tooltip.bodyColor = 'rgba(255,255,255,0.85)';
+    Chart.defaults.plugins.tooltip.cornerRadius = 6;
+    Chart.defaults.plugins.tooltip.padding = 10;
+  }
   const data = await GET('/sales');
   if (!data) return;
   analyticsRawData = data;
@@ -1357,8 +1367,8 @@ function renderChartByYear(data) {
     data: {
       labels: years,
       datasets: [
-        { type:'bar', label:'Sales Count', data: years.map(y => counts[y]||0), backgroundColor:'rgba(13,33,55,0.8)', yAxisID:'y' },
-        { type:'line', label:'Volume ($M)', data: years.map(y => vols[y] ? +(vols[y]/1e6).toFixed(1) : 0), borderColor:'#e8732a', backgroundColor:'rgba(232,115,42,0.1)', yAxisID:'y1', tension:0.3, pointRadius:5, fill:true },
+        { type:'bar', label:'Sales Count', data: years.map(y => counts[y]||0), backgroundColor:'rgba(13,33,55,0.85)', borderColor:'#0d2137', borderWidth:1, yAxisID:'y' },
+        { type:'line', label:'Volume ($M)', data: years.map(y => vols[y] ? +(vols[y]/1e6).toFixed(1) : 0), borderColor:'#e8732a', backgroundColor:'rgba(232,115,42,0.12)', pointBackgroundColor:'#e8732a', pointBorderColor:'#fff', pointBorderWidth:2, yAxisID:'y1', tension:0.35, pointRadius:6, fill:true },
       ]
     },
     options: {
@@ -1380,7 +1390,7 @@ function renderChartByAsset(data) {
   destroyChart('byAsset');
   analyticsCharts.byAsset = new Chart(ctx, {
     type:'bar',
-    data: { labels: sorted.map(([k]) => k), datasets: [{ label:'Sales', data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444'] }] },
+    data: { labels: sorted.map(([k]) => k), datasets: [{ label:'Sales', data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#c45e1e','#2e6b9e','#f0a05a','#4a7a9b','#a65c1a'], borderWidth:0 }] },
     options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
   });
 }
@@ -1398,7 +1408,7 @@ function renderChartYield(data) {
   destroyChart('yield');
   analyticsCharts.yield = new Chart(ctx, {
     type:'bar',
-    data: { labels: avgs.map(([k]) => k), datasets: [{ label:'Avg Yield %', data: avgs.map(([,v]) => v), backgroundColor:'rgba(232,115,42,0.75)', borderColor:'#e8732a', borderWidth:1 }] },
+    data: { labels: avgs.map(([k]) => k), datasets: [{ label:'Avg Yield %', data: avgs.map(([,v]) => v), backgroundColor: avgs.map((_, i) => i === avgs.length-1 ? '#e8732a' : `rgba(13,33,55,${0.45 + i * (0.45/Math.max(avgs.length-1,1))})`), borderWidth:0 }] },
     options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, title:{ display:true, text:'Yield %' } } } }
   });
 }
@@ -1411,7 +1421,7 @@ function renderChartProcess(data) {
   destroyChart('process');
   analyticsCharts.process = new Chart(ctx, {
     type:'doughnut',
-    data: { labels: sorted.map(([k]) => k), datasets: [{ data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#f59e0b','#10b981','#3b82f6'] }] },
+    data: { labels: sorted.map(([k]) => k), datasets: [{ data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#c45e1e','#2e6b9e','#f0a05a'], borderWidth:2, borderColor:'#fff', hoverOffset:6 }] },
     options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
   });
 }
