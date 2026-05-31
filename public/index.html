@@ -129,7 +129,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
 .b-pub{background:#ede9fe;color:#4c1d95}
 .b-strataretail{background:#dcfce7;color:#166534}
 .b-strataoffice{background:#e0f2fe;color:#075985}
-.b-residential{background:#f1f5f9;color:#475569}
+.b-aptblocks{background:#f1f5f9;color:#475569}
 .b-default{background:#f1f5f9;color:#475569}
 .b-sold{background:#d1fae5;color:#065f46}
 .b-active{background:#fef3c7;color:#92400e}
@@ -325,7 +325,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Residential</option><option>Commercial</option>
+          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="sf-process" onchange="loadSales()">
           <option value="">All Processes</option>
@@ -391,7 +391,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Residential</option><option>Commercial</option>
+          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="tf-process" onchange="loadTracking()">
           <option value="">All Processes</option>
@@ -461,7 +461,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Residential</option><option>Commercial</option>
+          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="an-region" onchange="renderAnalytics()">
           <option value="">All Regions</option>
@@ -527,7 +527,7 @@ const S = {
 };
 
 const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Strata Retail','Strata Office','Medical/Healthcare','Development Site',
-  'Fast Food/QSR','Service Station','Pub/Hotel','Residential','Commercial'];
+  'Fast Food/QSR','Service Station','Pub/Hotel','Apartment Blocks','Commercial'];
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
 const REGIONS = ['CBD/City','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
@@ -1110,7 +1110,7 @@ function assetBadge(cls) {
     'Retail':'b-retail','Strata Retail':'b-strataretail','Strata Office':'b-strataoffice',
     'Development Site':'b-devsite','Commercial Office':'b-office',
     'Fast Food/QSR':'b-fastfood','Service Station':'b-service','Pub/Hotel':'b-pub',
-    'Residential':'b-residential','Commercial':'b-default'
+    'Apartment Blocks':'b-aptblocks','Commercial':'b-default'
   };
   if (!cls) return '<span class="badge-pill b-default">–</span>';
   return `<span class="badge-pill ${map[cls]||'b-default'}">${cls}</span>`;
