@@ -1,5 +1,6 @@
 'use strict';
 
+const ExcelJS     = require('exceljs');
 const express     = require('express');
 const cors        = require('cors');
 const compression = require('compression');
@@ -280,6 +281,98 @@ app.delete('/api/validate/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── Excel Export ─────────────────────────────────────────────────────────────
+app.get('/api/sales/export', requireAuth, async (req, res) => {
+  const { search, asset_class, process: proc, years, region, suburb } = req.query;
+  let sql = 'SELECT * FROM sales WHERE 1=1';
+  const params = [];
+  if (search) {
+    sql += ' AND (address LIKE ? OR suburb LIKE ? OR vendor LIKE ? OR purchaser LIKE ? OR agent1 LIKE ? OR notes LIKE ?)';
+    const s = `%${search}%`;
+    params.push(s, s, s, s, s, s);
+  }
+  if (asset_class) { sql += ' AND asset_class = ?'; params.push(asset_class); }
+  if (proc)        { sql += ' AND process = ?';     params.push(proc); }
+  if (region)      { sql += ' AND region = ?';      params.push(region); }
+  if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+  if (years) {
+    const yl = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
+    if (yl.length) { sql += ` AND year IN (${yl.map(() => '?').join(',')})`; params.push(...yl); }
+  }
+  sql += ' ORDER BY exchange_date DESC';
+  const rows = db.prepare(sql).all(...params);
+
+  const NAVY = 'FF0D2137', ORANGE = 'FFE8732A', WHITE = 'FFFFFFFF', LGREY = 'FFF0F2F5';
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Cushman & Wakefield';
+  const ws = wb.addWorksheet('NSW Investment Sales');
+
+  ws.columns = [
+    { key: 'address',         width: 32 }, { key: 'suburb',          width: 15 },
+    { key: 'region',          width: 18 }, { key: 'asset_class',     width: 18 },
+    { key: 'process',         width: 16 }, { key: 'status',          width: 12 },
+    { key: 'price',           width: 16 }, { key: 'price_guide',     width: 16 },
+    { key: 'net_rent',        width: 14 }, { key: 'yield_percent',   width: 10 },
+    { key: 'wale',            width: 10 }, { key: 'land_area',       width: 10 },
+    { key: 'floor_area',      width: 10 }, { key: 'zoning',          width: 14 },
+    { key: 'fsr',             width: 8  }, { key: 'agent1',          width: 22 },
+    { key: 'firm1',           width: 22 }, { key: 'vendor',          width: 28 },
+    { key: 'purchaser',       width: 28 }, { key: 'exchange_date',   width: 14 },
+    { key: 'settlement_date', width: 14 }, { key: 'year',            width: 8  },
+    { key: 'notes',           width: 55 },
+  ];
+
+  // Title row
+  ws.addRow(['NSW Investment Sales — Cushman & Wakefield']);
+  ws.mergeCells('A1:W1');
+  const tc = ws.getCell('A1');
+  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } };
+  tc.font = { color: { argb: WHITE }, bold: true, size: 14 };
+  tc.alignment = { vertical: 'middle', horizontal: 'left' };
+  ws.getRow(1).height = 36;
+
+  // Header row
+  ws.addRow(['Address','Suburb','Region','Asset Class','Process','Status',
+    'Price','Price Guide','Net Rent (pa)','Yield %','WALE (yrs)','Land m²','Floor m²',
+    'Zoning','FSR','Agent','Firm','Vendor','Purchaser','Exchange Date','Settlement Date','Year','Notes']);
+  const hr = ws.getRow(2);
+  hr.height = 24;
+  hr.eachCell(cell => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } };
+    cell.font = { color: { argb: WHITE }, bold: true, size: 10 };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = { bottom: { style: 'medium', color: { argb: ORANGE } } };
+  });
+
+  // Data rows
+  rows.forEach((r, idx) => {
+    const row = ws.addRow([
+      r.address, r.suburb, r.region, r.asset_class, r.process, r.status,
+      r.price || null, r.price_guide || null, r.net_rent || null,
+      r.yield_percent || null, r.wale || null, r.land_area || null, r.floor_area || null,
+      r.zoning, r.fsr, r.agent1, r.firm1, r.vendor, r.purchaser,
+      r.exchange_date, r.settlement_date, r.year, r.notes,
+    ]);
+    row.height = 18;
+    const bg = idx % 2 === 0 ? WHITE : LGREY;
+    row.eachCell({ includeEmpty: true }, cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.alignment = { vertical: 'middle' };
+    });
+    ['G','H','I'].forEach(col => { const c = row.getCell(col); if (c.value) c.numFmt = '"$"#,##0'; });
+    const yc = row.getCell('J'); if (yc.value) yc.numFmt = '0.00"%"';
+    ['L','M'].forEach(col => { const c = row.getCell(col); if (c.value) c.numFmt = '#,##0'; });
+  });
+
+  ws.views = [{ state: 'frozen', ySplit: 2 }];
+  ws.autoFilter = { from: 'A2', to: 'W2' };
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="nsw-investment-sales-${new Date().toISOString().slice(0,10)}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
 
 // ── Filter Options ────────────────────────────────────────────────────────────
 

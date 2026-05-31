@@ -213,6 +213,18 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
 .mt-8{margin-top:8px}
 .scraper-btn-wrap{margin-left:auto}
 .loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+
+/* ── Analytics ──────────────────────────────────────────────────── */
+.analytics-content{padding:28px}
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+@media(max-width:900px){.analytics-grid{grid-template-columns:1fr}}
+.chart-wrap{padding:16px;height:280px;position:relative}
+.import-preview{max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.import-preview table{width:100%;border-collapse:collapse}
+.import-preview th{background:var(--bg);padding:8px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;white-space:nowrap;position:sticky;top:0;border-bottom:2px solid var(--border)}
+.import-preview td{padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:top}
+.dup-row td{background:#fef2f2}
+.dup-label{font-size:10px;color:#dc2626;font-weight:600}
 </style>
 </head>
 <body>
@@ -249,6 +261,10 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="nav-item" data-section="tracking" onclick="showSection('tracking')">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
         Tracking
+      </div>
+      <div class="nav-item" data-section="analytics" onclick="showSection('analytics')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        Analytics
       </div>
     </div>
     <div class="sidebar-footer">
@@ -293,7 +309,9 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           <div class="sub" id="sales-count">Finalised investment sales</div>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary btn-sm" onclick="exportSales()">Export CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportSales()">↓ Export Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('rpdata-file').click()">↑ Import RPData</button>
+          <input type="file" id="rpdata-file" accept=".xlsx,.xls" class="hidden" onchange="handleRPDataFile(event)">
           <button class="btn btn-primary btn-sm" onclick="openAddSale()">+ Add Sale</button>
         </div>
       </div>
@@ -419,6 +437,58 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </section>
 
 
+    <!-- ── Analytics ────────────────────────────────────────────── -->
+    <section id="section-analytics" class="hidden">
+      <div class="page-header">
+        <div>
+          <h1>Analytics</h1>
+          <div class="sub">Market analysis and sales insights</div>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <select class="filter-select" id="an-year" onchange="renderAnalytics()">
+          <option value="">All Years</option>
+          <option>2026</option><option>2025</option><option>2024</option>
+          <option>2023</option><option>2022</option><option>2021</option>
+        </select>
+        <select class="filter-select" id="an-asset" onchange="renderAnalytics()">
+          <option value="">All Asset Classes</option>
+          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Retail</option><option>Medical/Healthcare</option><option>Development Site</option>
+          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
+          <option>Residential</option><option>Commercial</option>
+        </select>
+        <select class="filter-select" id="an-region" onchange="renderAnalytics()">
+          <option value="">All Regions</option>
+          <option>CBD/City</option><option>Eastern Suburbs</option><option>Inner West</option>
+          <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
+          <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="clearAnalyticsFilters()">Clear</button>
+      </div>
+      <div class="analytics-content">
+        <div class="stats-row" id="analytics-kpis"></div>
+        <div class="analytics-grid">
+          <div class="dash-panel">
+            <div class="dash-panel-header">Sales by Year</div>
+            <div class="chart-wrap"><canvas id="chart-by-year"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">By Asset Class</div>
+            <div class="chart-wrap"><canvas id="chart-by-asset"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Avg Yield % by Asset Class</div>
+            <div class="chart-wrap"><canvas id="chart-yield"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Sale Process Mix</div>
+            <div class="chart-wrap"><canvas id="chart-process"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div><!-- /main-content -->
 </div><!-- /app -->
 
@@ -540,6 +610,7 @@ function showSection(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'sales') { loadSalesYears(); loadSales(); }
   if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
+  if (name === 'analytics') loadAnalytics();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -771,11 +842,19 @@ function saleForm(s={}) {
   </form>`;
 }
 
-function exportSales() {
+async function exportSales() {
   const params = buildParams('sf');
-  const rows = [['Address','Suburb','Region','Asset Class','Process','Price','Price Guide','Net Rent','Yield %','WALE','Land m²','Floor m²','Agent 1','Firm 1','Agent 2','Firm 2','Vendor','Purchaser','Exchange Date','Settlement Date','Notes']];
-  S.salesData.forEach(s => rows.push([s.address,s.suburb,s.region,s.asset_class,s.process,s.price,s.price_guide,s.net_rent,s.yield_percent,s.wale,s.land_area,s.floor_area,s.agent1,s.firm1,s.agent2,s.firm2,s.vendor,s.purchaser,s.exchange_date,s.settlement_date,s.notes]));
-  downloadCSV(rows, 'nsw-investment-sales.csv');
+  const resp = await fetch('/api/sales/export?' + params, {
+    headers: { Authorization: 'Bearer ' + S.token }
+  });
+  if (!resp.ok) { alert('Export failed'); return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nsw-investment-sales.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1037,11 +1116,313 @@ function processBadge(p) {
   return `<span class="badge-pill ${map[p]||'b-default'}">${p}</span>`;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// RPDATA IMPORT
+// ═══════════════════════════════════════════════════════════════
+async function handleRPDataFile(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const records = await parseRPDataFile(file);
+    if (!records.length) { alert('No records found in file.'); return; }
+    showImportPreview(records);
+  } catch(err) { alert('Could not parse file: ' + err.message); }
+}
+
+function toTitleCase(str) {
+  return (str||'').toLowerCase().replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+}
+
+function parseRPDataFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        let headerRow = -1;
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i] && rows[i].includes('Street Address')) { headerRow = i; break; }
+        }
+        if (headerRow < 0) { reject(new Error('No header row found')); return; }
+        const headers = rows[headerRow];
+        const col = {};
+        headers.forEach((h, i) => { if (h) col[h] = i; });
+        const MONTH = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+        function parseDate(s) {
+          const m = (s||'').match(/(\d+)\s+(\w{3})\s+(\d{4})/);
+          if (!m) return null;
+          return `${m[3]}-${MONTH[m[2]]||'01'}-${m[1].padStart(2,'0')}`;
+        }
+        function parsePrice(s) {
+          if (!s || s === 'Not Disclosed' || s === '-') return null;
+          const n = parseFloat(String(s).replace(/[$,]/g,''));
+          return (!isNaN(n) && n > 0) ? n : null;
+        }
+        function mapAsset(t) {
+          t = (t||'').toLowerCase();
+          if (t.includes('retail')) return 'Retail';
+          if (t.includes('office')) return 'Commercial Office';
+          if (t.includes('industrial')) return 'Industrial';
+          if (t.includes('medical')||t.includes('health')) return 'Medical/Healthcare';
+          if (t.includes('childcare')||t.includes('child care')) return 'Childcare';
+          return 'Commercial';
+        }
+        function mapRegion(s) {
+          const m = {'bondi':'Eastern Suburbs','bondi beach':'Eastern Suburbs','bondi junction':'Eastern Suburbs',
+            'coogee':'Eastern Suburbs','maroubra':'Eastern Suburbs','randwick':'Eastern Suburbs',
+            'paddington':'Eastern Suburbs','woollahra':'Eastern Suburbs','double bay':'Eastern Suburbs',
+            'rose bay':'Eastern Suburbs','vaucluse':'Eastern Suburbs','darlinghurst':'Eastern Suburbs',
+            'surry hills':'Eastern Suburbs','redfern':'Eastern Suburbs','bronte':'Eastern Suburbs',
+            'clovelly':'Eastern Suburbs','waverley':'Eastern Suburbs','edgecliff':'Eastern Suburbs',
+            'waterloo':'Eastern Suburbs','kingsford':'Eastern Suburbs','kensington':'Eastern Suburbs',
+            'newtown':'Inner West','marrickville':'Inner West','leichhardt':'Inner West',
+            'north sydney':'North Shore','chatswood':'North Shore','manly':'Northern Beaches',
+            'parramatta':'Western Sydney','blacktown':'Western Sydney','penrith':'Western Sydney',
+            'hurstville':'Southern Sydney','cronulla':'Southern Sydney','liverpool':'South West Sydney',
+            'sydney':'CBD/City','haymarket':'CBD/City','pyrmont':'CBD/City'};
+          return m[(s||'').toLowerCase().trim()] || null;
+        }
+        const records = [];
+        for (let i = headerRow + 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r) continue;
+          const streetAddr = String(r[col['Street Address']]||'').trim();
+          if (!streetAddr) continue;
+          const suburb = toTitleCase(String(r[col['Suburb']]||'').trim());
+          const addr = toTitleCase(streetAddr) + ', ' + suburb + ' NSW';
+          const price = parsePrice(String(r[col['Sale Price']]||'').trim());
+          const exchangeDate = parseDate(String(r[col['Sale Date']]||'').trim());
+          const yr = exchangeDate ? parseInt(exchangeDate.split('-')[0]) : new Date().getFullYear();
+          const agency = String(r[col['Agency']]||'').trim();
+          const agent = String(r[col['Agent']]||'').trim();
+          const landRaw = r[col['Land Size (m²)']];
+          const floorRaw = r[col['Floor Size (m²)']];
+          const vendor = toTitleCase(String(r[col['Vendor 1 Name']]||'').trim());
+          const purchaser = toTitleCase(String(r[col['Owner 1 Name']]||'').trim());
+          const propType = String(r[col['Property Type']]||'').trim();
+          records.push({
+            address: addr,
+            suburb,
+            region: mapRegion(suburb),
+            asset_class: mapAsset(propType),
+            process: 'Private Treaty',
+            status: 'Sold',
+            price,
+            land_area: typeof landRaw === 'number' ? landRaw : (parseFloat(landRaw)||null),
+            floor_area: typeof floorRaw === 'number' ? floorRaw : (parseFloat(floorRaw)||null),
+            agent1: (agent && agent !== '-') ? agent : null,
+            firm1: (agency && agency !== '-') ? agency : null,
+            vendor: (vendor && vendor !== '-') ? vendor : null,
+            purchaser: (purchaser && purchaser !== '-') ? purchaser : null,
+            exchange_date: exchangeDate,
+            settlement_date: parseDate(String(r[col['Settlement Date']]||'').trim()),
+            year: yr,
+            notes: `Source: RPData. Property type: ${propType}.`,
+            _dup: S.salesData.some(s => s.address.toLowerCase() === addr.toLowerCase()),
+          });
+        }
+        resolve(records);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function showImportPreview(records) {
+  const rows = records.map((r, i) => `
+    <tr class="${r._dup ? 'dup-row' : ''}">
+      <td><input type="checkbox" id="imp-${i}" ${r._dup ? '' : 'checked'} style="accent-color:var(--accent)"></td>
+      <td>${esc(r.address)}${r._dup ? '<br><span class="dup-label">POSSIBLE DUPLICATE</span>' : ''}</td>
+      <td>${assetBadge(r.asset_class)}</td>
+      <td>${r.price ? '$'+fmt(r.price) : '–'}</td>
+      <td>${fmtDate(r.exchange_date)}</td>
+      <td>${esc([r.agent1,r.firm1].filter(Boolean).join(' / ')) || '–'}</td>
+      <td>${esc(r.vendor||'–')}</td>
+    </tr>`).join('');
+
+  const html = `
+    <p style="margin-bottom:12px;font-size:13px;color:var(--muted)">
+      Parsed <strong style="color:var(--text)">${records.length}</strong> records.
+      Review below and uncheck any to exclude.
+    </p>
+    <div class="import-preview">
+      <table>
+        <thead><tr>
+          <th><input type="checkbox" id="imp-all" checked style="accent-color:var(--accent)"></th>
+          <th>Address</th><th>Asset Class</th><th>Price</th><th>Exchange Date</th><th>Agent / Firm</th><th>Vendor</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  openModal(`Import RPData — ${records.length} records`, html, async () => {
+    const selected = records.filter((_, i) => {
+      const cb = document.getElementById('imp-' + i);
+      return cb && cb.checked;
+    });
+    if (!selected.length) { alert('No records selected.'); return; }
+    let imported = 0;
+    for (const r of selected) {
+      const { _dup, ...body } = r;
+      const res = await POST('/sales', body);
+      if (res && !res.error) imported++;
+    }
+    closeModal();
+    loadSales();
+    alert(`Imported ${imported} record${imported !== 1 ? 's' : ''}.`);
+  }, `Import ${records.length} Records`);
+
+  setTimeout(() => {
+    const allCb = document.getElementById('imp-all');
+    if (allCb) allCb.onchange = function() {
+      document.querySelectorAll('[id^="imp-"]').forEach(c => { if (c.id !== 'imp-all') c.checked = this.checked; });
+    };
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════════════════════
+let analyticsRawData = [];
+const analyticsCharts = {};
+
+async function loadAnalytics() {
+  const data = await GET('/sales');
+  if (!data) return;
+  analyticsRawData = data;
+  renderAnalytics();
+}
+
+function clearAnalyticsFilters() {
+  ['an-year','an-asset','an-region'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderAnalytics();
+}
+
+function getAnalyticsData() {
+  const year = document.getElementById('an-year')?.value || '';
+  const assetClass = document.getElementById('an-asset')?.value || '';
+  const region = document.getElementById('an-region')?.value || '';
+  return analyticsRawData.filter(s => {
+    if (year && String(s.year) !== year) return false;
+    if (assetClass && s.asset_class !== assetClass) return false;
+    if (region && s.region !== region) return false;
+    return true;
+  });
+}
+
+function fmtVol(n) {
+  if (!n) return '0';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return Number(n).toFixed(0);
+}
+
+function renderAnalytics() {
+  const data = getAnalyticsData();
+  const withPrice = data.filter(s => s.price);
+  const totalVol = withPrice.reduce((sum, s) => sum + s.price, 0);
+  const avgPrice = withPrice.length ? totalVol / withPrice.length : 0;
+  const withYield = data.filter(s => s.yield_percent);
+  const avgYield = withYield.length ? withYield.reduce((sum, s) => sum + s.yield_percent, 0) / withYield.length : 0;
+  document.getElementById('analytics-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-label">Sales</div></div>
+    <div class="stat-card"><div class="stat-num">$${fmtVol(totalVol)}</div><div class="stat-label">Total Volume</div></div>
+    <div class="stat-card green"><div class="stat-num">${avgPrice ? '$'+fmtVol(avgPrice) : '–'}</div><div class="stat-label">Avg Price</div></div>
+    <div class="stat-card blue"><div class="stat-num">${avgYield ? avgYield.toFixed(2)+'%' : '–'}</div><div class="stat-label">Avg Yield</div></div>
+  `;
+  renderChartByYear(data);
+  renderChartByAsset(data);
+  renderChartYield(data);
+  renderChartProcess(data);
+}
+
+function destroyChart(key) { if (analyticsCharts[key]) { analyticsCharts[key].destroy(); delete analyticsCharts[key]; } }
+
+function renderChartByYear(data) {
+  const counts = {}, vols = {};
+  data.forEach(s => {
+    if (!s.year) return;
+    counts[s.year] = (counts[s.year]||0) + 1;
+    if (s.price) vols[s.year] = (vols[s.year]||0) + s.price;
+  });
+  const years = Object.keys(counts).sort();
+  const ctx = document.getElementById('chart-by-year'); if (!ctx) return;
+  destroyChart('byYear');
+  analyticsCharts.byYear = new Chart(ctx, {
+    data: {
+      labels: years,
+      datasets: [
+        { type:'bar', label:'Sales Count', data: years.map(y => counts[y]||0), backgroundColor:'rgba(13,33,55,0.8)', yAxisID:'y' },
+        { type:'line', label:'Volume ($M)', data: years.map(y => vols[y] ? +(vols[y]/1e6).toFixed(1) : 0), borderColor:'#e8732a', backgroundColor:'rgba(232,115,42,0.1)', yAxisID:'y1', tension:0.3, pointRadius:5, fill:true },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        y:  { beginAtZero:true, ticks:{ stepSize:1 }, title:{ display:true, text:'Count' } },
+        y1: { beginAtZero:true, position:'right', grid:{ drawOnChartArea:false }, title:{ display:true, text:'$M' } },
+      },
+      plugins:{ legend:{ position:'bottom' } }
+    }
+  });
+}
+
+function renderChartByAsset(data) {
+  const counts = {};
+  data.forEach(s => { const k = s.asset_class||'Unknown'; counts[k] = (counts[k]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const ctx = document.getElementById('chart-by-asset'); if (!ctx) return;
+  destroyChart('byAsset');
+  analyticsCharts.byAsset = new Chart(ctx, {
+    type:'bar',
+    data: { labels: sorted.map(([k]) => k), datasets: [{ label:'Sales', data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444'] }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+  });
+}
+
+function renderChartYield(data) {
+  const sums = {}, cnts = {};
+  data.filter(s => s.yield_percent).forEach(s => {
+    const k = s.asset_class||'Unknown';
+    sums[k] = (sums[k]||0) + s.yield_percent;
+    cnts[k] = (cnts[k]||0) + 1;
+  });
+  const avgs = Object.entries(sums).map(([k,v]) => [k, +(v/cnts[k]).toFixed(2)]).sort((a,b) => a[1]-b[1]);
+  if (!avgs.length) return;
+  const ctx = document.getElementById('chart-yield'); if (!ctx) return;
+  destroyChart('yield');
+  analyticsCharts.yield = new Chart(ctx, {
+    type:'bar',
+    data: { labels: avgs.map(([k]) => k), datasets: [{ label:'Avg Yield %', data: avgs.map(([,v]) => v), backgroundColor:'rgba(232,115,42,0.75)', borderColor:'#e8732a', borderWidth:1 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, title:{ display:true, text:'Yield %' } } } }
+  });
+}
+
+function renderChartProcess(data) {
+  const counts = {};
+  data.forEach(s => { const k = s.process||'Unknown'; counts[k] = (counts[k]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const ctx = document.getElementById('chart-process'); if (!ctx) return;
+  destroyChart('process');
+  analyticsCharts.process = new Chart(ctx, {
+    type:'doughnut',
+    data: { labels: sorted.map(([k]) => k), datasets: [{ data: sorted.map(([,v]) => v), backgroundColor:['#0d2137','#e8732a','#1a3a5c','#f59e0b','#10b981','#3b82f6'] }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
+  });
+}
+
 function trackStatusBadge(s) {
   const map = {'Active Campaign':'b-active','Under Offer':'b-offer','Exchanged - Awaiting Settlement':'b-exchanged','Withdrawn':'b-withdrawn','Converted to Sale':'b-sold'};
   if (!s) return '–';
   return `<span class="badge-pill ${map[s]||'b-default'}">${s}</span>`;
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>

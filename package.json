@@ -11,6 +11,7 @@
     "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",
     "compression": "^1.7.4",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "exceljs": "^4.4.0"
   }
 }
