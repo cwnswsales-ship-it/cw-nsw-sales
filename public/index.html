@@ -204,7 +204,11 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .close-urgent{color:var(--accent);font-weight:700}
 .close-soon{color:var(--info);font-weight:600}
 /* Inline status select */
-.status-select{border:none;background:transparent;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;color:inherit;padding:0;outline:none;max-width:160px}
+.status-select{border:none;border-radius:4px;font-size:11px;font-family:'Inter',sans-serif;font-weight:700;cursor:pointer;outline:none;padding:3px 20px 3px 7px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' fill='none'%3E%3Cpath d='M1 1l3 3 3-3' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 5px center;max-width:180px}
+.status-active{background:#fef3c7;color:#92400e}
+.status-offer{background:#dbeafe;color:#1e40af}
+.status-exchanged{background:#ffedd5;color:#9a3412}
+.status-withdrawn{background:#fee2e2;color:#991b1b}
 /* ── IM Upload Zone ── */
 .im-upload-zone{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden;transition:max-height .3s ease}
 .im-upload-inner{display:flex;align-items:center;gap:16px;padding:14px 28px;cursor:pointer;transition:.2s}
@@ -480,7 +484,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="im-upload-zone" id="im-drop-zone"
            ondragover="imDragOver(event)" ondragleave="imDragLeave(event)" ondrop="imDrop(event)">
         <input type="file" id="im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="imFileSelected(event)">
-        <div class="im-upload-inner" onclick="document.getElementById('im-file-input').click()">
+        <div class="im-upload-inner" id="im-upload-inner" onclick="document.getElementById('im-file-input').click()">
           <div class="im-upload-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
@@ -1157,13 +1161,14 @@ function renderTracking(data) {
     }
     const statusOpts = TRACK_STATUSES.map(s =>
       `<option value="${s}"${s===t.status?' selected':''}>${s}</option>`).join('');
+    const statusCls = statusSelectClass(t.status);
     return `
     <tr class="${urgencyClass}">
       <td class="td-addr">${t.address}<small>${[t.suburb,t.region].filter(Boolean).join(' · ')}</small></td>
       <td>${assetBadge(t.asset_class)}</td>
       <td>${processBadge(t.process)}</td>
       <td>
-        <select class="status-select" onchange="quickStatusChange('${t.id}',this.value)" title="Change status">
+        <select class="status-select ${statusCls}" onchange="quickStatusChange('${t.id}',this.value);this.className='status-select '+statusSelectClass(this.value)" title="Change status">
           ${statusOpts}
         </select>
       </td>
@@ -1432,6 +1437,15 @@ function trackStatusBadge(s) {
   const map = {'Active Campaign':'b-active','Under Offer':'b-offer','Exchanged - Awaiting Settlement':'b-exchanged','Withdrawn':'b-withdrawn'};
   if (!s) return '–';
   return `<span class="badge-pill ${map[s]||'b-default'}">${s}</span>`;
+}
+
+function statusSelectClass(s) {
+  if (!s) return 'status-active';
+  if (s === 'Active Campaign') return 'status-active';
+  if (s === 'Under Offer')     return 'status-offer';
+  if (s.startsWith('Exchanged')) return 'status-exchanged';
+  if (s === 'Withdrawn')       return 'status-withdrawn';
+  return 'status-active';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1753,15 +1767,16 @@ function imFileSelected(e) {
 
 function setIMState(state, msg) {
   const el = id => document.getElementById(id);
-  el('im-upload-inner') && (el('im-upload-inner').classList.toggle('hidden', state !== 'idle'));
+  const inner = el('im-upload-inner');
+  if (inner) inner.classList.toggle('hidden', state !== 'idle');
   el('im-loading').classList.toggle('hidden', state !== 'loading');
   el('im-success').classList.toggle('hidden', state !== 'success');
   el('im-error').classList.toggle('hidden', state !== 'error');
   if (state === 'loading' && msg) el('im-loading-text').textContent = msg;
   if (state === 'success' && msg) el('im-success-text').textContent = msg;
   if (state === 'error'   && msg) el('im-error-text').textContent = msg;
-  if (state === 'success') setTimeout(() => setIMState('idle'), 4000);
-  if (state === 'error')   setTimeout(() => setIMState('idle'), 6000);
+  if (state === 'success') setTimeout(() => setIMState('idle'), 5000);
+  if (state === 'error')   setTimeout(() => setIMState('idle'), 8000);
 }
 
 async function processIMFile(file) {
