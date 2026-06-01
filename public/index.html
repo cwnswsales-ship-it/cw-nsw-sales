@@ -164,25 +164,47 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .b-tender{background:#ede9fe;color:#5b21b6}
 
 /* ── Dashboard ── */
-.dash-content{padding:24px 28px}
-.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
-.stat-card{background:var(--card);border-radius:8px;padding:18px 20px;border:1px solid var(--border);position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.dash-content{padding:20px 28px}
+.dash-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1100px){.dash-3col{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.dash-2col,.dash-3col{grid-template-columns:1fr}}
+.dash-panel{background:var(--card);border-radius:8px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.dash-panel-header{padding:13px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+.dash-panel-sub{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.dash-panel-body{padding:0}
+.dash-row{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border);font-size:12.5px;transition:.12s;gap:12px}
+.dash-row:last-child{border-bottom:none}
+.dash-row:hover{background:var(--bg)}
+.dash-row-left{font-weight:500;color:var(--text);min-width:0;flex:1}
+.dash-row-right{color:var(--muted);font-size:12px;font-weight:600;text-align:right;flex-shrink:0}
+.dash-notable-price{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.dash-notable-yield{font-size:11px;color:var(--success);font-weight:600}
+.dash-close-date{font-size:12px;font-weight:700}
+.dash-close-urgent{color:var(--danger)}
+.dash-close-soon{color:var(--accent)}
+.dash-close-ok{color:var(--success)}
+.dash-close-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.dash-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:12.5px}
+/* Campaign stats bar */
+.campaign-stats-bar{display:flex;background:var(--navy);color:#fff;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.04)}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px}
+.stat-card{background:var(--card);border-radius:8px;padding:16px 18px;border:1px solid var(--border);position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
 .stat-card.green::before{background:var(--success)}
 .stat-card.blue::before{background:var(--info)}
 .stat-card.purple::before{background:#8b5cf6}
-.stat-num{font-size:30px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.5px}
-.stat-label{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
-.dash-panel{background:var(--card);border-radius:8px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.dash-panel-header{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;color:var(--text)}
-.dash-panel-body{padding:0}
-.dash-row{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border);font-size:12.5px;transition:.12s}
-.dash-row:last-child{border-bottom:none}
-.dash-row:hover{background:var(--bg)}
-.dash-row-left{font-weight:500;color:var(--text)}
-.dash-row-right{color:var(--muted);font-size:12px;font-weight:600}
+.stat-num{font-size:26px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.5px}
+.stat-label{font-size:11px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+/* Tracking urgency rows */
+.row-overdue td:first-child{border-left:3px solid var(--danger)}
+.row-urgent td:first-child{border-left:3px solid var(--accent)}
+.row-soon td:first-child{border-left:3px solid var(--info)}
+.close-overdue{color:var(--danger);font-weight:700}
+.close-urgent{color:var(--accent);font-weight:700}
+.close-soon{color:var(--info);font-weight:600}
+/* Inline status select */
+.status-select{border:none;background:transparent;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;color:inherit;padding:0;outline:none;max-width:160px}
 .scraper-status{display:flex;align-items:center;gap:8px;padding:14px 18px;font-size:12.5px;color:var(--muted)}
 
 /* ── Modal ── */
@@ -283,23 +305,38 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 
     <!-- ── Dashboard ─────────────────────────────────────────────── -->
     <section id="section-dashboard" class="hidden">
+      <!-- KPI bar (reuses sales-stats-bar styles) -->
+      <div class="sales-stats-bar" id="dash-kpi-bar">
+        <div class="ss-item"><div class="ss-val">–</div><div class="ss-label">Sales Recorded</div></div>
+        <div class="ss-item"><div class="ss-val orange">–</div><div class="ss-label">Total Volume</div></div>
+        <div class="ss-item"><div class="ss-val orange">–</div><div class="ss-label">Avg Yield</div></div>
+        <div class="ss-item"><div class="ss-val">–</div><div class="ss-label">Active Campaigns</div></div>
+        <div class="ss-item"><div class="ss-val">–</div><div class="ss-label">Closing This Week</div></div>
+      </div>
       <div class="page-header">
-        <div><h1>Dashboard</h1><div class="sub">NSW Investment Sales Overview</div></div>
+        <div><h1>Dashboard</h1><div class="sub" id="dash-date-sub">NSW Investment Sales Intelligence</div></div>
       </div>
       <div class="dash-content">
-        <div class="stats-row" id="dash-stats"></div>
-        <div class="dash-grid">
+        <!-- row 1: notable sales + upcoming closes -->
+        <div class="dash-2col">
           <div class="dash-panel">
-            <div class="dash-panel-header">Recent Sales</div>
-            <div class="dash-panel-body" id="dash-recent-sales"></div>
+            <div class="dash-panel-header">Notable Recent Sales <span class="dash-panel-sub">highest value · recent years</span></div>
+            <div id="dash-notable-sales"></div>
           </div>
           <div class="dash-panel">
-            <div class="dash-panel-header">By Asset Class</div>
-            <div class="dash-panel-body" id="dash-by-asset"></div>
+            <div class="dash-panel-header">Upcoming Closes &amp; Auctions <span class="dash-panel-sub">next 14 days</span></div>
+            <div id="dash-upcoming-closes"></div>
+          </div>
+        </div>
+        <!-- row 2: asset class + campaign status -->
+        <div class="dash-3col">
+          <div class="dash-panel" style="grid-column:span 2">
+            <div class="dash-panel-header">Sales by Asset Class <span class="dash-panel-sub">all records</span></div>
+            <div id="dash-by-asset"></div>
           </div>
           <div class="dash-panel">
-            <div class="dash-panel-header">By Region</div>
-            <div class="dash-panel-body" id="dash-by-region"></div>
+            <div class="dash-panel-header">Campaign Status</div>
+            <div id="dash-campaign-status"></div>
           </div>
         </div>
       </div>
@@ -387,6 +424,14 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 
     <!-- ── Tracking ───────────────────────────────────────────────── -->
     <section id="section-tracking" class="hidden">
+      <!-- Campaign stats bar -->
+      <div class="campaign-stats-bar" id="campaign-stats-bar">
+        <div class="ss-item"><div class="ss-val" id="cst-active">–</div><div class="ss-label">Active Campaign</div></div>
+        <div class="ss-item"><div class="ss-val orange" id="cst-offer">–</div><div class="ss-label">Under Offer</div></div>
+        <div class="ss-item"><div class="ss-val orange" id="cst-exchanged">–</div><div class="ss-label">Exchanged</div></div>
+        <div class="ss-item"><div class="ss-val" id="cst-closing">–</div><div class="ss-label">Closing This Week</div></div>
+        <div class="ss-item"><div class="ss-val" id="cst-withdrawn">–</div><div class="ss-label">Withdrawn</div></div>
+      </div>
       <div class="page-header">
         <div><h1>Campaigns</h1><div class="sub" id="tracking-count">Active campaigns subject to settlement</div></div>
         <div class="header-actions">
@@ -439,7 +484,8 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
             <th onclick="sortTable('tracking','agent1')">Agent / Firm</th>
             <th onclick="sortTable('tracking','vendor')">Vendor</th>
             <th onclick="sortTable('tracking','campaign_close_date')">Close Date</th>
-            <th onclick="sortTable('tracking','expected_settlement_date')">Exp. Settlement</th>
+            <th>Days</th>
+            <th onclick="sortTable('tracking','expected_settlement_date')">Settlement</th>
             <th>Notes</th>
             <th></th>
           </tr></thead>
@@ -633,34 +679,97 @@ async function loadDashboard() {
   const data = await GET('/stats');
   if (!data) return;
 
-  document.getElementById('dash-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-num">${data.totalSales}</div><div class="stat-label">Total Sales</div></div>
-    <div class="stat-card green"><div class="stat-num">${data.totalTracking}</div><div class="stat-label">In Campaign</div></div>
-  `;
+  // Date subtitle
+  document.getElementById('dash-date-sub').textContent =
+    'NSW Investment Sales Intelligence · ' + new Date().toLocaleDateString('en-AU', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
-  document.getElementById('dash-recent-sales').innerHTML = data.recentSales.length
-    ? data.recentSales.map(s => `
-        <div class="dash-row">
-          <div class="dash-row-left">${s.address}<br><small style="color:var(--muted);font-weight:400;font-size:11px">${s.suburb||''} · ${s.asset_class||''}</small></div>
-          <div class="dash-row-right">${s.price ? '$'+fmt(s.price) : s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '–'}</div>
+  // KPI bar
+  const kpis = document.getElementById('dash-kpi-bar').querySelectorAll('.ss-item');
+  const kpiVals = [
+    data.totalSales,
+    data.totalVolume ? '$' + fmtVol(data.totalVolume) : '–',
+    data.avgYield ? data.avgYield.toFixed(2) + '%' : '–',
+    data.totalActive,
+    data.closingThisWeek,
+  ];
+  const kpiLabels = ['Sales Recorded','Total Volume','Avg Yield','Active Campaigns','Closing This Week'];
+  kpis.forEach((item, i) => {
+    item.querySelector('.ss-val').textContent = kpiVals[i];
+    item.querySelector('.ss-label').textContent = kpiLabels[i];
+  });
+
+  // Notable recent sales
+  document.getElementById('dash-notable-sales').innerHTML = data.notableSales.length
+    ? data.notableSales.map(s => `
+        <div class="dash-row" style="cursor:pointer" onclick="showSection('sales')">
+          <div class="dash-row-left">
+            <div style="font-weight:600;font-size:12.5px">${s.address}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${[s.suburb, s.asset_class].filter(Boolean).join(' · ')}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${processBadge(s.process)}&nbsp;${s.exchange_date ? fmtDate(s.exchange_date) : (s.year||'')}</div>
+          </div>
+          <div class="dash-row-right">
+            ${s.price ? `<div class="dash-notable-price">$${fmtVol(s.price)}</div>` : ''}
+            ${s.yield_percent ? `<div class="dash-notable-yield">${s.yield_percent.toFixed(2)}% yield</div>` : ''}
+          </div>
         </div>`).join('')
-    : '<div class="scraper-status">No sales recorded yet</div>';
+    : '<div class="dash-empty">No sales recorded yet</div>';
 
+  // Upcoming closes
+  document.getElementById('dash-upcoming-closes').innerHTML = data.upcomingCloses.length
+    ? data.upcomingCloses.map(t => {
+        const days = daysUntilClose(t.campaign_close_date);
+        const daysLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' :
+          days < 0 ? `${Math.abs(days)}d ago` : `${days} days`;
+        const cls = days < 0 ? 'dash-close-urgent' : days <= 3 ? 'dash-close-urgent' :
+          days <= 7 ? 'dash-close-soon' : 'dash-close-ok';
+        return `
+        <div class="dash-row" style="cursor:pointer" onclick="showSection('tracking')">
+          <div class="dash-row-left">
+            <div style="font-weight:600;font-size:12.5px">${t.address}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${[t.suburb, t.asset_class].filter(Boolean).join(' · ')}</div>
+            <div style="font-size:11px;margin-top:1px">${processBadge(t.process)}&nbsp;${trackStatusBadge(t.status)}</div>
+          </div>
+          <div class="dash-row-right">
+            <div class="dash-close-date ${cls}">${daysLabel}</div>
+            ${t.price_guide ? `<div class="dash-close-meta">Guide: $${fmtVol(t.price_guide)}</div>` : ''}
+            ${t.agent1 ? `<div class="dash-close-meta">${t.agent1}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="dash-empty">No campaigns closing in the next 14 days</div>';
+
+  // By asset class
+  const maxCount = data.byAsset.length ? Math.max(...data.byAsset.map(r => r.count)) : 1;
   document.getElementById('dash-by-asset').innerHTML = data.byAsset.length
     ? data.byAsset.map(r => `
         <div class="dash-row">
           <div class="dash-row-left">${assetBadge(r.asset_class)}</div>
-          <div class="dash-row-right fw-600">${r.count}</div>
+          <div class="dash-row-right" style="display:flex;align-items:center;gap:10px">
+            <div style="width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div style="width:${Math.round(r.count/maxCount*100)}%;height:100%;background:var(--accent);border-radius:2px"></div>
+            </div>
+            <span style="min-width:20px;text-align:right">${r.count}</span>
+          </div>
         </div>`).join('')
-    : '<div class="scraper-status">No data</div>';
+    : '<div class="dash-empty">No data</div>';
 
-  document.getElementById('dash-by-region').innerHTML = data.byRegion.length
-    ? data.byRegion.map(r => `
+  // Campaign status
+  document.getElementById('dash-campaign-status').innerHTML = data.trackingByStatus.length
+    ? data.trackingByStatus.map(r => `
         <div class="dash-row">
-          <div class="dash-row-left">${r.region}</div>
+          <div class="dash-row-left">${trackStatusBadge(r.status)}</div>
           <div class="dash-row-right fw-600">${r.count}</div>
         </div>`).join('')
-    : '<div class="scraper-status">No data</div>';
+    : '<div class="dash-empty">No campaigns tracked</div>';
+}
+
+function daysUntilClose(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -954,30 +1063,78 @@ async function loadTracking() {
 function renderTracking(data) {
   const tbody = document.getElementById('tracking-tbody');
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><h3>No properties tracked</h3><p>Add properties manually</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><h3>No properties tracked</h3><p>Add properties manually</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map(t => `
-    <tr>
+  const today = new Date(); today.setHours(0,0,0,0);
+  tbody.innerHTML = data.map(t => {
+    const days = daysUntilClose(t.campaign_close_date);
+    const urgencyClass = days !== null && t.status !== 'Withdrawn'
+      ? (days < 0 ? 'row-overdue' : days <= 3 ? 'row-urgent' : days <= 7 ? 'row-soon' : '')
+      : '';
+    let daysCell = '–';
+    if (days !== null) {
+      const cls = days < 0 ? 'close-overdue' : days <= 3 ? 'close-urgent' : days <= 7 ? 'close-soon' : '';
+      const label = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 0 ? `${Math.abs(days)}d ago` : `${days}d`;
+      daysCell = cls ? `<span class="${cls}">${label}</span>` : label;
+    }
+    const statusOpts = TRACK_STATUSES.map(s =>
+      `<option value="${s}"${s===t.status?' selected':''}>${s}</option>`).join('');
+    return `
+    <tr class="${urgencyClass}">
       <td class="td-addr">${t.address}<small>${[t.suburb,t.region].filter(Boolean).join(' · ')}</small></td>
       <td>${assetBadge(t.asset_class)}</td>
       <td>${processBadge(t.process)}</td>
-      <td>${trackStatusBadge(t.status)}</td>
+      <td>
+        <select class="status-select" onchange="quickStatusChange('${t.id}',this.value)" title="Change status">
+          ${statusOpts}
+        </select>
+      </td>
       <td class="td-mono">${t.price_guide ? '$'+fmt(t.price_guide) : '–'}</td>
       <td class="td-mono">${t.net_rent ? '$'+fmt(t.net_rent) : '–'}</td>
       <td class="td-mono">${t.estimated_yield ? t.estimated_yield.toFixed(2)+'%' : '–'}</td>
       <td>${[t.agent1,t.firm1].filter(Boolean).join('<br><small style="color:var(--muted);font-size:11px">') + (t.firm1?'</small>':'')}</td>
       <td>${t.vendor||'–'}</td>
       <td>${fmtDate(t.campaign_close_date)}</td>
+      <td>${daysCell}</td>
       <td>${fmtDate(t.expected_settlement_date)}</td>
       <td class="td-truncate" title="${(t.notes||'').replace(/"/g,'&quot;')}">${t.notes||'–'}</td>
       <td class="td-actions">
         <button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Mark as Sold">Sold</button>
+        <button class="btn btn-secondary btn-sm" onclick="quickStatusChange('${t.id}','Withdrawn')" title="Withdraw campaign">Withdraw</button>
         ${t.source_url ? `<a href="${t.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditTracking('${t.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTracking('${t.id}')" title="Delete">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+  renderCampaignStats(data);
+}
+
+function renderCampaignStats(data) {
+  const counts = { 'Active Campaign': 0, 'Under Offer': 0, 'Exchanged - Awaiting Settlement': 0, 'Withdrawn': 0 };
+  let closingThisWeek = 0;
+  data.forEach(t => {
+    if (t.status in counts) counts[t.status]++;
+    const d = daysUntilClose(t.campaign_close_date);
+    if (d !== null && d >= 0 && d <= 7 && t.status !== 'Withdrawn') closingThisWeek++;
+  });
+  const el = id => document.getElementById(id);
+  if (el('cst-active')) {
+    el('cst-active').textContent = counts['Active Campaign'];
+    el('cst-offer').textContent = counts['Under Offer'];
+    el('cst-exchanged').textContent = counts['Exchanged - Awaiting Settlement'];
+    el('cst-closing').textContent = closingThisWeek;
+    el('cst-withdrawn').textContent = counts['Withdrawn'];
+  }
+}
+
+async function quickStatusChange(id, newStatus) {
+  const t = S.trackingData.find(x => x.id === id);
+  if (!t) return;
+  if (newStatus === t.status) return;
+  const data = await PUT('/tracking/' + id, { ...t, status: newStatus });
+  if (data && !data.error) loadTracking();
 }
 
 function openAddTracking(prefill={}) {
@@ -1107,7 +1264,7 @@ function sortTable(table, col) {
   const ths = tableEl.querySelectorAll('th');
   const cols = table === 'sales'
     ? ['address','','asset_class','process','price','net_rent','yield_percent','land_area','floor_area','','','agent1','exchange_date','notes','']
-    : ['address','asset_class','process','status','price_guide','net_rent','estimated_yield','agent1','vendor','campaign_close_date','expected_settlement_date','notes',''];
+    : ['address','asset_class','process','status','price_guide','net_rent','estimated_yield','agent1','vendor','campaign_close_date','','expected_settlement_date','notes',''];
   const idx = cols.indexOf(col);
   if (idx >= 0 && ths[idx]) ths[idx].classList.add('sort-' + sort.dir);
 }

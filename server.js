@@ -67,12 +67,40 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 
 app.get('/api/stats', requireAuth, (req, res) => {
-  const totalSales      = db.prepare("SELECT COUNT(*) as c FROM sales").get().c;
-  const totalTracking   = db.prepare("SELECT COUNT(*) as c FROM tracking WHERE status != 'Converted to Sale'").get().c;
-  const recentSales     = db.prepare("SELECT id, address, suburb, asset_class, price, yield_percent, agent1, settlement_date FROM sales ORDER BY created_at DESC LIMIT 5").all();
-  const byAsset         = db.prepare("SELECT asset_class, COUNT(*) as count FROM sales WHERE asset_class IS NOT NULL GROUP BY asset_class ORDER BY count DESC LIMIT 6").all();
-  const byRegion        = db.prepare("SELECT region, COUNT(*) as count FROM sales WHERE region IS NOT NULL GROUP BY region ORDER BY count DESC LIMIT 6").all();
-  res.json({ totalSales, totalTracking, recentSales, byAsset, byRegion });
+  const totalSales     = db.prepare("SELECT COUNT(*) as c FROM sales").get().c;
+  const totalVolume    = db.prepare("SELECT SUM(price) as v FROM sales WHERE price IS NOT NULL").get().v || 0;
+  const avgYield       = db.prepare("SELECT AVG(yield_percent) as y FROM sales WHERE yield_percent IS NOT NULL AND yield_percent > 0 AND yield_percent < 20").get().y;
+  const totalActive    = db.prepare("SELECT COUNT(*) as c FROM tracking WHERE status NOT IN ('Converted to Sale','Withdrawn')").get().c;
+  const closingThisWeek = db.prepare(
+    "SELECT COUNT(*) as c FROM tracking WHERE status NOT IN ('Converted to Sale','Withdrawn') AND campaign_close_date BETWEEN date('now') AND date('now','+7 days')"
+  ).get().c;
+
+  const notableSales   = db.prepare(`
+    SELECT id, address, suburb, asset_class, process, price, yield_percent,
+           agent1, firm1, exchange_date, year
+    FROM sales ORDER BY year DESC, COALESCE(price,0) DESC, created_at DESC LIMIT 8
+  `).all();
+
+  const upcomingCloses = db.prepare(`
+    SELECT id, address, suburb, asset_class, process, price_guide, estimated_yield,
+           agent1, firm1, vendor, campaign_close_date, status
+    FROM tracking
+    WHERE status NOT IN ('Converted to Sale','Withdrawn')
+      AND campaign_close_date IS NOT NULL
+      AND campaign_close_date >= date('now','-1 day')
+      AND campaign_close_date <= date('now','+14 days')
+    ORDER BY campaign_close_date ASC LIMIT 10
+  `).all();
+
+  const trackingByStatus = db.prepare(
+    "SELECT status, COUNT(*) as count FROM tracking WHERE status != 'Converted to Sale' GROUP BY status ORDER BY count DESC"
+  ).all();
+
+  const byAsset = db.prepare(
+    "SELECT asset_class, COUNT(*) as count FROM sales WHERE asset_class IS NOT NULL GROUP BY asset_class ORDER BY count DESC LIMIT 8"
+  ).all();
+
+  res.json({ totalSales, totalVolume, avgYield, totalActive, closingThisWeek, notableSales, upcomingCloses, trackingByStatus, byAsset });
 });
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
