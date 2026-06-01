@@ -205,6 +205,23 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .close-soon{color:var(--info);font-weight:600}
 /* Inline status select */
 .status-select{border:none;background:transparent;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;color:inherit;padding:0;outline:none;max-width:160px}
+/* ── IM Upload Zone ── */
+.im-upload-zone{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden;transition:max-height .3s ease}
+.im-upload-inner{display:flex;align-items:center;gap:16px;padding:14px 28px;cursor:pointer;transition:.2s}
+.im-upload-inner:hover{background:rgba(255,255,255,.04)}
+.im-upload-zone.drag-over .im-upload-inner{background:rgba(232,115,42,.15);outline:2px dashed var(--accent);outline-offset:-4px}
+.im-upload-icon{width:40px;height:40px;background:rgba(232,115,42,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(232,115,42,.3)}
+.im-upload-icon svg{width:20px;height:20px;color:var(--accent)}
+.im-upload-text{flex:1}
+.im-upload-title{font-size:13px;font-weight:700;color:#fff;letter-spacing:-.1px}
+.im-upload-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.im-upload-btn{padding:7px 16px;background:rgba(232,115,42,.15);border:1px solid rgba(232,115,42,.4);border-radius:5px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif;transition:.15s}
+.im-upload-btn:hover{background:rgba(232,115,42,.25)}
+.im-loading{display:flex;align-items:center;gap:12px;padding:14px 28px;color:rgba(255,255,255,.7);font-size:13px}
+.im-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.im-success{display:flex;align-items:center;gap:10px;padding:12px 28px;background:rgba(16,185,129,.1);color:var(--success);font-size:12.5px;font-weight:600}
+.im-error-msg{display:flex;align-items:center;gap:10px;padding:12px 28px;background:rgba(239,68,68,.1);color:var(--danger);font-size:12.5px}
 .scraper-status{display:flex;align-items:center;gap:8px;padding:14px 18px;font-size:12.5px;color:var(--muted)}
 /* ── Checkbox selection ── */
 .td-cb{width:36px;text-align:center;padding-left:10px!important}
@@ -459,10 +476,37 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="ss-item"><div class="ss-val" id="cst-closing">–</div><div class="ss-label">Closing This Week</div></div>
         <div class="ss-item"><div class="ss-val" id="cst-withdrawn">–</div><div class="ss-label">Withdrawn</div></div>
       </div>
+      <!-- IM Upload Zone -->
+      <div class="im-upload-zone" id="im-drop-zone"
+           ondragover="imDragOver(event)" ondragleave="imDragLeave(event)" ondrop="imDrop(event)">
+        <input type="file" id="im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="imFileSelected(event)">
+        <div class="im-upload-inner" onclick="document.getElementById('im-file-input').click()">
+          <div class="im-upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="im-upload-text">
+            <div class="im-upload-title">Drop an Information Memorandum to auto-extract campaign data</div>
+            <div class="im-upload-sub">AI-powered extraction from PDF or image · address, price guide, yield, tenancy, agents and more</div>
+          </div>
+          <button class="im-upload-btn" onclick="event.stopPropagation();document.getElementById('im-file-input').click()">Browse Files</button>
+        </div>
+        <div class="im-loading hidden" id="im-loading">
+          <div class="im-spinner"></div>
+          <span id="im-loading-text">Extracting data from document…</span>
+        </div>
+        <div class="im-success hidden" id="im-success">
+          ✓ <span id="im-success-text">Data extracted — review and save below</span>
+        </div>
+        <div class="im-error-msg hidden" id="im-error">
+          ✕ <span id="im-error-text">Extraction failed</span>
+        </div>
+      </div>
       <div class="page-header">
         <div><h1>Campaigns</h1><div class="sub" id="tracking-count">Active campaigns subject to settlement</div></div>
         <div class="header-actions">
-          <button class="btn btn-primary btn-sm" onclick="openAddTracking()">+ Add Property</button>
+          <button class="btn btn-secondary btn-sm" onclick="openAddTracking()">+ Add Manually</button>
         </div>
       </div>
       <div class="filters-bar">
@@ -1209,7 +1253,7 @@ function openConvertToSale(id) {
 
 function trackingForm(t={}) {
   return `<form id="tracking-form" class="form-grid" onsubmit="return false">
-    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(t.address)}" required></div>
+    <div class="form-group full"><label>Address *</label><input name="address" value="${esc(t.address)}" required placeholder="123 Street, Suburb NSW 2000"></div>
     <div class="form-group"><label>Suburb</label><input name="suburb" value="${esc(t.suburb)}"></div>
     <div class="form-group"><label>Region</label>${sel('region', REGIONS, t.region)}</div>
     <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, t.asset_class)}</div>
@@ -1219,6 +1263,12 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${t.price_guide||''}"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${t.net_rent||''}"></div>
     <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" type="number" step="0.01" value="${t.estimated_yield||''}"></div>
+    <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
+    <div class="form-section">Property</div>
+    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
+    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${t.floor_area||''}"></div>
+    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}"></div>
+    <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(t.fsr)}"></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}"></div>
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}"></div>
@@ -1674,6 +1724,98 @@ function renderChartYield(data) {
       plugins: { legend: { display: false } },
       scales: { x: { beginAtZero: true, max: Math.ceil(max * 1.2), ticks: { callback: v => v + '%' } } }
     }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IM UPLOAD + AI EXTRACTION
+// ═══════════════════════════════════════════════════════════════
+function imDragOver(e) {
+  e.preventDefault();
+  document.getElementById('im-drop-zone').classList.add('drag-over');
+}
+function imDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    document.getElementById('im-drop-zone').classList.remove('drag-over');
+  }
+}
+function imDrop(e) {
+  e.preventDefault();
+  document.getElementById('im-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processIMFile(file);
+}
+function imFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) processIMFile(file);
+  e.target.value = '';
+}
+
+function setIMState(state, msg) {
+  const el = id => document.getElementById(id);
+  el('im-upload-inner') && (el('im-upload-inner').classList.toggle('hidden', state !== 'idle'));
+  el('im-loading').classList.toggle('hidden', state !== 'loading');
+  el('im-success').classList.toggle('hidden', state !== 'success');
+  el('im-error').classList.toggle('hidden', state !== 'error');
+  if (state === 'loading' && msg) el('im-loading-text').textContent = msg;
+  if (state === 'success' && msg) el('im-success-text').textContent = msg;
+  if (state === 'error'   && msg) el('im-error-text').textContent = msg;
+  if (state === 'success') setTimeout(() => setIMState('idle'), 4000);
+  if (state === 'error')   setTimeout(() => setIMState('idle'), 6000);
+}
+
+async function processIMFile(file) {
+  const allowed = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp','image/gif'];
+  if (!allowed.includes(file.type)) {
+    setIMState('error', `Unsupported file: ${file.name}. Please upload a PDF or image.`);
+    return;
+  }
+  setIMState('loading', `Reading ${file.name}…`);
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  setIMState('loading', `Extracting data from ${file.name} with AI…`);
+  const result = await POST('/extract-im', { filename: file.name, mimeType: file.type, data: base64 });
+  if (!result || result.error) {
+    setIMState('error', result?.error || 'Server error — extraction failed.');
+    return;
+  }
+  setIMState('success', `${file.name} — data extracted. Review the form below.`);
+  openAddTrackingFromIM(result.data, file.name);
+}
+
+function openAddTrackingFromIM(d, filename) {
+  const prefill = {
+    address: d.address || '',
+    suburb: d.suburb || '',
+    region: d.region || '',
+    asset_class: d.asset_class || '',
+    process: d.process || '',
+    status: 'Active Campaign',
+    price_guide: d.price_guide || '',
+    net_rent: d.net_rent || '',
+    estimated_yield: d.estimated_yield || '',
+    wale: d.wale || '',
+    land_area: d.land_area || '',
+    floor_area: d.floor_area || '',
+    zoning: d.zoning || '',
+    fsr: d.fsr || '',
+    vendor: d.vendor || '',
+    agent1: d.agent1 || '',
+    firm1: d.firm1 || '',
+    agent2: d.agent2 || '',
+    firm2: d.firm2 || '',
+    campaign_close_date: d.campaign_close_date || '',
+    notes: [d.notes, filename ? `Source: ${filename}` : ''].filter(Boolean).join(' | '),
+  };
+  openModal(`Add Campaign — extracted from ${filename||'IM'}`, trackingForm(prefill), async () => {
+    const body = getFormData('tracking-form');
+    if (!body.address) return alert('Address is required');
+    const data = await POST('/tracking', body);
+    if (data && !data.error) { closeModal(); loadTracking(); }
   });
 }
 

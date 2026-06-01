@@ -9,6 +9,14 @@ const crypto      = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const db          = require('./db');
 
+let anthropic = null;
+try {
+  const Anthropic = require('@anthropic-ai/sdk');
+  if (process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+} catch(e) { /* SDK not installed yet */ }
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 const APP_PASSWORD = process.env.APP_PASSWORD || 'CW@Investment2025';
@@ -16,7 +24,7 @@ const APP_SECRET   = process.env.APP_SECRET   || 'cw-nsw-sales-secret-key-2025';
 
 app.use(compression());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '30mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -212,11 +220,13 @@ app.post('/api/tracking', requireAuth, (req, res) => {
   const year = body.year || new Date().getFullYear();
   db.prepare(`
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
-      price_guide, net_rent, estimated_yield, vendor, agent1, agent2, firm1, firm2,
+      price_guide, net_rent, estimated_yield, wale, land_area, floor_area, zoning, fsr, height_limit,
+      vendor, agent1, agent2, firm1, firm2,
       campaign_close_date, expected_settlement_date, year, notes, source_url, discovery_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
+    body.wale, body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.expected_settlement_date, year,
     body.notes, body.source_url, body.discovery_id || null);
@@ -228,12 +238,15 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
   const year = body.year || undefined;
   db.prepare(`
     UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price_guide=?, net_rent=?, estimated_yield=?, vendor=?, agent1=?, agent2=?, firm1=?, firm2=?,
+      price_guide=?, net_rent=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
+      zoning=?, fsr=?, height_limit=?,
+      vendor=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
+    body.wale, body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.expected_settlement_date, year,
     body.notes, body.source_url, req.params.id);
@@ -410,6 +423,81 @@ app.get('/api/options', requireAuth, (req, res) => {
   const years   = db.prepare(`SELECT DISTINCT year FROM ${table} WHERE year IS NOT NULL ORDER BY year DESC`).all().map(r => r.year);
   const regions = db.prepare(`SELECT DISTINCT region FROM ${table} WHERE region IS NOT NULL ORDER BY region`).all().map(r => r.region);
   res.json({ suburbs, years, regions });
+});
+
+// ── IM Extraction ─────────────────────────────────────────────────────────────
+
+const IM_PROMPT = `You are a commercial real estate analyst. Extract data from this Information Memorandum and return ONLY a valid JSON object — no prose, no markdown fences.
+
+Required JSON structure (use null for any field not found or unclear):
+{
+  "address": "full street address including street number, street name, suburb, NSW",
+  "suburb": "suburb name only",
+  "region": "one of exactly: CBD/City | Eastern Suburbs | Inner West | North Shore | Northern Beaches | Western Sydney | Hills District | Southern Sydney | South West Sydney",
+  "asset_class": "one of exactly: Childcare | Commercial Office | Industrial | Retail | Strata Retail | Strata Office | Medical/Healthcare | Development Site | Fast Food/QSR | Service Station | Pub/Hotel | Apartment Blocks | Commercial",
+  "process": "one of exactly: EOI | Auction | Private Treaty | Off-Market | Tender | Sale by Negotiation",
+  "price_guide": null or integer (price guide in dollars, e.g. 4500000),
+  "net_rent": null or integer (annual net rent in dollars),
+  "estimated_yield": null or number (yield as a percentage number e.g. 5.5 for 5.5%),
+  "wale": null or number (weighted average lease expiry in years),
+  "land_area": null or integer (land area in square metres),
+  "floor_area": null or integer (net lettable area or GFA in square metres),
+  "zoning": "planning zone code and description e.g. B4 Mixed Use",
+  "fsr": "floor space ratio as written e.g. 2.5:1",
+  "height_limit": "height limit as written e.g. 24m",
+  "vendor": "vendor or owner name if mentioned",
+  "agent1": "selling agent first name and last name",
+  "firm1": "selling agency or firm name",
+  "agent2": null or "second agent name if listed",
+  "firm2": null or "second firm name if listed",
+  "campaign_close_date": null or "YYYY-MM-DD format if a campaign close date, EOI close date, or auction date is mentioned",
+  "notes": "key investment highlights, tenancy details, lease expiry, development potential — max 300 characters"
+}`;
+
+app.post('/api/extract-im', requireAuth, async (req, res) => {
+  if (!anthropic) {
+    return res.status(503).json({
+      error: 'AI extraction is not configured. Please set the ANTHROPIC_API_KEY environment variable in Railway.'
+    });
+  }
+
+  const { filename, mimeType, data } = req.body;
+  if (!data || !mimeType) return res.status(400).json({ error: 'No file data provided.' });
+
+  const supportedImages = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
+  const isPDF   = mimeType === 'application/pdf';
+  const isImage = supportedImages.includes(mimeType.toLowerCase());
+
+  if (!isPDF && !isImage) {
+    return res.status(400).json({
+      error: `Unsupported file type: ${mimeType}. Please upload a PDF or image (PNG, JPG, WEBP).`
+    });
+  }
+
+  try {
+    const contentBlock = isPDF
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } }
+      : { type: 'image',    source: { type: 'base64', media_type: mimeType, data } };
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: [contentBlock, { type: 'text', text: IM_PROMPT }]
+      }]
+    });
+
+    const text = (message.content[0]?.text || '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Claude did not return valid JSON. Raw response: ' + text.slice(0, 200));
+
+    const extracted = JSON.parse(jsonMatch[0]);
+    res.json({ success: true, data: extracted, filename });
+  } catch (err) {
+    console.error('IM extraction error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // SPA fallback
