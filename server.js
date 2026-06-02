@@ -6,6 +6,7 @@ const cors        = require('cors');
 const compression = require('compression');
 const path        = require('path');
 const crypto      = require('crypto');
+const fs          = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const db          = require('./db');
 
@@ -16,6 +17,11 @@ try {
     anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
 } catch(e) { /* SDK not installed yet */ }
+
+// ── Persistent storage paths ──────────────────────────────────────────────────
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const IM_DIR   = path.join(DATA_DIR, 'ims');
+if (!fs.existsSync(IM_DIR)) fs.mkdirSync(IM_DIR, { recursive: true });
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -498,6 +504,57 @@ app.post('/api/extract-im', requireAuth, async (req, res) => {
     console.error('IM extraction error:', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── IM File Storage ───────────────────────────────────────────────────────────
+
+function sanitizeFilename(str) {
+  return (str || '').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Save an IM file: POST /api/save-im  { data: base64, mimeType, suburb, address, agency }
+app.post('/api/save-im', requireAuth, (req, res) => {
+  const { data, mimeType, suburb, address, agency } = req.body || {};
+  if (!data || !mimeType) return res.status(400).json({ error: 'No file data' });
+  const ext = mimeType === 'application/pdf' ? 'pdf'
+    : mimeType === 'image/png'  ? 'png'
+    : mimeType === 'image/webp' ? 'webp'
+    : 'jpg';
+  const label = [
+    sanitizeFilename(suburb),
+    sanitizeFilename(address),
+    agency ? '- ' + sanitizeFilename(agency) : ''
+  ].filter(Boolean).join(', ').replace(/,\s*$/, '');
+  const filename = (label || 'IM-' + Date.now()) + '.' + ext;
+  const filepath = path.join(IM_DIR, filename);
+  fs.writeFileSync(filepath, Buffer.from(data, 'base64'));
+  res.json({ success: true, filename });
+});
+
+// List saved IMs: GET /api/ims
+app.get('/api/ims', requireAuth, (req, res) => {
+  const files = fs.readdirSync(IM_DIR)
+    .filter(f => /\.(pdf|png|jpg|jpeg|webp)$/i.test(f))
+    .map(f => {
+      const stat = fs.statSync(path.join(IM_DIR, f));
+      return { filename: f, size: stat.size, saved: stat.mtime.toISOString() };
+    })
+    .sort((a, b) => b.saved.localeCompare(a.saved));
+  res.json(files);
+});
+
+// Download/view a saved IM: GET /api/ims/:filename
+app.get('/api/ims/:filename', requireAuth, (req, res) => {
+  const filepath = path.join(IM_DIR, path.basename(req.params.filename));
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(filepath);
+});
+
+// Delete a saved IM: DELETE /api/ims/:filename
+app.delete('/api/ims/:filename', requireAuth, (req, res) => {
+  const filepath = path.join(IM_DIR, path.basename(req.params.filename));
+  if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+  res.json({ success: true });
 });
 
 // SPA fallback

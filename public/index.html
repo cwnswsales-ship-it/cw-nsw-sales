@@ -310,6 +310,20 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .tab-btn:last-child{border-right:none}
 .tab-btn.active{background:var(--accent);color:#fff}
 
+/* ── IM Library Panel ── */
+#im-library-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
+.im-lib-box{background:var(--card);border-radius:10px;width:100%;max-width:680px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.im-lib-header{background:var(--navy);color:#fff;padding:16px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between}
+.im-lib-header h3{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.im-lib-header p{font-size:11px;opacity:.55;margin-top:2px}
+.im-lib-body{flex:1;overflow-y:auto;padding:14px}
+.im-lib-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);margin-bottom:8px;transition:.12s}
+.im-lib-row:hover{background:var(--bg)}
+.im-lib-icon{width:34px;height:34px;background:rgba(232,115,42,.1);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.im-lib-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text);word-break:break-word}
+.im-lib-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.im-lib-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+
 /* ── Utilities ── */
 .hidden{display:none!important}
 .text-right{text-align:right}
@@ -425,6 +439,36 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('vg-file').click()" title="Upload NSW Valuer General CSV to verify against our data">↑ Upload VG Data</button>
           <input type="file" id="vg-file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleVGFile(event)">
           <button class="btn btn-primary btn-sm" onclick="openAddSale()">+ Add Sale</button>
+        </div>
+      </div>
+      <!-- IM Upload Zone (Sales) -->
+      <div class="im-upload-zone" id="sale-im-drop-zone"
+           ondragover="saleImDragOver(event)" ondragleave="saleImDragLeave(event)" ondrop="saleImDrop(event)">
+        <input type="file" id="sale-im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="saleImFileSelected(event)">
+        <div class="im-upload-inner" id="sale-im-upload-inner" onclick="document.getElementById('sale-im-file-input').click()">
+          <div class="im-upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="im-upload-text">
+            <div class="im-upload-title">Drop an Information Memorandum to add a sale</div>
+            <div class="im-upload-sub">AI extracts address, price, yield, tenancy, agents · file saved as Suburb, Address — Agency</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="im-upload-btn" onclick="event.stopPropagation();showIMLibrary()">📁 Library</button>
+            <button class="im-upload-btn" onclick="event.stopPropagation();document.getElementById('sale-im-file-input').click()">Browse Files</button>
+          </div>
+        </div>
+        <div class="im-loading hidden" id="sale-im-loading">
+          <div class="im-spinner"></div>
+          <span id="sale-im-loading-text">Extracting data…</span>
+        </div>
+        <div class="im-success hidden" id="sale-im-success">
+          ✓ <span id="sale-im-success-text">Data extracted — review and save below</span>
+        </div>
+        <div class="im-error-msg hidden" id="sale-im-error">
+          ✕ <span id="sale-im-error-text">Extraction failed</span>
         </div>
       </div>
       <!-- database tabs -->
@@ -2263,6 +2307,162 @@ function addFromVG(payload) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// IM UPLOAD — SALES (mirrors Campaigns IM zone but pre-fills sale form)
+// ═══════════════════════════════════════════════════════════════
+function saleImDragOver(e) {
+  e.preventDefault();
+  document.getElementById('sale-im-drop-zone').classList.add('drag-over');
+}
+function saleImDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget))
+    document.getElementById('sale-im-drop-zone').classList.remove('drag-over');
+}
+function saleImDrop(e) {
+  e.preventDefault();
+  document.getElementById('sale-im-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processSaleIMFile(file);
+}
+function saleImFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) processSaleIMFile(file);
+  e.target.value = '';
+}
+
+function setSaleIMState(state, msg) {
+  const inner = document.getElementById('sale-im-upload-inner');
+  if (inner) inner.classList.toggle('hidden', state !== 'idle');
+  ['sale-im-loading','sale-im-success','sale-im-error'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  if (state !== 'idle') {
+    const el = document.getElementById('sale-im-' + state);
+    if (el) el.classList.remove('hidden');
+  }
+  if (state === 'loading' && msg) document.getElementById('sale-im-loading-text').textContent = msg;
+  if (state === 'success' && msg) document.getElementById('sale-im-success-text').textContent = msg;
+  if (state === 'error'   && msg) document.getElementById('sale-im-error-text').textContent = msg;
+  if (state === 'success') setTimeout(() => setSaleIMState('idle'), 5000);
+  if (state === 'error')   setTimeout(() => setSaleIMState('idle'), 8000);
+}
+
+async function processSaleIMFile(file) {
+  const allowed = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp','image/gif'];
+  if (!allowed.includes(file.type)) {
+    setSaleIMState('error', `Unsupported: ${file.name}. Use PDF or image.`);
+    return;
+  }
+  setSaleIMState('loading', `Reading ${file.name}…`);
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  setSaleIMState('loading', `Extracting data from ${file.name} with AI…`);
+  const result = await POST('/extract-im', { filename: file.name, mimeType: file.type, data: base64 });
+  if (!result || result.error) {
+    setSaleIMState('error', result?.error || 'Server error — extraction failed.');
+    return;
+  }
+  const d = result.data;
+  setSaleIMState('success', `${file.name} — extracted. Saving file…`);
+  // Auto-save the IM file to the server library
+  const agency = d.firm1 || d.agent1 || '';
+  const saveRes = await POST('/save-im', {
+    data: base64, mimeType: file.type,
+    suburb: d.suburb || '', address: d.address || '', agency
+  });
+  if (saveRes && saveRes.filename) {
+    setSaleIMState('success', `Saved as "${saveRes.filename}" — review form below`);
+  }
+  openAddSaleFromIM(d, file.name);
+}
+
+function openAddSaleFromIM(d, filename) {
+  const prefill = {
+    address: d.address || '',
+    suburb:  d.suburb  || '',
+    region:  d.region  || '',
+    asset_class: d.asset_class || '',
+    process: d.process || '',
+    price:   d.price   || '',
+    price_guide: d.price_guide || '',
+    net_rent: d.net_rent || '',
+    yield_percent: d.estimated_yield || d.yield_percent || '',
+    wale: d.wale || '',
+    land_area: d.land_area || '',
+    floor_area: d.floor_area || '',
+    zoning: d.zoning || '',
+    fsr: d.fsr || '',
+    agent1: d.agent1 || '',
+    firm1:  d.firm1  || '',
+    agent2: d.agent2 || '',
+    firm2:  d.firm2  || '',
+    vendor: d.vendor || '',
+    exchange_date: d.exchange_date || '',
+    notes: [d.notes, filename ? `Source IM: ${filename}` : ''].filter(Boolean).join(' | '),
+  };
+  openModal(`Add Sale — extracted from ${filename || 'IM'}`, saleForm(prefill), async () => {
+    const body = getFormData('sale-form');
+    if (!body.address) return alert('Address is required');
+    const data = await POST('/sales', body);
+    if (data && !data.error) { closeModal(); loadSales(); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IM LIBRARY
+// ═══════════════════════════════════════════════════════════════
+async function showIMLibrary() {
+  document.getElementById('im-library-overlay').classList.remove('hidden');
+  const body = document.getElementById('im-lib-body');
+  body.innerHTML = '<div class="im-lib-empty">Loading…</div>';
+  const files = await GET('/ims');
+  if (!files || !files.length) {
+    body.innerHTML = '<div class="im-lib-empty">No IMs saved yet. Drop a PDF above to extract and save.</div>';
+    return;
+  }
+  body.innerHTML = files.map(f => {
+    const ext  = f.filename.split('.').pop().toUpperCase();
+    const icon = ext === 'PDF' ? '📄' : '🖼';
+    const kb   = (f.size / 1024).toFixed(0);
+    const date = new Date(f.saved).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+    const name = f.filename.replace(/\.[^.]+$/, '');
+    return `
+    <div class="im-lib-row">
+      <div class="im-lib-icon">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div class="im-lib-name">${esc(name)}</div>
+        <div class="im-lib-meta">${ext} · ${kb} KB · saved ${date}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="/api/ims/${encodeURIComponent(f.filename)}" target="_blank" rel="noopener"
+           class="btn btn-secondary btn-sm" title="Open file">View</a>
+        <button class="btn btn-danger btn-sm" onclick="deleteIM('${esc(f.filename)}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function closeIMLibrary() {
+  document.getElementById('im-library-overlay').classList.add('hidden');
+}
+
+async function deleteIM(filename) {
+  if (!confirm(`Delete "${filename}"?`)) return;
+  await DEL('/ims/' + encodeURIComponent(filename));
+  showIMLibrary();
+}
+
+// Close library on backdrop click
+document.addEventListener('click', e => {
+  const overlay = document.getElementById('im-library-overlay');
+  if (overlay && e.target === overlay) closeIMLibrary();
+});
+
 function renderChartProcess(data) {
   destroyChart('process');
   const counts = {};
@@ -2302,6 +2502,22 @@ function renderChartProcess(data) {
     <button class="vg-tab" id="vg-tab-matched" onclick="showVGTab('matched')">✓ Matched <span id="vg-count-matched">0</span></button>
   </div>
   <div class="vg-body" id="vg-body"></div>
+</div>
+
+<!-- ── IM Library ──────────────────────────────────────────────────────────── -->
+<div id="im-library-overlay" class="hidden">
+  <div class="im-lib-box">
+    <div class="im-lib-header">
+      <div>
+        <h3>Information Memorandum Library</h3>
+        <p>Saved as Suburb, Address — Agency · click to view · persisted to server</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="closeIMLibrary()">✕ Close</button>
+    </div>
+    <div class="im-lib-body" id="im-lib-body">
+      <div class="im-lib-empty">Loading…</div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
