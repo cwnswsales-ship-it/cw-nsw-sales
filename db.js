@@ -106,6 +106,34 @@ db.exec(`
     error TEXT,
     ran_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS portfolio_listings (
+    id TEXT PRIMARY KEY,
+    portfolio TEXT,
+    tenant TEXT,
+    address TEXT,
+    suburb TEXT,
+    state TEXT DEFAULT 'NSW',
+    asset_class TEXT,
+    net_rent REAL,
+    price_guide REAL,
+    yield_percent REAL,
+    wale REAL,
+    land_area REAL,
+    floor_area REAL,
+    auction_date TEXT,
+    auction_location TEXT,
+    agent1 TEXT,
+    firm1 TEXT,
+    agent2 TEXT,
+    firm2 TEXT,
+    status TEXT DEFAULT 'Active',
+    result_price REAL,
+    tracking_id TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ── Seed Data ────────────────────────────────────────────────────────────────

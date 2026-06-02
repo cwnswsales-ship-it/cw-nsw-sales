@@ -636,6 +636,150 @@ app.delete('/api/ims/:filename', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// ── Portfolio Extraction ──────────────────────────────────────────────────────
+
+const PORTFOLIO_PROMPT = `You are a commercial real estate analyst processing a Burgess Rawson / CBRE investment portfolio catalogue.
+
+Extract EVERY individual property listed in this PDF and return ONLY a valid JSON array — no prose, no markdown fences, no commentary.
+
+Each element represents one property:
+[
+  {
+    "tenant": "tenant or property name",
+    "address": "full street address",
+    "suburb": "suburb name",
+    "state": "NSW" or "VIC" or "QLD" or "SA" or "WA" or "TAS" or "ACT" or "NT",
+    "asset_class": "one of: Supermarket | Convenience Retail | Service Station | Fast Food/QSR | Healthcare | Childcare | Fitness | Pub/Hotel | Office | Industrial | Retail | Commercial | Other",
+    "net_rent": null or integer (annual net income in dollars, e.g. 250000),
+    "price_guide": null or integer (price guide if stated),
+    "yield_percent": null or number (yield as a percentage e.g. 5.5),
+    "wale": null or number (weighted average lease expiry in years),
+    "land_area": null or integer (land area in square metres),
+    "floor_area": null or integer (building area in square metres),
+    "auction_date": "YYYY-MM-DD" or null,
+    "auction_location": "city of auction e.g. Sydney",
+    "agent1": "agent name" or null,
+    "firm1": "agency name" or null,
+    "agent2": null or "second agent name",
+    "firm2": null or "second firm name",
+    "portfolio": "portfolio name e.g. CBRE Portfolio #185",
+    "notes": "key lease details, tenant info, highlights — max 200 characters"
+  }
+]
+
+Include every property — do not skip any. Return ONLY the JSON array.`;
+
+app.post('/api/extract-portfolio', requireAuth, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
+  const { filename, mimeType, data } = req.body;
+  if (!data || mimeType !== 'application/pdf') return res.status(400).json({ error: 'PDF required.' });
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } },
+          { type: 'text', text: PORTFOLIO_PROMPT }
+        ]
+      }]
+    });
+    const text = (message.content[0]?.text || '').trim();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('Claude did not return a JSON array. Response: ' + text.slice(0, 200));
+    const listings = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(listings)) throw new Error('Expected an array of properties.');
+    res.json({ success: true, count: listings.length, listings, filename });
+  } catch (err) {
+    console.error('Portfolio extraction error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all portfolio listings
+app.get('/api/portfolio', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT * FROM portfolio_listings ORDER BY auction_date ASC, state ASC, suburb ASC').all();
+  res.json(rows);
+});
+
+// Bulk insert extracted listings
+app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
+  const { listings } = req.body || {};
+  if (!Array.isArray(listings) || !listings.length) return res.status(400).json({ error: 'No listings provided.' });
+  const ins = db.prepare(`
+    INSERT INTO portfolio_listings (id, portfolio, tenant, address, suburb, state, asset_class,
+      net_rent, price_guide, yield_percent, wale, land_area, floor_area, auction_date,
+      auction_location, agent1, firm1, agent2, firm2, notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `);
+  const insertAll = db.transaction((rows) => {
+    rows.forEach(l => {
+      ins.run(uuidv4(), l.portfolio || null, l.tenant || null,
+        l.address || null, l.suburb || null, l.state || 'NSW', l.asset_class || null,
+        l.net_rent || null, l.price_guide || null, l.yield_percent || null,
+        l.wale || null, l.land_area || null, l.floor_area || null,
+        l.auction_date || null, l.auction_location || null,
+        l.agent1 || null, l.firm1 || null, l.agent2 || null, l.firm2 || null,
+        l.notes || null);
+    });
+  });
+  insertAll(listings);
+  res.json({ success: true, inserted: listings.length });
+});
+
+// Update portfolio listing status / result
+app.put('/api/portfolio/:id', requireAuth, (req, res) => {
+  const { status, result_price, notes } = req.body || {};
+  db.prepare(`UPDATE portfolio_listings SET status=?, result_price=?, notes=?, updated_at=datetime('now') WHERE id=?`)
+    .run(status || 'Active', result_price || null, notes || null, req.params.id);
+  res.json(db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id));
+});
+
+// Delete one portfolio listing
+app.delete('/api/portfolio/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM portfolio_listings WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// Clear all portfolio listings
+app.delete('/api/portfolio', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM portfolio_listings').run();
+  res.json({ ok: true });
+});
+
+// Convert portfolio listing → tracking campaign
+app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
+  const listing = db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id);
+  if (!listing) return res.status(404).json({ error: 'Not found' });
+  const body = req.body;
+  const trackId = uuidv4();
+  db.prepare(`
+    INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
+      price_guide, net_rent, estimated_yield, wale, land_area, floor_area,
+      agent1, firm1, agent2, firm2, campaign_close_date, year, notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(trackId,
+    body.address || listing.address, body.suburb || listing.suburb,
+    body.region || null, body.asset_class || listing.asset_class,
+    'Auction', body.status || 'Active Campaign',
+    body.price_guide || listing.price_guide || null,
+    body.net_rent || listing.net_rent || null,
+    body.estimated_yield || listing.yield_percent || null,
+    body.wale || listing.wale || null,
+    body.land_area || listing.land_area || null,
+    body.floor_area || listing.floor_area || null,
+    body.agent1 || listing.agent1 || null, body.firm1 || listing.firm1 || null,
+    body.agent2 || listing.agent2 || null, body.firm2 || listing.firm2 || null,
+    listing.auction_date || null,
+    listing.auction_date ? new Date(listing.auction_date).getFullYear() : new Date().getFullYear(),
+    body.notes || [listing.tenant, listing.portfolio, listing.notes].filter(Boolean).join(' | ') || null
+  );
+  db.prepare(`UPDATE portfolio_listings SET status='Tracking', tracking_id=?, updated_at=datetime('now') WHERE id=?`)
+    .run(trackId, req.params.id);
+  res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId) });
+});
+
 // SPA fallback
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
