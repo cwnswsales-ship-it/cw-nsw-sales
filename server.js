@@ -835,9 +835,18 @@ function applySeed() {
   const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
   if (!fs.existsSync(seedPath)) { console.log('[seed] seeds/sales_2026.json not found — skipping'); return; }
   console.log('[seed] Applying seed from', seedPath);
+  let data;
   try {
-    const { sales = [], tracking = [], portfolio_listings = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
-    const insSale = db.prepare(`INSERT OR IGNORE INTO sales (
+    data = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+  } catch (e) {
+    console.error('[seed] Failed to parse seed file:', e.message);
+    return;
+  }
+  const { sales = [], tracking = [], portfolio_listings = [] } = data;
+
+  // Each table seeded independently so one failure never blocks the others
+  try {
+    const ins = db.prepare(`INSERT OR IGNORE INTO sales (
       id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
       yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
       agent1,agent2,firm1,firm2,exchange_date,settlement_date,campaign_close_date,year,notes
@@ -846,7 +855,13 @@ function applySeed() {
       @yield_percent,@wale,@land_area,@floor_area,@zoning,@fsr,@height_limit,@vendor,@purchaser,
       @agent1,@agent2,@firm1,@firm2,@exchange_date,@settlement_date,@campaign_close_date,@year,@notes
     )`);
-    const insTrack = db.prepare(`INSERT OR IGNORE INTO tracking (
+    let n = 0;
+    db.transaction(() => { for (const r of sales) n += ins.run(r).changes; })();
+    console.log(`[seed] ${n}/${sales.length} sales inserted`);
+  } catch (e) { console.error('[seed] Sales error:', e.message); }
+
+  try {
+    const ins = db.prepare(`INSERT OR IGNORE INTO tracking (
       id,address,suburb,region,asset_class,process,status,price_guide,net_rent,
       estimated_yield,vendor,agent1,agent2,firm1,firm2,campaign_close_date,
       expected_settlement_date,year,notes
@@ -855,26 +870,25 @@ function applySeed() {
       @estimated_yield,@vendor,@agent1,@agent2,@firm1,@firm2,@campaign_close_date,
       @expected_settlement_date,@year,@notes
     )`);
-    const insPortfolio = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (
+    let n = 0;
+    db.transaction(() => { for (const r of tracking) n += ins.run(r).changes; })();
+    console.log(`[seed] ${n}/${tracking.length} campaigns inserted`);
+  } catch (e) { console.error('[seed] Tracking error:', e.message); }
+
+  try {
+    const ins = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (
       id,tenant,address,suburb,state,asset_class,net_rent,price_guide,yield_percent,
       wale,land_area,floor_area,auction_date,auction_location,agent1,firm1,agent2,firm2,
-      portfolio,notes,status,tracked,added_to_sales
+      portfolio,notes,status
     ) VALUES (
       @id,@tenant,@address,@suburb,@state,@asset_class,@net_rent,@price_guide,@yield_percent,
       @wale,@land_area,@floor_area,@auction_date,@auction_location,@agent1,@firm1,@agent2,@firm2,
-      @portfolio,@notes,@status,@tracked,@added_to_sales
+      @portfolio,@notes,@status
     )`);
-    const seedTx = db.transaction(() => {
-      let sc = 0, tc = 0, pc = 0;
-      for (const r of sales)             { sc += insSale.run(r).changes; }
-      for (const r of tracking)          { tc += insTrack.run(r).changes; }
-      for (const r of portfolio_listings) { pc += insPortfolio.run(r).changes; }
-      console.log(`Seed applied: ${sc} sales, ${tc} campaigns, ${pc} portfolio listings.`);
-    });
-    seedTx();
-  } catch (e) {
-    console.error('Seed error:', e.message);
-  }
+    let n = 0;
+    db.transaction(() => { for (const r of portfolio_listings) n += ins.run(r).changes; })();
+    if (portfolio_listings.length) console.log(`[seed] ${n}/${portfolio_listings.length} portfolio listings inserted`);
+  } catch (e) { console.error('[seed] Portfolio error:', e.message); }
 }
 applySeed();
 
