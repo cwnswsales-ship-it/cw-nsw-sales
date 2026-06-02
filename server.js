@@ -797,7 +797,7 @@ function applySeed() {
   const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
   if (!fs.existsSync(seedPath)) return;
   try {
-    const { sales = [], tracking = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    const { sales = [], tracking = [], portfolio_listings = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
     const insSale = db.prepare(`INSERT OR IGNORE INTO sales (
       id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
       yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
@@ -816,11 +816,21 @@ function applySeed() {
       @estimated_yield,@vendor,@agent1,@agent2,@firm1,@firm2,@campaign_close_date,
       @expected_settlement_date,@year,@notes
     )`);
+    const insPortfolio = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (
+      id,tenant,address,suburb,state,asset_class,net_rent,price_guide,yield_percent,
+      wale,land_area,floor_area,auction_date,auction_location,agent1,firm1,agent2,firm2,
+      portfolio,notes,status,tracked,added_to_sales
+    ) VALUES (
+      @id,@tenant,@address,@suburb,@state,@asset_class,@net_rent,@price_guide,@yield_percent,
+      @wale,@land_area,@floor_area,@auction_date,@auction_location,@agent1,@firm1,@agent2,@firm2,
+      @portfolio,@notes,@status,@tracked,@added_to_sales
+    )`);
     const seedTx = db.transaction(() => {
-      let sc = 0, tc = 0;
-      for (const r of sales)    { const info = insSale.run(r);   sc += info.changes; }
-      for (const r of tracking) { const info = insTrack.run(r);  tc += info.changes; }
-      console.log(`Seed applied: ${sc} sales, ${tc} tracking records inserted.`);
+      let sc = 0, tc = 0, pc = 0;
+      for (const r of sales)             { sc += insSale.run(r).changes; }
+      for (const r of tracking)          { tc += insTrack.run(r).changes; }
+      for (const r of portfolio_listings) { pc += insPortfolio.run(r).changes; }
+      console.log(`Seed applied: ${sc} sales, ${tc} campaigns, ${pc} portfolio listings.`);
     });
     seedTx();
   } catch (e) {
@@ -828,6 +838,20 @@ function applySeed() {
   }
 }
 applySeed();
+
+// ── Export endpoint — call this to get a backup you can commit as the seed ────
+app.get('/api/admin/export', requireAuth, (req, res) => {
+  try {
+    const sales             = db.prepare('SELECT * FROM sales ORDER BY id').all();
+    const tracking          = db.prepare('SELECT * FROM tracking ORDER BY id').all();
+    const portfolio_listings = db.prepare('SELECT * FROM portfolio_listings ORDER BY id').all();
+    const payload = { exported_at: new Date().toISOString(), sales, tracking, portfolio_listings };
+    res.setHeader('Content-Disposition', 'attachment; filename="sales_backup.json"');
+    res.json(payload);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`NSW Investment Sales DB running on port ${PORT}`);
