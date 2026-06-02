@@ -310,6 +310,31 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .tab-btn:last-child{border-right:none}
 .tab-btn.active{background:var(--accent);color:#fff}
 
+/* ── Brains Trust ── */
+.bt-search-wrap{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.bt-textarea{flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none;resize:vertical;line-height:1.6;transition:.2s}
+.bt-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,115,42,.1)}
+.bt-examples{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:20px}
+.bt-ex-label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:2px}
+.bt-example{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-size:11.5px;font-family:'Inter',sans-serif;color:var(--muted);cursor:pointer;transition:.15s}
+.bt-example:hover{border-color:var(--accent);color:var(--accent)}
+.bt-loading{display:flex;align-items:center;gap:12px;padding:32px;color:var(--muted);font-size:13px}
+.bt-card{background:var(--card);border-radius:9px;border:1px solid var(--border);margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:.15s}
+.bt-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1)}
+.bt-card-header{padding:14px 18px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.bt-card-addr{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.bt-card-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.bt-card-price{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.4px;white-space:nowrap}
+.bt-card-yield{font-size:11px;color:var(--success);font-weight:600;text-align:right;margin-top:2px}
+.bt-card-body{padding:0 18px 14px}
+.bt-reason{font-size:12.5px;color:var(--text);line-height:1.6;margin-bottom:10px}
+.bt-action-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(232,115,42,.1);color:var(--accent);border:1px solid rgba(232,115,42,.25)}
+.bt-status-withdrawn{border-left:4px solid var(--danger)}
+.bt-status-active{border-left:4px solid var(--success)}
+.bt-status-sold{border-left:4px solid var(--info)}
+.bt-empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.bt-empty h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+
 /* ── Agent Analytics ── */
 #agency-table thead th, #agent-table thead th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);white-space:nowrap}
 #agency-table tbody td, #agent-table tbody td{padding:10px 13px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:middle}
@@ -389,6 +414,10 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="nav-item" data-section="agents" onclick="showSection('agents')">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.973 5.973 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/></svg>
         Agent Analytics
+      </div>
+      <div class="nav-item" data-section="brains" onclick="showSection('brains')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+        Brains Trust
       </div>
     </div>
     <div class="sidebar-footer">
@@ -794,6 +823,35 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       </div>
     </section>
 
+    <!-- ── Brains Trust ──────────────────────────────────────────── -->
+    <section id="section-brains" class="hidden">
+      <div class="sales-stats-bar">
+        <div class="ss-item" style="flex:3;border-right:none">
+          <div class="ss-val" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:0;line-height:1.4">Describe what you're looking for — a suburb, use, price range, asset class — and the AI will search our sales database and campaign history for matches and opportunities.</div>
+        </div>
+      </div>
+      <div class="page-header">
+        <div><h1>Brains Trust</h1><div class="sub">AI-powered property matching from our sales &amp; campaign database</div></div>
+      </div>
+      <div style="padding:24px 28px 0">
+        <div class="bt-search-wrap">
+          <textarea id="bt-query" class="bt-textarea" placeholder="e.g. Looking for a Surry Hills terrace for owner-occupation, circa $3–5M, happy to consider a freehold with a small income component or fully vacant…" rows="3"></textarea>
+          <button class="btn btn-primary" id="bt-submit" onclick="runBrainsTrust()" style="align-self:flex-end;padding:10px 22px;font-size:13px">
+            <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+            Find Matches
+          </button>
+        </div>
+        <div class="bt-examples">
+          <span class="bt-ex-label">Try:</span>
+          <button class="bt-example" onclick="setBTQuery('Childcare centre investment, 5%+ yield, Western Sydney or Hills District')">Childcare 5%+ yield Western Sydney</button>
+          <button class="bt-example" onclick="setBTQuery('Withdrawn retail campaign in Eastern Suburbs, vendor may be motivated to re-engage')">Withdrawn Eastern Suburbs retail</button>
+          <button class="bt-example" onclick="setBTQuery('Development site with DA approval, inner Sydney, circa $5–10M')">Inner Sydney DA site $5–10M</button>
+          <button class="bt-example" onclick="setBTQuery('Service station or fast food QSR investment, long WALE, any NSW location')">Service station / QSR long WALE</button>
+        </div>
+      </div>
+      <div id="bt-results" style="padding:20px 28px"></div>
+    </section>
+
   </div><!-- /main-content -->
 </div><!-- /app -->
 
@@ -924,6 +982,7 @@ function showSection(name) {
   if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
   if (name === 'analytics') loadAnalytics();
   if (name === 'agents') loadAgentAnalytics();
+  if (name === 'brains') { /* loads on demand */ }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2416,6 +2475,99 @@ function addFromVG(payload) {
     if (data && !data.error) { closeModal(); loadSales(); }
   });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BRAINS TRUST
+// ═══════════════════════════════════════════════════════════════
+function setBTQuery(text) {
+  const el = document.getElementById('bt-query');
+  if (el) { el.value = text; el.focus(); }
+}
+
+async function runBrainsTrust() {
+  const query = (document.getElementById('bt-query')?.value || '').trim();
+  if (!query) { document.getElementById('bt-query')?.focus(); return; }
+
+  const results = document.getElementById('bt-results');
+  const btn = document.getElementById('bt-submit');
+  btn.disabled = true;
+  btn.textContent = 'Thinking…';
+  results.innerHTML = `<div class="bt-loading"><div class="im-spinner"></div>Searching ${query.length > 60 ? query.slice(0,60)+'…' : query}</div>`;
+
+  const data = await POST('/brains-trust', { query });
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg> Find Matches';
+
+  if (!data || data.error) {
+    results.innerHTML = `<div class="bt-empty"><h3>Something went wrong</h3><p>${esc(data?.error || 'Unknown error')}</p></div>`;
+    return;
+  }
+  if (!data.suggestions?.length) {
+    results.innerHTML = `<div class="bt-empty"><h3>No strong matches found</h3><p>Try broadening your brief — different suburbs, price range, or asset class.</p></div>`;
+    return;
+  }
+
+  results.innerHTML = `
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+      ${data.suggestions.length} suggestion${data.suggestions.length!==1?'s':''} · based on our sales database &amp; campaign history
+    </div>
+    ${data.suggestions.map(s => renderBTCard(s)).join('')}`;
+}
+
+function renderBTCard(s) {
+  const statusCls = s.status?.toLowerCase().includes('withdrawn') ? 'bt-status-withdrawn'
+    : s.status?.toLowerCase().includes('active') ? 'bt-status-active' : 'bt-status-sold';
+  const statusBadge = s.status?.toLowerCase().includes('withdrawn')
+    ? `<span class="badge-pill b-withdrawn">${esc(s.status)}</span>`
+    : s.status?.toLowerCase().includes('active')
+    ? `<span class="badge-pill b-active">${esc(s.status)}</span>`
+    : `<span class="badge-pill b-sold">${esc(s.status||'Sold')}</span>`;
+
+  const viewBtn = s.id ? `<button class="btn btn-secondary btn-sm" onclick="btViewRecord('${s.id}','${s.record_type||'sale'}')">View Record</button>` : '';
+
+  return `
+  <div class="bt-card ${statusCls}">
+    <div class="bt-card-header">
+      <div style="min-width:0;flex:1">
+        <div class="bt-card-addr">${esc(s.address||'Unknown address')}</div>
+        <div class="bt-card-sub">${[s.suburb, s.asset_class].filter(Boolean).map(x=>esc(x)).join(' · ')} &nbsp;${statusBadge}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${s.price ? `<div class="bt-card-price">$${fmtVol(s.price)}</div>` : ''}
+        ${s.yield_percent ? `<div class="bt-card-yield">${Number(s.yield_percent).toFixed(2)}% yield</div>` : ''}
+      </div>
+    </div>
+    <div class="bt-card-body">
+      <div class="bt-reason">${esc(s.match_reason||'')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="bt-action-chip">→ ${esc(s.action||'Review')}</div>
+        ${viewBtn}
+      </div>
+    </div>
+  </div>`;
+}
+
+function btViewRecord(id, type) {
+  if (type === 'campaign') {
+    showSection('tracking');
+    setTimeout(() => {
+      const el = document.querySelector(`#tracking-tbody button[onclick*="${id}"]`);
+      if (el) el.closest('tr')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 500);
+  } else {
+    showSection('sales');
+    setTimeout(() => {
+      const row = document.getElementById('row-' + id);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 500);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey && document.getElementById('bt-query') === document.activeElement) {
+    runBrainsTrust();
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════
 // AGENT ANALYTICS

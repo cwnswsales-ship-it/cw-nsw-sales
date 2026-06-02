@@ -506,6 +506,85 @@ app.post('/api/extract-im', requireAuth, async (req, res) => {
   }
 });
 
+// ── Brains Trust ──────────────────────────────────────────────────────────────
+app.post('/api/brains-trust', requireAuth, async (req, res) => {
+  if (!anthropic) {
+    return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
+  }
+  const { query } = req.body || {};
+  if (!query || query.trim().length < 5) return res.status(400).json({ error: 'Please describe what you are looking for.' });
+
+  // Fetch compact versions of sales + tracking data
+  const sales = db.prepare(`
+    SELECT id, address, suburb, region, asset_class, process, price, net_rent, yield_percent,
+           land_area, floor_area, notes, exchange_date, year, 'sold' as record_type
+    FROM sales ORDER BY year DESC, price DESC LIMIT 200
+  `).all();
+
+  const tracking = db.prepare(`
+    SELECT id, address, suburb, region, asset_class, process, status, price_guide, net_rent,
+           estimated_yield, land_area, floor_area, notes, campaign_close_date, vendor, 'campaign' as record_type
+    FROM tracking ORDER BY created_at DESC LIMIT 100
+  `).all();
+
+  // Compact text representation to minimise tokens
+  const formatSale = s => `[SALE id:${s.id}] ${s.address}, ${s.suburb||''} | ${s.asset_class||'?'} | $${s.price ? (s.price/1e6).toFixed(2)+'M' : '?'} | yield:${s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '?'} | ${s.process||''} | ${s.year||''} | land:${s.land_area||'?'}m² floor:${s.floor_area||'?'}m² | notes:${(s.notes||'').slice(0,120)}`;
+  const formatTrack = t => `[CAMPAIGN id:${t.id} status:${t.status}] ${t.address}, ${t.suburb||''} | ${t.asset_class||'?'} | guide:$${t.price_guide ? (t.price_guide/1e6).toFixed(2)+'M' : '?'} | yield:${t.estimated_yield ? t.estimated_yield.toFixed(2)+'%' : '?'} | ${t.process||''} | vendor:${t.vendor||'?'} | notes:${(t.notes||'').slice(0,120)}`;
+
+  const dbText = [
+    ...tracking.map(formatTrack),
+    ...sales.map(formatSale),
+  ].join('\n');
+
+  const prompt = `You are a senior commercial property advisor at Cushman & Wakefield NSW with deep market knowledge.
+
+A colleague has described a property brief: "${query.trim()}"
+
+Below is our internal sales database and campaign tracker. Use this data to make intelligent, specific suggestions.
+
+DATABASE:
+${dbText}
+
+TASK: Analyse the brief and return the 5 most relevant matches or insights. Consider:
+- Withdrawn campaigns (status "Withdrawn") — vendor may still be motivated to sell
+- Properties in the same suburb or nearby with similar characteristics
+- Asset classes that suit the stated use (owner-occupy, investment, development etc.)
+- Price points and yields that align with the brief
+- Opportunities that may not be obvious but warrant a call
+
+Return a JSON array of exactly this shape (no markdown, raw JSON only):
+[
+  {
+    "id": "the database id or null",
+    "record_type": "sale" or "campaign",
+    "address": "full address",
+    "suburb": "suburb",
+    "asset_class": "asset class",
+    "price": numeric price or price_guide or null,
+    "yield_percent": numeric yield or null,
+    "status": "Sold / Withdrawn / Active Campaign / etc",
+    "match_reason": "2-3 sentences explaining why this property fits the brief and what action to consider",
+    "action": "short recommended action e.g. 'Call vendor direct', 'Monitor for re-listing', 'Strong match — arrange inspection'"
+  }
+]`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    const text = (message.content[0]?.text || '').trim();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array returned');
+    const suggestions = JSON.parse(jsonMatch[0]);
+    res.json({ success: true, suggestions, query });
+  } catch (err) {
+    console.error('Brains Trust error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── IM File Storage ───────────────────────────────────────────────────────────
 
 function sanitizeFilename(str) {
