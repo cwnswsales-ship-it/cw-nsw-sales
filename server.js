@@ -792,7 +792,45 @@ app.get('*', (req, res) => {
 });
 
 
-// ── Seed data on startup ──────────────────────────────────────────────────────
+let s3Client = null;
+function getS3() {
+  if (s3Client) return s3Client;
+  const endpoint  = process.env.BUCKET_ENDPOINT_URL;
+  const accessKey = process.env.BUCKET_ACCESS_KEY_ID;
+  const secretKey = process.env.BUCKET_SECRET_ACCESS_KEY;
+  const region    = process.env.BUCKET_REGION || 'auto';
+  if (!endpoint || !accessKey || !secretKey) return null;
+  const { S3Client } = require('@aws-sdk/client-s3');
+  s3Client = new S3Client({ endpoint, region, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey }, forcePathStyle: true });
+  return s3Client;
+}
+
+async function backupDb() {
+  const s3 = getS3();
+  const bucket = process.env.BUCKET_NAME;
+  if (!s3 || !bucket) return;
+  const dbPath = path.join(DATA_DIR, 'cw-nsw-sales.db');
+  if (!fs.existsSync(dbPath)) return;
+  try {
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'cw-nsw-sales.db', Body: fs.readFileSync(dbPath) }));
+    console.log('[db-backup] Database backed up to bucket');
+  } catch (e) {
+    console.error('[db-backup] Error:', e.message);
+  }
+}
+
+// Back up every 15 minutes
+setInterval(backupDb, 15 * 60 * 1000);
+
+// Back up on Railway deploy shutdown signal
+process.on('SIGTERM', async () => {
+  console.log('[shutdown] Backing up DB before exit...');
+  await backupDb();
+  process.exit(0);
+});
+
+
 function applySeed() {
   const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
   if (!fs.existsSync(seedPath)) return;
