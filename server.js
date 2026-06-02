@@ -809,11 +809,11 @@ async function backupDb() {
   const s3 = getS3();
   const bucket = process.env.BUCKET_NAME;
   if (!s3 || !bucket) return;
-  const dbPath = path.join(DATA_DIR, 'cw-nsw-sales.db');
-  if (!fs.existsSync(dbPath)) return;
+  const dbPath = path.join(DATA_DIR, 'sales.db');
+  if (!fs.existsSync(dbPath)) { console.log('[db-backup] sales.db not found, skipping'); return; }
   try {
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
-    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'cw-nsw-sales.db', Body: fs.readFileSync(dbPath) }));
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'sales.db', Body: fs.readFileSync(dbPath) }));
     console.log('[db-backup] Database backed up to bucket');
   } catch (e) {
     console.error('[db-backup] Error:', e.message);
@@ -833,7 +833,8 @@ process.on('SIGTERM', async () => {
 
 function applySeed() {
   const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
-  if (!fs.existsSync(seedPath)) return;
+  if (!fs.existsSync(seedPath)) { console.log('[seed] seeds/sales_2026.json not found — skipping'); return; }
+  console.log('[seed] Applying seed from', seedPath);
   try {
     const { sales = [], tracking = [], portfolio_listings = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
     const insSale = db.prepare(`INSERT OR IGNORE INTO sales (

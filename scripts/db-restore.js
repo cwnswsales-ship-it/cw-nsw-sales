@@ -6,7 +6,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
-const DB_PATH  = path.join(DATA_DIR, 'cw-nsw-sales.db');
+const DB_PATH  = path.join(DATA_DIR, 'sales.db');
 
 async function restore() {
   const endpoint  = process.env.BUCKET_ENDPOINT_URL;
@@ -35,7 +35,7 @@ async function restore() {
 
   try {
     console.log('[db-restore] Downloading database from bucket...');
-    const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: 'cw-nsw-sales.db' }));
+    const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: 'sales.db' }));
     const chunks = [];
     for await (const chunk of res.Body) chunks.push(Buffer.from(chunk));
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
