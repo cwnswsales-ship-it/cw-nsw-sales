@@ -878,7 +878,45 @@ function applySeed() {
 }
 applySeed();
 
-// ── Export endpoint — call this to get a backup you can commit as the seed ────
+// ── Force reseed endpoint — call this to immediately restore all data ──────────
+app.post('/api/admin/reseed', requireAuth, (req, res) => {
+  try {
+    const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
+    if (!fs.existsSync(seedPath)) return res.status(404).json({ error: 'Seed file not found' });
+    const { sales = [], tracking = [], portfolio_listings = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    const insSale = db.prepare(`INSERT OR IGNORE INTO sales (
+      id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
+      yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
+      agent1,agent2,firm1,firm2,exchange_date,settlement_date,campaign_close_date,year,notes
+    ) VALUES (
+      @id,@address,@suburb,@region,@asset_class,@process,@status,@price,@price_guide,@net_rent,
+      @yield_percent,@wale,@land_area,@floor_area,@zoning,@fsr,@height_limit,@vendor,@purchaser,
+      @agent1,@agent2,@firm1,@firm2,@exchange_date,@settlement_date,@campaign_close_date,@year,@notes
+    )`);
+    const insTrack = db.prepare(`INSERT OR IGNORE INTO tracking (
+      id,address,suburb,region,asset_class,process,status,price_guide,net_rent,
+      estimated_yield,vendor,agent1,agent2,firm1,firm2,campaign_close_date,
+      expected_settlement_date,year,notes
+    ) VALUES (
+      @id,@address,@suburb,@region,@asset_class,@process,@status,@price_guide,@net_rent,
+      @estimated_yield,@vendor,@agent1,@agent2,@firm1,@firm2,@campaign_close_date,
+      @expected_settlement_date,@year,@notes
+    )`);
+    let sc = 0, tc = 0;
+    const tx = db.transaction(() => {
+      for (const r of sales)    sc += insSale.run(r).changes;
+      for (const r of tracking) tc += insTrack.run(r).changes;
+    });
+    tx();
+    console.log(`[reseed] Inserted ${sc} sales, ${tc} campaigns`);
+    res.json({ success: true, sales_inserted: sc, tracking_inserted: tc, total_sales: db.prepare('SELECT COUNT(*) as c FROM sales').get().c });
+  } catch (e) {
+    console.error('[reseed] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 app.get('/api/admin/export', requireAuth, (req, res) => {
   try {
     const sales             = db.prepare('SELECT * FROM sales ORDER BY id').all();
