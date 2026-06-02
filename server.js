@@ -784,6 +784,148 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId) });
 });
 
+// ── New Listings Search (Serper.dev + Claude) ────────────────────────────────
+
+const NSW_SEARCH_QUERIES = [
+  'NSW commercial investment property for sale EOI auction 2026 site:commercialrealestate.com.au',
+  'NSW commercial investment property for sale 2026 site:realcommercial.com.au',
+  'NSW childcare "service station" industrial retail investment for sale EOI tender 2026',
+  '"New South Wales" commercial investment for sale Colliers OR "Knight Frank" OR "Ray White Commercial" EOI 2026',
+];
+
+async function runSerperSearch(query) {
+  const r = await fetch('https://google.serper.dev/search', {
+    method: 'POST',
+    headers: { 'X-API-KEY': process.env.SERPER_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: query, gl: 'au', hl: 'en', num: 10 }),
+  });
+  if (!r.ok) throw new Error(`Serper ${r.status}`);
+  return r.json();
+}
+
+app.post('/api/listings/search', requireAuth, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not set in Railway.' });
+  if (!process.env.SERPER_API_KEY) return res.status(503).json({
+    error: 'SERPER_API_KEY not set. Go to serper.dev, create a free account (2,500 searches/month free), copy your API key, then add SERPER_API_KEY to your Railway variables.'
+  });
+
+  try {
+    const organic = [];
+    for (const q of NSW_SEARCH_QUERIES) {
+      try {
+        const data = await runSerperSearch(q);
+        if (data.organic) organic.push(...data.organic);
+      } catch (e) { console.error('[search] query failed:', e.message); }
+    }
+
+    const seen = new Set();
+    const unique = organic.filter(r => r.link && !seen.has(r.link) && seen.add(r.link));
+    if (!unique.length) return res.json({ searched: 0, found: 0, added: 0, listings: [] });
+
+    const resultsText = unique.slice(0, 40).map((r, i) =>
+      `[${i + 1}] URL: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet || ''}`
+    ).join('\n\n');
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: `You are a commercial real estate analyst. Extract NSW commercial investment property listings from these Google search results.
+
+INCLUDE: Genuine NSW commercial properties currently FOR SALE (investment grade: offices, industrial, childcare, service stations, medical, retail investments, pubs, development sites etc.)
+EXCLUDE: Residential properties, non-NSW properties, leasing/for-lease, already-sold listings, news/articles, property management, research reports, "wanted to buy" ads
+
+Return ONLY a JSON array (no markdown fences, no commentary):
+[{
+  "address": "full street address or best available",
+  "suburb": "suburb name",
+  "region": "one of: CBD/City | Eastern Suburbs | Inner West | North Shore | Northern Beaches | Western Sydney | Hills District | Southern Sydney | South West Sydney | Regional NSW",
+  "asset_class": "one of: Childcare | Commercial Office | Industrial | Retail | Strata Retail | Strata Office | Medical/Healthcare | Development Site | Fast Food/QSR | Service Station | Pub/Hotel | Commercial",
+  "price_guide": null or integer dollars,
+  "net_rent": null or integer annual dollars,
+  "wale": null or number years,
+  "agent": "agent name or null",
+  "firm": "agency name or null",
+  "source_url": "exact URL from the result",
+  "description": "1-2 sentences: what it is, key metrics, sale process"
+}]
+
+If no genuine for-sale listings found, return [].
+
+Search results:
+${resultsText}`
+      }]
+    });
+
+    const text = (msg.content[0]?.text || '').trim();
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) return res.json({ searched: unique.length, found: 0, added: 0, listings: [] });
+
+    let listings = [];
+    try { listings = JSON.parse(match[0]); } catch (e) { /* ignore */ }
+    if (!Array.isArray(listings)) listings = [];
+
+    const existingUrls = new Set([
+      ...db.prepare('SELECT source_url FROM discoveries WHERE source_url IS NOT NULL').all().map(r => r.source_url),
+      ...db.prepare('SELECT source_url FROM tracking WHERE source_url IS NOT NULL').all().map(r => r.source_url),
+      ...db.prepare('SELECT source_url FROM sales WHERE source_url IS NOT NULL').all().map(r => r.source_url),
+    ]);
+
+    const ins = db.prepare(`INSERT INTO discoveries
+      (id, address, suburb, region, asset_class, price_guide, description, agent, firm, source_url, status)
+      VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`);
+
+    let added = 0;
+    const newListings = [];
+    db.transaction(() => {
+      for (const l of listings) {
+        if (!l.source_url || existingUrls.has(l.source_url)) continue;
+        if (!l.address && !l.suburb) continue;
+        const id = uuidv4();
+        ins.run(id, l.address || null, l.suburb || null, l.region || null, l.asset_class || null,
+          l.price_guide ? String(l.price_guide) : null,
+          l.description || null, l.agent || null, l.firm || null, l.source_url);
+        newListings.push({ id, ...l, status: 'pending' });
+        added++;
+      }
+    })();
+
+    console.log(`[listings-search] ${unique.length} results → ${listings.length} listings → ${added} new`);
+    res.json({ searched: unique.length, found: listings.length, added, listings: newListings });
+  } catch (e) {
+    console.error('[listings-search]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/listings/pending-count', requireAuth, (req, res) => {
+  res.json({ count: db.prepare("SELECT COUNT(*) as c FROM discoveries WHERE status='pending'").get().c });
+});
+
+app.get('/api/listings/pending', requireAuth, (req, res) => {
+  res.json(db.prepare("SELECT * FROM discoveries WHERE status='pending' ORDER BY scraped_at DESC").all());
+});
+
+app.post('/api/listings/:id/track', requireAuth, (req, res) => {
+  const disc = db.prepare('SELECT * FROM discoveries WHERE id=?').get(req.params.id);
+  if (!disc) return res.status(404).json({ error: 'Not found' });
+  const trackId = uuidv4();
+  db.prepare(`INSERT INTO tracking (id, address, suburb, region, asset_class, status, price_guide, agent1, firm1, year, notes, source_url, discovery_id)
+    VALUES (?,?,?,?,?,'Active Campaign',?,?,?,?,?,?,?)`)
+    .run(trackId, disc.address, disc.suburb, disc.region, disc.asset_class,
+      disc.price_guide ? parseFloat(disc.price_guide) : null,
+      disc.agent, disc.firm, new Date().getFullYear(),
+      disc.description, disc.source_url, disc.id);
+  db.prepare("UPDATE discoveries SET status='approved', reviewed_at=datetime('now') WHERE id=?").run(disc.id);
+  res.json({ ok: true, tracking: db.prepare('SELECT * FROM tracking WHERE id=?').get(trackId) });
+});
+
+app.post('/api/listings/:id/dismiss', requireAuth, (req, res) => {
+  db.prepare("UPDATE discoveries SET status='dismissed', reviewed_at=datetime('now') WHERE id=?").run(req.params.id);
+  res.json({ ok: true });
+});
+
 // SPA fallback
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
