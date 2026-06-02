@@ -792,6 +792,43 @@ app.get('*', (req, res) => {
 });
 
 
+// ── Seed data on startup ──────────────────────────────────────────────────────
+function applySeed() {
+  const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
+  if (!fs.existsSync(seedPath)) return;
+  try {
+    const { sales = [], tracking = [] } = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    const insSale = db.prepare(`INSERT OR IGNORE INTO sales (
+      id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
+      yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
+      agent1,agent2,firm1,firm2,exchange_date,settlement_date,campaign_close_date,year,notes
+    ) VALUES (
+      @id,@address,@suburb,@region,@asset_class,@process,@status,@price,@price_guide,@net_rent,
+      @yield_percent,@wale,@land_area,@floor_area,@zoning,@fsr,@height_limit,@vendor,@purchaser,
+      @agent1,@agent2,@firm1,@firm2,@exchange_date,@settlement_date,@campaign_close_date,@year,@notes
+    )`);
+    const insTrack = db.prepare(`INSERT OR IGNORE INTO tracking (
+      id,address,suburb,region,asset_class,process,status,price_guide,net_rent,
+      estimated_yield,vendor,agent1,agent2,firm1,firm2,campaign_close_date,
+      expected_settlement_date,year,notes
+    ) VALUES (
+      @id,@address,@suburb,@region,@asset_class,@process,@status,@price_guide,@net_rent,
+      @estimated_yield,@vendor,@agent1,@agent2,@firm1,@firm2,@campaign_close_date,
+      @expected_settlement_date,@year,@notes
+    )`);
+    const seedTx = db.transaction(() => {
+      let sc = 0, tc = 0;
+      for (const r of sales)    { const info = insSale.run(r);   sc += info.changes; }
+      for (const r of tracking) { const info = insTrack.run(r);  tc += info.changes; }
+      console.log(`Seed applied: ${sc} sales, ${tc} tracking records inserted.`);
+    });
+    seedTx();
+  } catch (e) {
+    console.error('Seed error:', e.message);
+  }
+}
+applySeed();
+
 app.listen(PORT, () => {
   console.log(`NSW Investment Sales DB running on port ${PORT}`);
   console.log(`Default password: ${APP_PASSWORD === 'CW@Investment2025' ? '(default - set APP_PASSWORD env var)' : '(custom)'}`);
