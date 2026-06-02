@@ -188,6 +188,25 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .dash-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:12.5px}
 /* Campaign stats bar */
 .campaign-stats-bar{display:flex;background:var(--navy);color:#fff;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.04)}
+/* Campaign tabs + process chips */
+.campaign-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 28px}
+.ctab{padding:11px 20px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;letter-spacing:.2px;transition:.15s;white-space:nowrap}
+.ctab:hover{color:var(--text)}
+.ctab.active{color:var(--text);border-bottom-color:var(--accent)}
+.ctab-exchanged.active{border-bottom-color:var(--success);color:var(--success)}
+.ctab-count{font-size:11px;font-weight:600;background:var(--bg);border-radius:10px;padding:1px 6px;margin-left:4px;color:var(--muted)}
+.ctab.active .ctab-count{background:rgba(232,115,42,.12);color:var(--accent)}
+.ctab-exchanged.active .ctab-count{background:rgba(16,185,129,.12);color:var(--success)}
+.process-chips{display:flex;gap:6px;padding:9px 28px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.process-chips-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+.pchip{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--muted);transition:.12s;background:transparent;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.4px;line-height:1.4}
+.pchip:hover{border-color:var(--navy);color:var(--navy)}
+.pchip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pchip-auction.active{background:#991b1b;border-color:#991b1b}
+.pchip-eoi.active{background:#1e40af;border-color:#1e40af}
+.pchip-tender.active{background:#5b21b6;border-color:#5b21b6}
+.pchip-offmarket.active{background:#334155;border-color:#334155}
+.pchip-treaty.active{background:#065f46;border-color:#065f46}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px}
 .stat-card{background:var(--card);border-radius:8px;padding:16px 18px;border:1px solid var(--border);position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
@@ -395,7 +414,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="ss-item"><div class="ss-val orange">–</div><div class="ss-label">Total Volume</div></div>
         <div class="ss-item"><div class="ss-val orange">–</div><div class="ss-label">Avg Yield</div></div>
         <div class="ss-item"><div class="ss-val">–</div><div class="ss-label">Dev Sites</div></div>
-        <div class="ss-item"><div class="ss-val">–</div><div class="ss-label">With Yield</div></div>
       </div>
       <!-- page header -->
       <div class="page-header">
@@ -450,18 +468,17 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <thead><tr>
             <th class="td-cb"><input type="checkbox" id="select-all-sales" title="Select all visible" onchange="toggleSelectAll(this.checked)"></th>
             <th onclick="sortTable('sales','address')">Address</th>
-            <th>Source</th>
+            <th onclick="sortTable('sales','price')">Sale Price</th>
+            <th onclick="sortTable('sales','exchange_date')">Sale Date</th>
             <th onclick="sortTable('sales','asset_class')">Asset Class</th>
-            <th onclick="sortTable('sales','process')">Process</th>
-            <th onclick="sortTable('sales','price')">Price</th>
-            <th onclick="sortTable('sales','net_rent')">Net Rent</th>
             <th onclick="sortTable('sales','yield_percent')">Yield %</th>
+            <th onclick="sortTable('sales','net_rent')">Net Rent</th>
             <th onclick="sortTable('sales','land_area')">Land m²</th>
+            <th title="Land rate (price ÷ land area)">Land $/m²</th>
             <th onclick="sortTable('sales','floor_area')">Floor m²</th>
             <th title="Allowable GFA Rate (price ÷ land × FSR) — Development Sites only">GFA Rate $/m²</th>
             <th title="DA-approved GFA Rate (price ÷ approved floor area) — where DA approved">DA GFA $/m²</th>
             <th onclick="sortTable('sales','agent1')">Agent / Firm</th>
-            <th onclick="sortTable('sales','exchange_date')">Exchange</th>
             <th>Notes</th>
             <th></th>
           </tr></thead>
@@ -508,10 +525,29 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </div>
       </div>
       <div class="page-header">
-        <div><h1>Campaigns</h1><div class="sub" id="tracking-count">Active campaigns subject to settlement</div></div>
+        <div><h1>Campaigns</h1><div class="sub" id="tracking-count">Loading…</div></div>
         <div class="header-actions">
           <button class="btn btn-secondary btn-sm" onclick="openAddTracking()">+ Add Manually</button>
         </div>
+      </div>
+      <!-- Campaign tabs -->
+      <div class="campaign-tabs">
+        <button class="ctab active" id="ctab-active" onclick="setCampaignTab('active')">
+          Active Pipeline <span class="ctab-count" id="ctab-active-count">0</span>
+        </button>
+        <button class="ctab ctab-exchanged" id="ctab-exchanged" onclick="setCampaignTab('exchanged')">
+          Exchanged — Pending Settlement <span class="ctab-count" id="ctab-exchanged-count">0</span>
+        </button>
+      </div>
+      <!-- Process chips (active tab only) -->
+      <div class="process-chips" id="process-chips">
+        <span class="process-chips-label">Process</span>
+        <button class="pchip active" id="pchip-all" onclick="setCampaignProcess('')">All</button>
+        <button class="pchip pchip-eoi" id="pchip-EOI" onclick="setCampaignProcess('EOI')">EOI</button>
+        <button class="pchip pchip-auction" id="pchip-Auction" onclick="setCampaignProcess('Auction')">Auction</button>
+        <button class="pchip pchip-tender" id="pchip-Tender" onclick="setCampaignProcess('Tender')">Tender</button>
+        <button class="pchip pchip-treaty" id="pchip-Private Treaty" onclick="setCampaignProcess('Private Treaty')">Private Treaty</button>
+        <button class="pchip pchip-offmarket" id="pchip-Off-Market" onclick="setCampaignProcess('Off-Market')">Off-Market</button>
       </div>
       <div class="filters-bar">
         <input class="filter-input" id="tf-search" placeholder="Search address, agent, vendor..." oninput="debounce(loadTracking,400)()">
@@ -523,16 +559,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
           <option>Apartment Blocks</option><option>Commercial</option>
         </select>
-        <select class="filter-select" id="tf-process" onchange="loadTracking()">
-          <option value="">All Processes</option>
-          <option>EOI</option><option>Auction</option><option>Private Treaty</option>
-          <option>Off-Market</option><option>Tender</option><option>Sale by Negotiation</option>
-        </select>
-        <select class="filter-select" id="tf-status" onchange="loadTracking()">
-          <option value="">All Statuses</option>
-          <option>Active Campaign</option><option>Under Offer</option>
-          <option>Exchanged - Awaiting Settlement</option><option>Withdrawn</option>
-        </select>
         <select class="filter-select" id="tf-region" onchange="loadTracking()">
           <option value="">All Regions</option>
           <option>CBD/City</option><option>Eastern Suburbs</option><option>Inner West</option>
@@ -540,10 +566,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
         </select>
         <input class="filter-input" id="tf-suburb" placeholder="Filter by suburb" oninput="debounce(loadTracking,400)()" style="min-width:120px">
-        <div class="ms-wrap" id="tf-years-wrap">
-          <button class="ms-btn" id="tf-years-btn" onclick="toggleMS('tf')">All Years</button>
-          <div class="ms-dropdown" id="tf-years-dd"></div>
-        </div>
         <button class="btn btn-secondary btn-sm" onclick="clearFilters('tf')">Clear</button>
       </div>
       <div class="table-wrap">
@@ -651,6 +673,8 @@ const S = {
   modalSubmit: null,
   sfTab: 'all',
   selectedSales: new Set(),
+  campaignTab: 'active',
+  campaignProcess: '',
 };
 
 const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Strata Retail','Strata Office',
@@ -977,7 +1001,6 @@ function renderSaleStats(data) {
     <div class="ss-item"><div class="ss-val orange">$${fmtVol(vol)}</div><div class="ss-label">Total Volume</div></div>
     <div class="ss-item"><div class="ss-val orange">${avgYield ? avgYield.toFixed(2)+'%' : '–'}</div><div class="ss-label">Avg Yield</div></div>
     <div class="ss-item"><div class="ss-val">${devSites}</div><div class="ss-label">Dev Sites</div></div>
-    <div class="ss-item"><div class="ss-val">${yields.length}</div><div class="ss-label">With Yield</div></div>
   `;
 }
 
@@ -1005,12 +1028,10 @@ function buildParams(prefix) {
     if (su) p.set('suburb', su);
     S.sfYears.forEach(y => p.append('years', y));
   } else {
-    const s = get('tf-search'), ac = get('tf-asset'), pr = get('tf-process'),
-          st = get('tf-status'), re = get('tf-region'), su = get('tf-suburb');
+    const s = get('tf-search'), ac = get('tf-asset'),
+          re = get('tf-region'), su = get('tf-suburb');
     if (s)  p.set('search', s);
     if (ac) p.set('asset_class', ac);
-    if (pr) p.set('process', pr);
-    if (st) p.set('status', st);
     if (re) p.set('region', re);
     if (su) p.set('suburb', su);
     S.tfYears.forEach(y => p.append('years', y));
@@ -1033,18 +1054,17 @@ function renderSales(data) {
     <tr class="${rowCls}" id="row-${s.id}">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
       <td class="td-addr">${s.address}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
-      <td>${sourceBadge(s)}</td>
-      <td>${assetBadge(s.asset_class)}</td>
-      <td>${processBadge(s.process)}</td>
       <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}</td>
-      <td class="td-mono">${s.net_rent ? '$'+fmt(s.net_rent) : '–'}</td>
+      <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
+      <td>${assetBadge(s.asset_class)}</td>
       <td class="td-mono ${s.yield_percent?'td-yield-good':''}">${s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '–'}</td>
+      <td class="td-mono">${s.net_rent ? '$'+fmt(s.net_rent) : '–'}</td>
       <td class="td-mono">${s.land_area ? fmt(s.land_area)+'m²' : '–'}</td>
+      <td class="td-mono">${(s.price && s.land_area) ? '$'+fmt(Math.round(s.price/s.land_area)) : '–'}</td>
       <td class="td-mono">${s.floor_area ? fmt(s.floor_area)+'m²' : '–'}</td>
       <td class="td-mono">${gfaRate ? '$'+fmt(Math.round(gfaRate)) : '–'}</td>
       <td class="td-mono ${daGfaRate?'td-da-gfa':''}">${daGfaRate ? '$'+fmt(Math.round(daGfaRate)) : '–'}</td>
       <td>${[s.agent1,s.firm1].filter(Boolean).join('<br><small style="color:var(--muted);font-size:11px">') + (s.firm1?'</small>':'')}</td>
-      <td>${fmtDate(s.exchange_date)}</td>
       <td class="td-truncate" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes||'–'}</td>
       <td class="td-actions">
         ${s.source_url ? `<a href="${s.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
@@ -1090,10 +1110,10 @@ function saleForm(s={}) {
     <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, s.asset_class)}</div>
     <div class="form-group"><label>Process</label>${sel('process', PROCESSES, s.process)}</div>
     <div class="form-section">Financials</div>
-    <div class="form-group"><label>Price ($)</label><input name="price" type="number" step="1000" value="${s.price||''}"></div>
+    <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}"></div>
-    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${s.net_rent||''}"></div>
-    <div class="form-group"><label>Yield %</label><input name="yield_percent" type="number" step="0.01" value="${s.yield_percent||''}"></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
+    <div class="form-group"><label>Yield %</label><input name="yield_percent" id="sf-yield" type="number" step="0.01" value="${s.yield_percent||''}" placeholder="Auto-calculated" title="Calculated automatically when price and net rent are entered"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${s.land_area||''}"></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
@@ -1137,8 +1157,47 @@ async function loadTracking() {
   const data = await GET('/tracking?' + params);
   if (!data) return;
   S.trackingData = data;
+  renderTrackingFiltered();
+}
+
+function renderTrackingFiltered() {
+  const all = S.trackingData;
+  const activeCount    = all.filter(t => t.status === 'Active Campaign' || t.status === 'Under Offer').length;
+  const exchangedCount = all.filter(t => t.status === 'Exchanged - Awaiting Settlement').length;
+  document.getElementById('ctab-active-count').textContent    = activeCount;
+  document.getElementById('ctab-exchanged-count').textContent = exchangedCount;
+
+  let data;
+  if (S.campaignTab === 'exchanged') {
+    data = all.filter(t => t.status === 'Exchanged - Awaiting Settlement');
+  } else {
+    data = all.filter(t => t.status === 'Active Campaign' || t.status === 'Under Offer' || t.status === 'Withdrawn');
+    if (S.campaignProcess) data = data.filter(t => t.process === S.campaignProcess);
+  }
+
+  const label = S.campaignTab === 'exchanged'
+    ? `${data.length} propert${data.length!==1?'ies':'y'} exchanged — pending settlement`
+    : `${data.length} active campaign${data.length!==1?'s':''}${S.campaignProcess ? ' · ' + S.campaignProcess : ''}`;
+  document.getElementById('tracking-count').textContent = label;
   renderTracking(data);
-  document.getElementById('tracking-count').textContent = `${data.length} propert${data.length!==1?'ies':'y'} being tracked`;
+}
+
+function setCampaignTab(tab) {
+  S.campaignTab = tab;
+  document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+  document.getElementById('ctab-' + tab).classList.add('active');
+  const chips = document.getElementById('process-chips');
+  if (chips) chips.classList.toggle('hidden', tab !== 'active');
+  renderTrackingFiltered();
+}
+
+function setCampaignProcess(proc) {
+  S.campaignProcess = proc;
+  document.querySelectorAll('.pchip').forEach(c => c.classList.remove('active'));
+  const chipId = proc ? 'pchip-' + proc : 'pchip-all';
+  const el = document.getElementById(chipId);
+  if (el) el.classList.add('active');
+  renderTrackingFiltered();
 }
 
 function renderTracking(data) {
@@ -1265,9 +1324,9 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Process</label>${sel('process', PROCESSES, t.process)}</div>
     <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, t.status||'Active Campaign')}</div>
     <div class="form-section">Financials</div>
-    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${t.price_guide||''}"></div>
-    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${t.net_rent||''}"></div>
-    <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" type="number" step="0.01" value="${t.estimated_yield||''}"></div>
+    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" id="tf-price-guide" type="number" step="1000" value="${t.price_guide||''}" oninput="calcTrackingYield()"></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="tf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcTrackingYield()"></div>
+    <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" id="tf-est-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated from price &amp; rent" title="Calculated automatically when price guide and net rent are both entered"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
     <div class="form-section">Property</div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
@@ -1351,7 +1410,7 @@ function sortTable(table, col) {
   tableEl.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
   const ths = tableEl.querySelectorAll('th');
   const cols = table === 'sales'
-    ? ['','address','','asset_class','process','price','net_rent','yield_percent','land_area','floor_area','','','agent1','exchange_date','notes','']
+    ? ['','address','price','exchange_date','asset_class','yield_percent','net_rent','land_area','','floor_area','','','agent1','notes','']
     : ['address','asset_class','process','status','price_guide','net_rent','estimated_yield','agent1','vendor','campaign_close_date','','expected_settlement_date','notes',''];
   const idx = cols.indexOf(col);
   if (idx >= 0 && ths[idx]) ths[idx].classList.add('sort-' + sort.dir);
@@ -1363,7 +1422,7 @@ function sortTable(table, col) {
 function clearFilters(prefix) {
   const ids = prefix === 'sf'
     ? ['sf-search','sf-asset','sf-process','sf-region','sf-suburb']
-    : ['tf-search','tf-asset','tf-process','tf-status','tf-region','tf-suburb'];
+    : ['tf-search','tf-asset','tf-region','tf-suburb'];
   ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   clearYears(prefix);
   if (prefix === 'sf') loadSales(); else loadTracking();
@@ -1390,6 +1449,14 @@ function fmtDate(d) {
   try {
     const dt = new Date(d);
     return dt.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+  } catch { return d; }
+}
+
+function fmtMonthYear(d) {
+  if (!d) return '–';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-AU', { month:'short', year:'numeric' });
   } catch { return d; }
 }
 
@@ -1446,6 +1513,22 @@ function statusSelectClass(s) {
   if (s.startsWith('Exchanged')) return 'status-exchanged';
   if (s === 'Withdrawn')       return 'status-withdrawn';
   return 'status-active';
+}
+
+function calcTrackingYield() {
+  const price = parseFloat(document.getElementById('tf-price-guide')?.value);
+  const rent  = parseFloat(document.getElementById('tf-net-rent')?.value);
+  const yieldEl = document.getElementById('tf-est-yield');
+  if (!yieldEl) return;
+  if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
+}
+
+function calcSaleYield() {
+  const price = parseFloat(document.getElementById('sf-price')?.value);
+  const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
+  const yieldEl = document.getElementById('sf-yield');
+  if (!yieldEl) return;
+  if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
 }
 
 // ═══════════════════════════════════════════════════════════════
