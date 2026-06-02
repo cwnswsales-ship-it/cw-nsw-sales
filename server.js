@@ -690,6 +690,10 @@ app.post('/api/extract-portfolio', requireAuth, async (req, res) => {
     if (!jsonMatch) throw new Error('Claude did not return a JSON array. Response: ' + text.slice(0, 200));
     const listings = JSON.parse(jsonMatch[0]);
     if (!Array.isArray(listings)) throw new Error('Expected an array of properties.');
+    // Strip city qualifiers in parentheses from suburb names e.g. "Darlington (Sydney)" → "Darlington"
+    listings.forEach(l => {
+      if (l.suburb) l.suburb = l.suburb.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    });
     res.json({ success: true, count: listings.length, listings, filename });
   } catch (err) {
     console.error('Portfolio extraction error:', err.message);
