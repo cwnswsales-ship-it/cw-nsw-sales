@@ -640,15 +640,15 @@ app.delete('/api/ims/:filename', requireAuth, (req, res) => {
 
 const PORTFOLIO_PROMPT = `You are a commercial real estate analyst processing a Burgess Rawson / CBRE investment portfolio catalogue.
 
-Extract EVERY individual property listed in this PDF and return ONLY a valid JSON array — no prose, no markdown fences, no commentary.
+Extract ONLY the NSW (New South Wales) properties from this PDF and return ONLY a valid JSON array — no prose, no markdown fences, no commentary. Skip any properties in VIC, QLD, SA, WA, TAS, ACT or NT.
 
-Each element represents one property:
+Each element represents one NSW property:
 [
   {
     "tenant": "tenant or property name",
     "address": "full street address",
     "suburb": "suburb name",
-    "state": "NSW" or "VIC" or "QLD" or "SA" or "WA" or "TAS" or "ACT" or "NT",
+    "state": "NSW",
     "asset_class": "one of: Supermarket | Convenience Retail | Service Station | Fast Food/QSR | Healthcare | Childcare | Fitness | Pub/Hotel | Office | Industrial | Retail | Commercial | Other",
     "net_rent": null or integer (annual net income in dollars, e.g. 250000),
     "price_guide": null or integer (price guide if stated),
@@ -657,7 +657,7 @@ Each element represents one property:
     "land_area": null or integer (land area in square metres),
     "floor_area": null or integer (building area in square metres),
     "auction_date": "YYYY-MM-DD" or null,
-    "auction_location": "city of auction e.g. Sydney",
+    "auction_location": "Sydney",
     "agent1": "agent name" or null,
     "firm1": "agency name" or null,
     "agent2": null or "second agent name",
@@ -667,7 +667,7 @@ Each element represents one property:
   }
 ]
 
-Include every property — do not skip any. Return ONLY the JSON array.`;
+NSW properties only — exclude all other states. Return ONLY the JSON array.`;
 
 app.post('/api/extract-portfolio', requireAuth, async (req, res) => {
   if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });

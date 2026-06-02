@@ -903,18 +903,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <div class="pi-cd-days" id="pi-cd-syd">–</div>
           <div class="pi-cd-label" id="pi-cd-syd-label">days to go</div>
         </div>
-        <div class="pi-cd-card" id="pi-cd-melbourne">
-          <div class="pi-cd-city">Melbourne Auction</div>
-          <div class="pi-cd-date">Tue 24 Jun 2026 · 10:30AM</div>
-          <div class="pi-cd-days" id="pi-cd-mel">–</div>
-          <div class="pi-cd-label" id="pi-cd-mel-label">days to go</div>
-        </div>
-        <div class="pi-cd-card" id="pi-cd-brisbane">
-          <div class="pi-cd-city">Brisbane Auction</div>
-          <div class="pi-cd-date">Wed 25 Jun 2026 · 10:30AM</div>
-          <div class="pi-cd-days" id="pi-cd-bri">–</div>
-          <div class="pi-cd-label" id="pi-cd-bri-label">days to go</div>
-        </div>
       </div>
       <!-- Page header -->
       <div class="page-header">
@@ -3098,9 +3086,7 @@ document.addEventListener('click', e => {
 // PREMIUM INVESTMENTS TRACKER
 // ═══════════════════════════════════════════════════════════════
 const PORTFOLIO_AUCTIONS = [
-  { id: 'syd', city: 'Sydney',    date: '2026-06-23', elId: 'pi-cd-syd', labelId: 'pi-cd-syd-label', cardId: 'pi-cd-sydney' },
-  { id: 'mel', city: 'Melbourne', date: '2026-06-24', elId: 'pi-cd-mel', labelId: 'pi-cd-mel-label', cardId: 'pi-cd-melbourne' },
-  { id: 'bri', city: 'Brisbane',  date: '2026-06-25', elId: 'pi-cd-bri', labelId: 'pi-cd-bri-label', cardId: 'pi-cd-brisbane' },
+  { id: 'syd', city: 'Sydney', date: '2026-06-23', elId: 'pi-cd-syd', labelId: 'pi-cd-syd-label', cardId: 'pi-cd-sydney' },
 ];
 
 function updatePortfolioCountdowns() {
