@@ -310,6 +310,19 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .tab-btn:last-child{border-right:none}
 .tab-btn.active{background:var(--accent);color:#fff}
 
+/* ── Agent Analytics ── */
+#agency-table thead th, #agent-table thead th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);white-space:nowrap}
+#agency-table tbody td, #agent-table tbody td{padding:10px 13px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:middle}
+#agency-table tbody tr:hover, #agent-table tbody tr:hover{background:var(--bg)}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:800;background:var(--bg);color:var(--muted)}
+.rank-badge.gold{background:#fef3c7;color:#92400e}
+.rank-badge.silver{background:#f1f5f9;color:#475569}
+.rank-badge.bronze{background:#ffedd5;color:#9a3412}
+.agent-name{font-weight:700;color:var(--text)}
+.agent-firm{font-size:11px;color:var(--muted);margin-top:1px}
+.vol-bar-wrap{display:flex;align-items:center;gap:8px}
+.vol-bar{height:5px;background:var(--accent);border-radius:3px;flex-shrink:0}
+
 /* ── IM Library Panel ── */
 #im-library-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
 .im-lib-box{background:var(--card);border-radius:10px;width:100%;max-width:680px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.3)}
@@ -371,7 +384,11 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="nav-section" style="margin-top:6px">Analytics</div>
       <div class="nav-item" data-section="analytics" onclick="showSection('analytics')">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-        Analytics
+        Market Analytics
+      </div>
+      <div class="nav-item" data-section="agents" onclick="showSection('agents')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.973 5.973 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/></svg>
+        Agent Analytics
       </div>
     </div>
     <div class="sidebar-footer">
@@ -685,6 +702,98 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       </div>
     </section>
 
+    <!-- ── Agent Analytics ──────────────────────────────────────── -->
+    <section id="section-agents" class="hidden">
+      <div class="sales-stats-bar" id="agent-kpi-bar">
+        <div class="ss-item"><div class="ss-val" id="ak-agencies">–</div><div class="ss-label">Active Agencies</div></div>
+        <div class="ss-item"><div class="ss-val" id="ak-agents">–</div><div class="ss-label">Active Agents</div></div>
+        <div class="ss-item"><div class="ss-val orange" id="ak-top-agency" style="font-size:13px;letter-spacing:0">–</div><div class="ss-label">Top Agency (by sales)</div></div>
+        <div class="ss-item"><div class="ss-val orange" id="ak-top-agent" style="font-size:13px;letter-spacing:0">–</div><div class="ss-label">Top Agent (by sales)</div></div>
+        <div class="ss-item"><div class="ss-val" id="ak-collab">–</div><div class="ss-label">Joint Sales</div></div>
+      </div>
+      <div class="page-header">
+        <div><h1>Agent Analytics</h1><div class="sub">Agency and agent performance across the sales database</div></div>
+        <div class="header-actions">
+          <select class="filter-select" id="aa-year" onchange="renderAgentAnalytics()">
+            <option value="">All Years</option>
+            <option>2026</option><option>2025</option><option>2024</option>
+            <option>2023</option><option>2022</option><option>2021</option>
+          </select>
+          <select class="filter-select" id="aa-asset" onchange="renderAgentAnalytics()">
+            <option value="">All Asset Classes</option>
+            <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+            <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
+            <option>Medical/Healthcare</option><option>Development Site</option>
+            <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
+            <option>Apartment Blocks</option><option>Commercial</option>
+          </select>
+        </div>
+      </div>
+      <!-- Agency / Agent tabs -->
+      <div class="campaign-tabs">
+        <button class="ctab active" id="aatab-agencies" onclick="setAgentTab('agencies')">Agencies</button>
+        <button class="ctab" id="aatab-agents" onclick="setAgentTab('agents')">Individual Agents</button>
+      </div>
+      <div class="analytics-content" style="padding-top:16px">
+        <!-- Agency leaderboard -->
+        <div id="aa-agencies-view">
+          <div class="dash-3col" style="margin-bottom:16px">
+            <div class="dash-panel" style="grid-column:span 2">
+              <div class="dash-panel-header">Top Agencies by Sales Count <span class="dash-panel-sub">all agents combined per firm</span></div>
+              <div class="chart-wrap" style="height:320px"><canvas id="chart-agency-bar"></canvas></div>
+            </div>
+            <div class="dash-panel">
+              <div class="dash-panel-header">Agency Volume Share</div>
+              <div class="chart-wrap" style="height:320px"><canvas id="chart-agency-vol"></canvas></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Agency Leaderboard</div>
+            <div class="table-wrap"><table id="agency-table">
+              <thead><tr>
+                <th style="width:36px">#</th>
+                <th>Agency</th>
+                <th>Sales</th>
+                <th>Total Volume</th>
+                <th>Avg Yield</th>
+                <th>Top Asset Class</th>
+                <th>Most Active Agent</th>
+              </tr></thead>
+              <tbody id="agency-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+        <!-- Agent leaderboard -->
+        <div id="aa-agents-view" class="hidden">
+          <div class="dash-3col" style="margin-bottom:16px">
+            <div class="dash-panel" style="grid-column:span 2">
+              <div class="dash-panel-header">Top Agents by Sales Count</div>
+              <div class="chart-wrap" style="height:320px"><canvas id="chart-agent-bar"></canvas></div>
+            </div>
+            <div class="dash-panel">
+              <div class="dash-panel-header">Top Agents by Volume</div>
+              <div class="chart-wrap" style="height:320px"><canvas id="chart-agent-vol"></canvas></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Agent Leaderboard</div>
+            <div class="table-wrap"><table id="agent-table">
+              <thead><tr>
+                <th style="width:36px">#</th>
+                <th>Agent</th>
+                <th>Agency</th>
+                <th>Sales</th>
+                <th>Total Volume</th>
+                <th>Avg Yield</th>
+                <th>Top Asset Class</th>
+              </tr></thead>
+              <tbody id="agent-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div><!-- /main-content -->
 </div><!-- /app -->
 
@@ -814,6 +923,7 @@ function showSection(name) {
   if (name === 'sales') { loadSalesYears(); loadSales(); }
   if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
   if (name === 'analytics') loadAnalytics();
+  if (name === 'agents') loadAgentAnalytics();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2304,6 +2414,222 @@ function addFromVG(payload) {
     if (!body.address) return alert('Address is required');
     const data = await POST('/sales', body);
     if (data && !data.error) { closeModal(); loadSales(); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENT ANALYTICS
+// ═══════════════════════════════════════════════════════════════
+let agentRawData = [];
+let agentTabActive = 'agencies';
+const agentCharts = {};
+
+function destroyAgentChart(id) {
+  if (agentCharts[id]) { agentCharts[id].destroy(); delete agentCharts[id]; }
+}
+
+async function loadAgentAnalytics() {
+  const data = await GET('/sales');
+  if (!data) return;
+  agentRawData = data;
+  renderAgentAnalytics();
+}
+
+function setAgentTab(tab) {
+  agentTabActive = tab;
+  document.querySelectorAll('[id^="aatab-"]').forEach(t => t.classList.remove('active'));
+  document.getElementById('aatab-' + tab).classList.add('active');
+  document.getElementById('aa-agencies-view').classList.toggle('hidden', tab !== 'agencies');
+  document.getElementById('aa-agents-view').classList.toggle('hidden', tab !== 'agents');
+  renderAgentAnalytics();
+}
+
+function getAgentFilteredData() {
+  const year  = document.getElementById('aa-year')?.value  || '';
+  const asset = document.getElementById('aa-asset')?.value || '';
+  return agentRawData.filter(s => {
+    if (year  && String(s.year) !== year)      return false;
+    if (asset && s.asset_class !== asset)       return false;
+    return true;
+  });
+}
+
+function buildAgencyMap(data) {
+  const map = {};
+  const addToAgency = (firm, agent, s) => {
+    if (!firm) return;
+    if (!map[firm]) map[firm] = { count: 0, volume: 0, yields: [], assets: {}, agents: {} };
+    map[firm].count++;
+    if (s.price) map[firm].volume += s.price;
+    if (s.yield_percent) map[firm].yields.push(s.yield_percent);
+    if (s.asset_class) map[firm].assets[s.asset_class] = (map[firm].assets[s.asset_class] || 0) + 1;
+    if (agent) map[firm].agents[agent] = (map[firm].agents[agent] || 0) + 1;
+  };
+  data.forEach(s => {
+    addToAgency(s.firm1, s.agent1, s);
+    if (s.firm2 && s.firm2 !== s.firm1) addToAgency(s.firm2, s.agent2, s);
+  });
+  return map;
+}
+
+function buildAgentMap(data) {
+  const map = {};
+  const addToAgent = (agent, firm, s) => {
+    if (!agent) return;
+    if (!map[agent]) map[agent] = { count: 0, volume: 0, yields: [], assets: {}, firm: firm || '' };
+    map[agent].count++;
+    if (s.price) map[agent].volume += s.price;
+    if (s.yield_percent) map[agent].yields.push(s.yield_percent);
+    if (s.asset_class) map[agent].assets[s.asset_class] = (map[agent].assets[s.asset_class] || 0) + 1;
+    if (firm && !map[agent].firm) map[agent].firm = firm;
+  };
+  data.forEach(s => {
+    addToAgent(s.agent1, s.firm1, s);
+    if (s.agent2 && s.agent2 !== s.agent1) addToAgent(s.agent2, s.firm2, s);
+  });
+  return map;
+}
+
+function topEntry(obj) {
+  return Object.entries(obj || {}).sort((a,b) => b[1]-a[1])[0]?.[0] || '–';
+}
+
+function rankBadge(i) {
+  const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+  return `<span class="rank-badge ${cls}">${i+1}</span>`;
+}
+
+function renderAgentAnalytics() {
+  const data = getAgentFilteredData();
+  const agencyMap = buildAgencyMap(data);
+  const agentMap  = buildAgentMap(data);
+
+  const agencies = Object.entries(agencyMap)
+    .map(([name, d]) => ({
+      name, count: d.count, volume: d.volume,
+      avgYield: d.yields.length ? d.yields.reduce((a,b)=>a+b,0)/d.yields.length : null,
+      topAsset: topEntry(d.assets),
+      topAgent: topEntry(d.agents),
+    }))
+    .sort((a,b) => b.count - a.count);
+
+  const agents = Object.entries(agentMap)
+    .map(([name, d]) => ({
+      name, firm: d.firm, count: d.count, volume: d.volume,
+      avgYield: d.yields.length ? d.yields.reduce((a,b)=>a+b,0)/d.yields.length : null,
+      topAsset: topEntry(d.assets),
+    }))
+    .sort((a,b) => b.count - a.count);
+
+  const jointSales = data.filter(s => s.agent1 && s.agent2).length;
+
+  // KPI bar
+  document.getElementById('ak-agencies').textContent  = agencies.length;
+  document.getElementById('ak-agents').textContent    = agents.length;
+  document.getElementById('ak-top-agency').textContent = agencies[0]?.name || '–';
+  document.getElementById('ak-top-agent').textContent  = agents[0]?.name  || '–';
+  document.getElementById('ak-collab').textContent    = jointSales;
+
+  if (agentTabActive === 'agencies') {
+    renderAgencyTable(agencies);
+    renderAgencyCharts(agencies);
+  } else {
+    renderAgentTable(agents);
+    renderAgentCharts(agents);
+  }
+}
+
+function renderAgencyTable(agencies) {
+  const maxVol = agencies[0]?.volume || 1;
+  document.getElementById('agency-tbody').innerHTML = agencies.slice(0, 30).map((a, i) => `
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td><div class="agent-name">${esc(a.name)}</div></td>
+      <td><strong>${a.count}</strong></td>
+      <td>
+        <div class="vol-bar-wrap">
+          <div class="vol-bar" style="width:${Math.round(a.volume/maxVol*80)}px"></div>
+          <span>$${fmtVol(a.volume)}</span>
+        </div>
+      </td>
+      <td>${a.avgYield ? '<span class="td-yield-good">'+a.avgYield.toFixed(2)+'%</span>' : '–'}</td>
+      <td>${a.topAsset ? assetBadge(a.topAsset) : '–'}</td>
+      <td class="text-muted" style="font-size:12px">${esc(a.topAgent)}</td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty-state">No data</td></tr>';
+}
+
+function renderAgentTable(agents) {
+  const maxVol = agents[0]?.volume || 1;
+  document.getElementById('agent-tbody').innerHTML = agents.slice(0, 30).map((a, i) => `
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td><div class="agent-name">${esc(a.name)}</div>${a.firm ? `<div class="agent-firm">${esc(a.firm)}</div>` : ''}</td>
+      <td class="text-muted" style="font-size:12px">${esc(a.firm) || '–'}</td>
+      <td><strong>${a.count}</strong></td>
+      <td>
+        <div class="vol-bar-wrap">
+          <div class="vol-bar" style="width:${Math.round(a.volume/maxVol*80)}px"></div>
+          <span>$${fmtVol(a.volume)}</span>
+        </div>
+      </td>
+      <td>${a.avgYield ? '<span class="td-yield-good">'+a.avgYield.toFixed(2)+'%</span>' : '–'}</td>
+      <td>${a.topAsset ? assetBadge(a.topAsset) : '–'}</td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty-state">No data</td></tr>';
+}
+
+function renderAgencyCharts(agencies) {
+  const top10 = agencies.slice(0, 10);
+  destroyAgentChart('agency-bar');
+  destroyAgentChart('agency-vol');
+  const ctx1 = document.getElementById('chart-agency-bar')?.getContext('2d');
+  if (ctx1) agentCharts['agency-bar'] = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: top10.map(a => a.name.length > 22 ? a.name.slice(0,20)+'…' : a.name),
+      datasets: [{ label: 'Sales', data: top10.map(a => a.count),
+        backgroundColor: 'rgba(13,33,55,0.82)', borderRadius: 4 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,ticks:{stepSize:1}}} }
+  });
+  const ctx2 = document.getElementById('chart-agency-vol')?.getContext('2d');
+  if (ctx2) agentCharts['agency-vol'] = new Chart(ctx2, {
+    type: 'doughnut',
+    data: { labels: top10.map(a => a.name.length > 18 ? a.name.slice(0,16)+'…' : a.name),
+      datasets: [{ data: top10.map(a => a.volume), backgroundColor: CW_PALETTE, borderWidth:2, borderColor:'#fff' }] },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'right', labels:{ boxWidth:12, padding:10, font:{size:11} } },
+        tooltip:{ callbacks:{ label: ctx => ` $${fmtVol(ctx.raw)}` } } } }
+  });
+}
+
+function renderAgentCharts(agents) {
+  const top10 = agents.slice(0, 10);
+  destroyAgentChart('agent-bar');
+  destroyAgentChart('agent-vol');
+  const ctx1 = document.getElementById('chart-agent-bar')?.getContext('2d');
+  if (ctx1) agentCharts['agent-bar'] = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: top10.map(a => a.name),
+      datasets: [{ label: 'Sales', data: top10.map(a => a.count),
+        backgroundColor: CW_PALETTE, borderRadius: 4 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,ticks:{stepSize:1}}} }
+  });
+  const ctx2 = document.getElementById('chart-agent-vol')?.getContext('2d');
+  if (ctx2) agentCharts['agent-vol'] = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: top10.map(a => a.name),
+      datasets: [{ label: 'Volume ($M)', data: top10.map(a => +(a.volume/1e6).toFixed(2)),
+        backgroundColor: 'rgba(232,115,42,0.8)', borderRadius:4 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: ctx => ` $${ctx.raw}M` } } },
+      scales:{ x:{ beginAtZero:true } } }
   });
 }
 
