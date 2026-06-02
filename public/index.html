@@ -569,7 +569,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
             <div class="im-upload-sub">AI extracts address, price, yield, tenancy, agents · file saved as Suburb, Address — Agency</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button class="im-upload-btn" onclick="event.stopPropagation();showIMLibrary()">📁 Library</button>
+            <button class="im-upload-btn" onclick="event.stopPropagation();window.open('https://cushwake1.sharepoint.com/:f:/r/sites/InvestmentSalesNSW/Shared%20Documents/Investment%20Sales%20-%20NSW/3.%20Information%20Memorandums?csf=1&web=1&e=TsdfGZ','_blank')">📁 Library</button>
             <button class="im-upload-btn" onclick="event.stopPropagation();document.getElementById('sale-im-file-input').click()">Browse Files</button>
           </div>
         </div>
@@ -825,42 +825,9 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           </select>
         </div>
       </div>
-      <!-- Agency / Agent tabs -->
-      <div class="campaign-tabs">
-        <button class="ctab active" id="aatab-agencies" onclick="setAgentTab('agencies')">Agencies</button>
-        <button class="ctab" id="aatab-agents" onclick="setAgentTab('agents')">Individual Agents</button>
-      </div>
+      <!-- Agent leaderboard (only view) -->
       <div class="analytics-content" style="padding-top:16px">
-        <!-- Agency leaderboard -->
-        <div id="aa-agencies-view">
-          <div class="dash-3col" style="margin-bottom:16px">
-            <div class="dash-panel" style="grid-column:span 2">
-              <div class="dash-panel-header">Top Agencies by Sales Count <span class="dash-panel-sub">all agents combined per firm</span></div>
-              <div class="chart-wrap" style="height:320px"><canvas id="chart-agency-bar"></canvas></div>
-            </div>
-            <div class="dash-panel">
-              <div class="dash-panel-header">Agency Volume Share</div>
-              <div class="chart-wrap" style="height:320px"><canvas id="chart-agency-vol"></canvas></div>
-            </div>
-          </div>
-          <div class="dash-panel">
-            <div class="dash-panel-header">Agency Leaderboard</div>
-            <div class="table-wrap"><table id="agency-table">
-              <thead><tr>
-                <th style="width:36px">#</th>
-                <th>Agency</th>
-                <th>Sales</th>
-                <th>Total Volume</th>
-                <th>Avg Yield</th>
-                <th>Top Asset Class</th>
-                <th>Most Active Agent</th>
-              </tr></thead>
-              <tbody id="agency-tbody"></tbody>
-            </table></div>
-          </div>
-        </div>
-        <!-- Agent leaderboard -->
-        <div id="aa-agents-view" class="hidden">
+        <div id="aa-agents-view">
           <div class="dash-3col" style="margin-bottom:16px">
             <div class="dash-panel" style="grid-column:span 2">
               <div class="dash-panel-header">Top Agents by Sales Count</div>
@@ -2785,7 +2752,6 @@ document.addEventListener('keydown', e => {
 // AGENT ANALYTICS
 // ═══════════════════════════════════════════════════════════════
 let agentRawData = [];
-let agentTabActive = 'agencies';
 const agentCharts = {};
 
 function destroyAgentChart(id) {
@@ -2796,15 +2762,6 @@ async function loadAgentAnalytics() {
   const data = await GET('/sales');
   if (!data) return;
   agentRawData = data;
-  renderAgentAnalytics();
-}
-
-function setAgentTab(tab) {
-  agentTabActive = tab;
-  document.querySelectorAll('[id^="aatab-"]').forEach(t => t.classList.remove('active'));
-  document.getElementById('aatab-' + tab).classList.add('active');
-  document.getElementById('aa-agencies-view').classList.toggle('hidden', tab !== 'agencies');
-  document.getElementById('aa-agents-view').classList.toggle('hidden', tab !== 'agents');
   renderAgentAnalytics();
 }
 
@@ -2894,13 +2851,8 @@ function renderAgentAnalytics() {
   document.getElementById('ak-top-agent').textContent  = agents[0]?.name  || '–';
   document.getElementById('ak-collab').textContent    = jointSales;
 
-  if (agentTabActive === 'agencies') {
-    renderAgencyTable(agencies);
-    renderAgencyCharts(agencies);
-  } else {
-    renderAgentTable(agents);
-    renderAgentCharts(agents);
-  }
+  renderAgentTable(agents);
+  renderAgentCharts(agents);
 }
 
 function renderAgencyTable(agencies) {
