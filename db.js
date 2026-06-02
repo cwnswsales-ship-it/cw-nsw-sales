@@ -136,3 +136,6 @@ db.exec(`
 `);
 
 module.exports = db;
+
+// Add region column to portfolio_listings if it doesn't exist yet (safe on existing DBs)
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN region TEXT'); } catch(e) {}

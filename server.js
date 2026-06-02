@@ -259,6 +259,19 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
 
+app.get('/api/tracking/:id', requireAuth, (req, res) => {
+  const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  res.json(row);
+});
+
+app.patch('/api/tracking/:id/status', requireAuth, (req, res) => {
+  const { status } = req.body || {};
+  if (!status) return res.status(400).json({ error: 'status required' });
+  db.prepare("UPDATE tracking SET status=?, updated_at=datetime('now') WHERE id=?").run(status, req.params.id);
+  res.json({ ok: true });
+});
+
 app.delete('/api/tracking/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM tracking WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
@@ -649,6 +662,7 @@ Each element represents one NSW property:
     "address": "full street address",
     "suburb": "suburb name",
     "state": "NSW",
+    "region": "assign based on suburb — one of exactly: CBD/City | Eastern Suburbs | Inner West | North Shore | Northern Beaches | Western Sydney | Hills District | Southern Sydney | South West Sydney | Regional NSW",
     "asset_class": "one of: Supermarket | Convenience Retail | Service Station | Fast Food/QSR | Healthcare | Childcare | Fitness | Pub/Hotel | Office | Industrial | Retail | Commercial | Other",
     "net_rent": null or integer (annual net income in dollars, e.g. 250000),
     "price_guide": null or integer (price guide if stated),
@@ -712,15 +726,15 @@ app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
   const { listings } = req.body || {};
   if (!Array.isArray(listings) || !listings.length) return res.status(400).json({ error: 'No listings provided.' });
   const ins = db.prepare(`
-    INSERT INTO portfolio_listings (id, portfolio, tenant, address, suburb, state, asset_class,
+    INSERT INTO portfolio_listings (id, portfolio, tenant, address, suburb, state, region, asset_class,
       net_rent, price_guide, yield_percent, wale, land_area, floor_area, auction_date,
       auction_location, agent1, firm1, agent2, firm2, notes)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   const insertAll = db.transaction((rows) => {
     rows.forEach(l => {
       ins.run(uuidv4(), l.portfolio || null, l.tenant || null,
-        l.address || null, l.suburb || null, l.state || 'NSW', l.asset_class || null,
+        l.address || null, l.suburb || null, l.state || 'NSW', l.region || null, l.asset_class || null,
         l.net_rent || null, l.price_guide || null, l.yield_percent || null,
         l.wale || null, l.land_area || null, l.floor_area || null,
         l.auction_date || null, l.auction_location || null,
@@ -732,11 +746,15 @@ app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
   res.json({ success: true, inserted: listings.length });
 });
 
-// Update portfolio listing status / result
+// Update portfolio listing status / result / region
 app.put('/api/portfolio/:id', requireAuth, (req, res) => {
-  const { status, result_price, notes } = req.body || {};
-  db.prepare(`UPDATE portfolio_listings SET status=?, result_price=?, notes=?, updated_at=datetime('now') WHERE id=?`)
-    .run(status || 'Active', result_price || null, notes || null, req.params.id);
+  const { status, result_price, notes, region, tracking_id } = req.body || {};
+  const fields = ['status=?', 'result_price=?', 'notes=?', "updated_at=datetime('now')"];
+  const vals   = [status || 'Active', result_price ?? null, notes ?? null];
+  if (region !== undefined)     { fields.push('region=?');     vals.push(region); }
+  if (tracking_id !== undefined){ fields.push('tracking_id=?'); vals.push(tracking_id); }
+  vals.push(req.params.id);
+  db.prepare(`UPDATE portfolio_listings SET ${fields.join(',')} WHERE id=?`).run(...vals);
   res.json(db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id));
 });
 
@@ -765,7 +783,7 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(trackId,
     body.address || listing.address, body.suburb || listing.suburb,
-    body.region || null, body.asset_class || listing.asset_class,
+    body.region || listing.region || null, body.asset_class || listing.asset_class,
     'Auction', body.status || 'Active Campaign',
     body.price_guide || listing.price_guide || null,
     body.net_rent || listing.net_rent || null,

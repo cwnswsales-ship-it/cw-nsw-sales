@@ -1118,10 +1118,11 @@ async function api(method, path, body) {
     return r.json();
   } catch(e) { console.error(e); return null; }
 }
-const GET  = p      => api('GET', p);
-const POST = (p, b) => api('POST', p, b);
-const PUT  = (p, b) => api('PUT', p, b);
-const DEL  = p      => api('DELETE', p);
+const GET   = p      => api('GET', p);
+const POST  = (p, b) => api('POST', p, b);
+const PUT   = (p, b) => api('PUT', p, b);
+const PATCH = (p, b) => api('PATCH', p, b);
+const DEL   = p      => api('DELETE', p);
 
 // ═══════════════════════════════════════════════════════════════
 // AUTH
@@ -3271,13 +3272,18 @@ function renderPortfolioTable(data) {
     const agents = [l.agent1, l.firm1].filter(Boolean).join(' / ');
     const agents2 = l.agent2 ? `<br><span style="color:var(--muted);font-size:11px">${esc(l.agent2)}${l.firm2 ? ' / ' + esc(l.firm2) : ''}</span>` : '';
 
+    const region = l.region || suburbToRegion(l.suburb);
+
     return `<tr id="prow-${l.id}">
       <td class="td-addr">
         <div style="font-weight:700">${esc(l.tenant || l.address || '–')}</div>
         ${l.tenant && l.address ? `<small>${esc(l.address)}</small>` : ''}
         ${l.portfolio ? `<small style="color:var(--accent);font-size:10px;font-weight:700">${esc(l.portfolio)}</small>` : ''}
       </td>
-      <td>${esc(l.suburb || '–')}</td>
+      <td>
+        <div>${esc(l.suburb || '–')}</div>
+        ${region ? `<small style="color:var(--muted);font-size:10px">${esc(region)}</small>` : ''}
+      </td>
       <td><span class="pi-state-badge ${stateCls}">${esc(l.state || '–')}</span></td>
       <td>${assetBadge(l.asset_class)}</td>
       <td class="td-mono">${l.net_rent ? '$' + fmt(l.net_rent) : '–'}</td>
@@ -3290,15 +3296,17 @@ function renderPortfolioTable(data) {
         <select class="pi-status-select ${statusCls}" onchange="setPortfolioStatus('${l.id}', this.value, this)">
           <option value="Active"     ${l.status==='Active'     ?'selected':''}>Active</option>
           <option value="Tracking"   ${l.status==='Tracking'   ?'selected':''}>Tracking</option>
-          <option value="Sold"       ${l.status==='Sold'       ?'selected':''}>Sold</option>
+          <option value="Sold"       ${l.status==='Sold'       ?'selected':''}>Sold ✓</option>
           <option value="Passed In"  ${l.status==='Passed In'  ?'selected':''}>Passed In</option>
           <option value="Withdrawn"  ${l.status==='Withdrawn'  ?'selected':''}>Withdrawn</option>
         </select>
       </td>
       <td class="td-truncate" style="max-width:130px">${esc(agents)}${agents2}</td>
       <td class="td-actions">
-        <button class="btn btn-secondary btn-sm" onclick="trackPortfolioItem('${l.id}')" title="Add to Campaigns tracker"
-          ${l.status === 'Tracking' ? 'disabled style="opacity:.5"' : ''}>Track</button>
+        <button class="btn btn-secondary btn-sm" onclick="trackPortfolioItem('${l.id}')" title="${l.status === 'Tracking' ? 'Re-open campaign details' : 'Add to Campaigns tracker'}"
+          style="${l.status === 'Tracking' ? 'border-color:var(--info);color:var(--info)' : ''}">
+          ${l.status === 'Tracking' ? '✓ Tracking' : 'Track'}
+        </button>
         <button class="btn btn-danger btn-sm" onclick="deletePortfolioItem('${l.id}')">✕</button>
       </td>
     </tr>`;
@@ -3373,6 +3381,8 @@ async function processPortfolioPDF(file) {
     setPortfolioUploadState('error', result?.error || 'Extraction failed — check ANTHROPIC_API_KEY is set in Railway.');
     return;
   }
+  // Fill in any missing regions from the suburb lookup
+  result.listings.forEach(l => { if (!l.region && l.suburb) l.region = suburbToRegion(l.suburb); });
   setPortfolioUploadState('loading', `Saving ${result.count} properties to database…`);
   const saveRes = await POST('/portfolio/bulk', { listings: result.listings });
   if (!saveRes || saveRes.error) {
@@ -3383,17 +3393,146 @@ async function processPortfolioPDF(file) {
   loadPortfolio();
 }
 
+function piStatusCls(status) {
+  return { 'Active':'pi-status-active','Tracking':'pi-status-tracking','Sold':'pi-status-sold','Passed In':'pi-status-passed','Withdrawn':'pi-status-withdrawn' }[status] || 'pi-status-active';
+}
+
 async function setPortfolioStatus(id, status, selectEl) {
-  if (selectEl) {
-    selectEl.className = 'pi-status-select ' + ({
-      'Active': 'pi-status-active', 'Tracking': 'pi-status-tracking',
-      'Sold': 'pi-status-sold', 'Passed In': 'pi-status-passed', 'Withdrawn': 'pi-status-withdrawn'
-    }[status] || 'pi-status-active');
+  const listing = S.portfolioData.find(l => l.id === id);
+  if (!listing) return;
+
+  if (status === 'Passed In') {
+    await handlePortfolioPassedIn(listing, id, selectEl);
+    return;
   }
+
+  if (status === 'Sold') {
+    await handlePortfolioSold(listing, id, selectEl);
+    return;
+  }
+
+  if (status === 'Withdrawn' && listing.tracking_id) {
+    await PATCH('/tracking/' + listing.tracking_id + '/status', { status: 'Withdrawn' });
+  }
+
+  if (selectEl) selectEl.className = 'pi-status-select ' + piStatusCls(status);
   await PUT('/portfolio/' + id, { status });
   const idx = S.portfolioData.findIndex(l => l.id === id);
   if (idx >= 0) S.portfolioData[idx].status = status;
   updatePortfolioStats(S.portfolioData);
+  renderPortfolioTable(S.portfolioData);
+}
+
+async function handlePortfolioPassedIn(listing, id, selectEl) {
+  const label = listing.tenant || listing.address || 'this property';
+  if (!confirm(`Mark as Passed In and add ${label} to Campaigns for follow-up tracking?`)) {
+    // Revert select to previous value
+    if (selectEl) { selectEl.value = listing.status; selectEl.className = 'pi-status-select ' + piStatusCls(listing.status); }
+    return;
+  }
+
+  // Update portfolio status
+  await PUT('/portfolio/' + id, { status: 'Passed In' });
+
+  // Create a new campaign in tracking
+  const region = listing.region || suburbToRegion(listing.suburb);
+  const auctionStr = listing.auction_date ? new Date(listing.auction_date).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'}) : '';
+  const campaign = await POST('/tracking', {
+    address: listing.address || listing.tenant || '',
+    suburb:  listing.suburb || '',
+    region:  region || '',
+    asset_class: mapPortfolioAsset(listing.asset_class),
+    process: 'Private Treaty',
+    status:  'Active Campaign',
+    price_guide: listing.price_guide || null,
+    net_rent: listing.net_rent || null,
+    estimated_yield: listing.yield_percent || null,
+    wale:    listing.wale || null,
+    land_area: listing.land_area || null,
+    floor_area: listing.floor_area || null,
+    vendor:  listing.tenant || null,
+    agent1:  listing.agent1 || null,
+    firm1:   listing.firm1  || null,
+    agent2:  listing.agent2 || null,
+    firm2:   listing.firm2  || null,
+    year:    new Date().getFullYear(),
+    notes:   [`Passed in at auction${auctionStr ? ' ' + auctionStr : ''}.`, listing.portfolio, listing.notes].filter(Boolean).join(' '),
+  });
+
+  const idx = S.portfolioData.findIndex(l => l.id === id);
+  if (idx >= 0) {
+    S.portfolioData[idx].status = 'Passed In';
+    if (campaign && !campaign.error) S.portfolioData[idx].tracking_id = campaign.id;
+  }
+  if (selectEl) selectEl.className = 'pi-status-select ' + piStatusCls('Passed In');
+  updatePortfolioStats(S.portfolioData);
+  renderPortfolioTable(S.portfolioData);
+  showToast('Passed In — added to Campaigns for follow-up');
+}
+
+async function handlePortfolioSold(listing, id, selectEl) {
+  const label = listing.tenant || listing.address || 'this property';
+  const body = `<div style="display:flex;flex-direction:column;gap:14px">
+    <p style="color:var(--muted);font-size:13px">Record the result for <strong>${esc(label)}</strong></p>
+    <div>
+      <label class="form-label">Sale Price</label>
+      <input class="form-input" id="sold-price" type="number" placeholder="e.g. 4250000">
+    </div>
+    <div>
+      <label class="form-label">Purchaser (optional)</label>
+      <input class="form-input" id="sold-purchaser" placeholder="Purchaser name">
+    </div>
+    <div>
+      <label class="form-label">Exchange Date (optional)</label>
+      <input class="form-input" id="sold-date" type="date">
+    </div>
+  </div>`;
+
+  openModal(`Record Sale — ${esc(label)}`, body, async () => {
+    const price     = parseFloat(document.getElementById('sold-price')?.value) || null;
+    const purchaser = document.getElementById('sold-purchaser')?.value || null;
+    const exchDate  = document.getElementById('sold-date')?.value || null;
+    const region    = listing.region || suburbToRegion(listing.suburb);
+
+    // Update portfolio
+    await PUT('/portfolio/' + id, { status: 'Sold', result_price: price });
+
+    // If already tracked in campaigns, convert to sale
+    if (listing.tracking_id && price) {
+      await POST('/tracking/' + listing.tracking_id + '/sell', {
+        price, purchaser, exchange_date: exchDate,
+        yield_percent: listing.yield_percent, wale: listing.wale,
+        net_rent: listing.net_rent, land_area: listing.land_area, floor_area: listing.floor_area,
+        year: exchDate ? new Date(exchDate).getFullYear() : new Date().getFullYear(),
+      });
+    } else if (price) {
+      // Not yet in campaigns — add directly to sales
+      await POST('/sales', {
+        address: listing.address || listing.tenant || '',
+        suburb: listing.suburb, region, asset_class: mapPortfolioAsset(listing.asset_class),
+        process: 'Auction', status: 'Sold', price,
+        price_guide: listing.price_guide, net_rent: listing.net_rent,
+        yield_percent: listing.yield_percent, wale: listing.wale,
+        land_area: listing.land_area, floor_area: listing.floor_area,
+        purchaser, exchange_date: exchDate,
+        agent1: listing.agent1, firm1: listing.firm1,
+        agent2: listing.agent2, firm2: listing.firm2,
+        year: exchDate ? new Date(exchDate).getFullYear() : new Date().getFullYear(),
+        notes: [listing.tenant, listing.portfolio, listing.notes].filter(Boolean).join(' | '),
+      });
+    }
+
+    closeModal();
+    const idx = S.portfolioData.findIndex(l => l.id === id);
+    if (idx >= 0) { S.portfolioData[idx].status = 'Sold'; S.portfolioData[idx].result_price = price; }
+    if (selectEl) selectEl.className = 'pi-status-select ' + piStatusCls('Sold');
+    updatePortfolioStats(S.portfolioData);
+    renderPortfolioTable(S.portfolioData);
+    showToast(price ? 'Sold — added to Sales Database' : 'Marked as Sold');
+  });
+
+  // Revert select while modal is open
+  if (selectEl) { selectEl.value = listing.status; selectEl.className = 'pi-status-select ' + piStatusCls(listing.status); }
 }
 
 async function deletePortfolioItem(id) {
@@ -3417,7 +3556,7 @@ function trackPortfolioItem(id) {
   const prefill = {
     address: listing.address || (listing.tenant ? listing.tenant + ', ' + (listing.suburb||'') : ''),
     suburb: listing.suburb || '',
-    region: null,
+    region: listing.region || suburbToRegion(listing.suburb) || '',
     asset_class: mapPortfolioAsset(listing.asset_class),
     process: 'Auction',
     status: 'Active Campaign',
@@ -3450,7 +3589,7 @@ function trackPortfolioItem(id) {
 
 function mapPortfolioAsset(cls) {
   const m = {
-    'Supermarket': 'Retail', 'Convenience Retail': 'Service Station',
+    'Supermarket': 'Retail', 'Convenience Retail': 'Retail',
     'Service Station': 'Service Station', 'Fast Food/QSR': 'Fast Food/QSR',
     'Healthcare': 'Medical/Healthcare', 'Childcare': 'Childcare',
     'Fitness': 'Commercial', 'Pub/Hotel': 'Pub/Hotel',
@@ -3458,6 +3597,27 @@ function mapPortfolioAsset(cls) {
     'Retail': 'Retail', 'Commercial': 'Commercial', 'Other': 'Commercial'
   };
   return m[cls] || 'Commercial';
+}
+
+// ── Suburb → Region lookup ────────────────────────────────────────────────────
+function suburbToRegion(suburb) {
+  if (!suburb) return null;
+  const s = suburb.toLowerCase().trim();
+  const map = {
+    'CBD/City':           ['sydney','haymarket','pyrmont','ultimo','barangaroo','the rocks','circular quay','surry hills','darlinghurst','woolloomooloo','potts point','elizabeth bay','kings cross','waterloo','zetland','redfern','chippendale','glebe','camperdown','broadway','millers point','dawes point','walsh bay'],
+    'Eastern Suburbs':    ['bondi','bondi beach','bondi junction','double bay','rose bay','vaucluse','woollahra','paddington','edgecliff','randwick','maroubra','coogee','bronte','waverley','tamarama','bellevue hill','point piper','dover heights','south coogee','clovelly','kensington','kingsford','little bay','malabar','la perouse','eastgardens','pagewood','daceyville','rosebery','beaconsfield','zetland','waterloo','erskineville','alexandria','mascot','botany'],
+    'Inner West':         ['newtown','marrickville','petersham','leichhardt','annandale','stanmore','enmore','dulwich hill','ashfield','summer hill','haberfield','rozelle','balmain','lilyfield','birchgrove','forest lodge','tempe','st peters','sydenham','wolli creek','arncliffe','turrella','rockdale','bardwell park','bardwell valley','bexley','kogarah','allawah','carlton','hurstville','beverly hills','kingsgrove'],
+    'North Shore':        ['north sydney','st leonards','crows nest','neutral bay','cremorne','mosman','chatswood','artarmon','willoughby','lane cove','greenwich','wollstonecraft','waverton','milsons point','kirribilli','pymble','gordon','turramurra','wahroonga','north turramurra','st ives','killara','lindfield','roseville','hornsby','waitara','asquith','mount colah','berowra','north wahroonga','warrawee','south turramurra','cheltenham','pennant hills','thornleigh','normanhurst'],
+    'Northern Beaches':   ['manly','dee why','collaroy','narrabeen','mona vale','newport','bayview','church point','terrey hills','frenchs forest','brookvale','warriewood','avalon','whale beach','palm beach','bilgola','curl curl','queenscliff','freshwater','harbord','balgowlah','fairlight','seaforth','clontarf','north manly','cromer','beacon hill','allambie heights','oxford falls','davidson','forestville'],
+    'Western Sydney':     ['parramatta','westmead','north parramatta','harris park','auburn','lidcombe','homebush','strathfield','burwood','concord','five dock','drummoyne','rhodes','meadowbank','ryde','west ryde','eastwood','epping','merrylands','granville','south granville','woodville','guildford','yennora','fairfield','cabramatta','canley vale','canley heights','bonnyrigg','wetherill park','smithfield','villawood','chester hill','bankstown','yagoona','revesby','padstow','panania','penrith','st marys','blacktown','seven hills','kings langley','baulkham hills','rooty hill','doonside','mount druitt','tregear','bidwill','hebersham','emerton','plumpton','quakers hill','stanhope gardens','parklea','rouse hill'],
+    'Hills District':     ['castle hill','dural','galston','kellyville','bella vista','norwest','glenwood','schofields','vineyard','riverstone','marsden park','winston hills','west pennant hills','cherrybrook','beecroft','carlingford','oatlands','telopea','dundas','ermington','south windsor','windsor','richmond','bligh park'],
+    'Southern Sydney':    ['cronulla','miranda','sutherland','engadine','menai','caringbah','gymea','como','jannali','kirrawee','grays point','bonnet bay','illawong','loftus','yarrawarrah','waterfall','heathcote','sand point'],
+    'South West Sydney':  ['liverpool','moorebank','chipping norton','milperra','padstow heights','condell park','bass hill','mount pritchard','green valley','busby','miller','cartwright','sadleir','macquarie fields','campbelltown','camden','narellan','oran park','mount annan','leppington','edmondson park','minto','ingleburn','glenfield','casula','prestons','warwick farm','georges hall','lansdowne','lansdowne rd'],
+  };
+  for (const [region, suburbs] of Object.entries(map)) {
+    if (suburbs.some(sub => s === sub || s.startsWith(sub + ' ') || s.endsWith(' ' + sub))) return region;
+  }
+  return 'Regional NSW';
 }
 
 // ═══════════════════════════════════════════════════════════════
