@@ -911,6 +911,8 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <div class="sub" id="pi-subtitle">Upload a portfolio PDF to extract all investment listings for tracking</div>
         </div>
         <div class="header-actions">
+          <span id="pi-backup-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"></span>
+          <button class="btn btn-secondary btn-sm" id="pi-backup-btn" onclick="triggerBackup()" title="Save all data to cloud now">☁ Backup Now</button>
           <button class="btn btn-secondary btn-sm" onclick="clearPortfolioListings()" title="Remove all extracted listings">Clear All</button>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('portfolio-file-input').click()">↑ Upload Portfolio PDF</button>
           <input type="file" id="portfolio-file-input" accept=".pdf" class="hidden" onchange="portfolioFileSelected(event)">
@@ -1160,7 +1162,7 @@ function showSection(name) {
   if (name === 'analytics') loadAnalytics();
   if (name === 'agents') loadAgentAnalytics();
   if (name === 'brains') { /* loads on demand */ }
-  if (name === 'premium') { updatePortfolioCountdowns(); loadPortfolio(); }
+  if (name === 'premium') { updatePortfolioCountdowns(); loadPortfolio(); loadBackupStatus(); }
   if (name === 'newlistings') loadNewListings();
 }
 
@@ -3106,6 +3108,66 @@ document.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// CLOUD BACKUP STATUS
+// ═══════════════════════════════════════════════════════════════
+async function loadBackupStatus() {
+  const data = await GET('/admin/backup-status');
+  if (!data) return;
+  renderBackupStatus(data);
+}
+
+function renderBackupStatus(data) {
+  const el = document.getElementById('pi-backup-status');
+  const btn = document.getElementById('pi-backup-btn');
+  if (!el) return;
+
+  if (!data.bucketOk) {
+    el.innerHTML = `<span style="color:var(--danger)">⚠ Bucket not configured — data will be lost on redeploy</span>`;
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+
+  if (data.lastStatus === 'never') {
+    el.innerHTML = `<span style="color:var(--accent)">☁ Not yet backed up</span>`;
+  } else if (data.lastStatus === 'ok' && data.lastTime) {
+    const ago = timeSince(new Date(data.lastTime));
+    el.innerHTML = `<span style="color:var(--success)">☁ Backed up ${ago}</span>
+      <span style="color:var(--muted);font-size:10px">${data.counts.sales}s · ${data.counts.tracking}c · ${data.counts.portfolio}p</span>`;
+  } else if (data.lastStatus === 'error') {
+    el.innerHTML = `<span style="color:var(--danger)" title="${esc(data.lastError||'')}">☁ Backup failed</span>`;
+  }
+}
+
+function timeSince(date) {
+  const secs = Math.floor((new Date() - date) / 1000);
+  if (secs < 60)   return 'just now';
+  if (secs < 3600) return Math.floor(secs / 60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs / 3600) + 'h ago';
+  return Math.floor(secs / 86400) + 'd ago';
+}
+
+async function triggerBackup() {
+  const btn = document.getElementById('pi-backup-btn');
+  const el  = document.getElementById('pi-backup-status');
+  if (btn) { btn.disabled = true; btn.textContent = '☁ Saving…'; }
+  if (el)  el.innerHTML = '<span style="color:var(--muted)">Backing up…</span>';
+
+  const data = await POST('/admin/backup', {});
+  if (btn) { btn.disabled = false; btn.textContent = '☁ Backup Now'; }
+
+  if (!data) {
+    if (el) el.innerHTML = '<span style="color:var(--danger)">Backup failed — check connection</span>';
+    return;
+  }
+  if (data.error) {
+    if (el) el.innerHTML = `<span style="color:var(--danger)">⚠ ${esc(data.error)}</span>`;
+    return;
+  }
+  renderBackupStatus(data);
+  showToast('Data saved to cloud ☁');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PREMIUM INVESTMENTS TRACKER
 // ═══════════════════════════════════════════════════════════════
 const PORTFOLIO_AUCTIONS = [
@@ -3343,6 +3405,8 @@ async function processPortfolioPDF(file) {
   }
   setPortfolioUploadState('success', `${result.count} properties extracted and saved from ${file.name}`);
   loadPortfolio();
+  // Refresh backup status — server triggers backup immediately after bulk insert
+  setTimeout(loadBackupStatus, 3000);
 }
 
 function piStatusCls(status) {

@@ -744,6 +744,8 @@ app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
   });
   insertAll(listings);
   res.json({ success: true, inserted: listings.length });
+  // Backup immediately — don't lose freshly uploaded portfolio data on next redeploy
+  backupDb().catch(e => console.error('[db-backup] Post-upload backup failed:', e.message));
 });
 
 // Update portfolio listing status / result / region
@@ -965,29 +967,69 @@ function getS3() {
   return s3Client;
 }
 
+const backupState = { lastTime: null, lastStatus: 'never', lastError: null, inProgress: false };
+
 async function backupDb() {
   const s3 = getS3();
   const bucket = process.env.BUCKET_NAME;
-  if (!s3 || !bucket) return;
+  if (!s3 || !bucket) {
+    backupState.lastStatus = 'no-bucket';
+    return false;
+  }
+  if (backupState.inProgress) return false;
   const dbPath = path.join(DATA_DIR, 'sales.db');
-  if (!fs.existsSync(dbPath)) { console.log('[db-backup] sales.db not found, skipping'); return; }
+  if (!fs.existsSync(dbPath)) { console.log('[db-backup] sales.db not found, skipping'); return false; }
+  backupState.inProgress = true;
   try {
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const counts = {
+      sales:     db.prepare('SELECT COUNT(*) as c FROM sales').get().c,
+      tracking:  db.prepare('SELECT COUNT(*) as c FROM tracking').get().c,
+      portfolio: db.prepare('SELECT COUNT(*) as c FROM portfolio_listings').get().c,
+    };
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'sales.db', Body: fs.readFileSync(dbPath) }));
-    console.log('[db-backup] Database backed up to bucket');
+    backupState.lastTime   = new Date().toISOString();
+    backupState.lastStatus = 'ok';
+    backupState.lastError  = null;
+    console.log(`[db-backup] Backed up — sales:${counts.sales} tracking:${counts.tracking} portfolio:${counts.portfolio}`);
+    return true;
   } catch (e) {
+    backupState.lastStatus = 'error';
+    backupState.lastError  = e.message;
     console.error('[db-backup] Error:', e.message);
+    return false;
+  } finally {
+    backupState.inProgress = false;
   }
 }
 
-// Back up every 15 minutes
-setInterval(backupDb, 15 * 60 * 1000);
+// Back up every 5 minutes
+setInterval(backupDb, 5 * 60 * 1000);
 
 // Back up on Railway deploy shutdown signal
 process.on('SIGTERM', async () => {
   console.log('[shutdown] Backing up DB before exit...');
   await backupDb();
   process.exit(0);
+});
+
+app.get('/api/admin/backup-status', requireAuth, (req, res) => {
+  const bucketOk = !!(process.env.BUCKET_ENDPOINT_URL && process.env.BUCKET_NAME &&
+    process.env.BUCKET_ACCESS_KEY_ID && process.env.BUCKET_SECRET_ACCESS_KEY);
+  const counts = {
+    sales:     db.prepare('SELECT COUNT(*) as c FROM sales').get().c,
+    tracking:  db.prepare('SELECT COUNT(*) as c FROM tracking').get().c,
+    portfolio: db.prepare('SELECT COUNT(*) as c FROM portfolio_listings').get().c,
+  };
+  res.json({ ...backupState, bucketOk, counts });
+});
+
+app.post('/api/admin/backup', requireAuth, async (req, res) => {
+  if (!process.env.BUCKET_ENDPOINT_URL || !process.env.BUCKET_NAME) {
+    return res.status(503).json({ error: 'Bucket not configured. Add BUCKET_* variables in Railway.' });
+  }
+  const ok = await backupDb();
+  res.json({ ok, ...backupState });
 });
 
 
