@@ -963,6 +963,10 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <option value="">All Statuses</option>
           <option>Active</option><option>Tracking</option><option>Sold</option><option>Passed In</option><option>Withdrawn</option>
         </select>
+        <div class="ms-wrap" id="pi-suburbs-wrap">
+          <button class="ms-btn" id="pi-suburbs-btn" onclick="togglePortfolioSuburbDD()">All Suburbs</button>
+          <div class="ms-dropdown" id="pi-suburbs-dd"></div>
+        </div>
         <span class="filter-count" id="pi-count-label"></span>
       </div>
       <!-- Table -->
@@ -1061,6 +1065,7 @@ const S = {
   campaignTab: 'active',
   campaignProcess: '',
   portfolioData: [],
+  piSuburbs: new Set(),
   nlLastSearched: null,
   nlPending: [],
 };
@@ -1320,7 +1325,54 @@ document.addEventListener('click', e => {
       document.getElementById(prefix + '-years-dd').classList.remove('open');
     }
   });
+  const piWrap = document.getElementById('pi-suburbs-wrap');
+  if (piWrap && !piWrap.contains(e.target)) {
+    document.getElementById('pi-suburbs-dd').classList.remove('open');
+  }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// PORTFOLIO SUBURB MULTI-SELECT
+// ═══════════════════════════════════════════════════════════════
+function initPortfolioSuburbMS() {
+  const suburbs = [...new Set(S.portfolioData.map(l => l.suburb || '').filter(Boolean))].sort();
+  renderPortfolioSuburbDD(suburbs);
+}
+
+function renderPortfolioSuburbDD(suburbs) {
+  const dd = document.getElementById('pi-suburbs-dd');
+  if (!dd) return;
+  dd.innerHTML = `<div class="ms-clear" onclick="clearPortfolioSuburbs()">Clear selection</div>` +
+    suburbs.map(s => `<label class="ms-option"><input type="checkbox" value="${s}" ${S.piSuburbs.has(s)?'checked':''}
+      onchange="togglePortfolioSuburb('${s.replace(/'/g,"\\'")}')"> ${s}</label>`).join('');
+}
+
+function togglePortfolioSuburbDD() {
+  const dd = document.getElementById('pi-suburbs-dd');
+  dd.classList.toggle('open');
+  const suburbs = [...new Set(S.portfolioData.map(l => l.suburb || '').filter(Boolean))].sort();
+  renderPortfolioSuburbDD(suburbs);
+}
+
+function togglePortfolioSuburb(suburb) {
+  if (S.piSuburbs.has(suburb)) S.piSuburbs.delete(suburb); else S.piSuburbs.add(suburb);
+  updatePortfolioSuburbBtn();
+  renderPortfolioTable(S.portfolioData);
+}
+
+function clearPortfolioSuburbs() {
+  S.piSuburbs.clear();
+  updatePortfolioSuburbBtn();
+  const dd = document.getElementById('pi-suburbs-dd');
+  if (dd) dd.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+  renderPortfolioTable(S.portfolioData);
+}
+
+function updatePortfolioSuburbBtn() {
+  const btn = document.getElementById('pi-suburbs-btn');
+  if (!btn) return;
+  btn.textContent = S.piSuburbs.size === 0 ? 'All Suburbs' : [...S.piSuburbs].sort().join(', ');
+}
 
 async function loadSalesYears() {}
 async function loadTrackingYears() {}
@@ -3217,6 +3269,7 @@ async function loadPortfolio() {
   const data = await GET('/portfolio');
   if (!data) return;
   S.portfolioData = data;
+  initPortfolioSuburbMS();
   renderPortfolioTable(data);
   updatePortfolioStats(data);
   const subtitle = document.getElementById('pi-subtitle');
@@ -3254,6 +3307,7 @@ function renderPortfolioTable(data) {
   if (stateF)  filtered = filtered.filter(l => l.state === stateF);
   if (assetF)  filtered = filtered.filter(l => l.asset_class === assetF);
   if (statusF) filtered = filtered.filter(l => l.status === statusF);
+  if (S.piSuburbs.size) filtered = filtered.filter(l => S.piSuburbs.has(l.suburb || ''));
 
   document.getElementById('pi-count-label').textContent = `${filtered.length} of ${data.length} listing${data.length !== 1 ? 's' : ''}`;
 
