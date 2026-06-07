@@ -881,6 +881,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="header-actions">
           <span id="pi-backup-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"></span>
           <button class="btn btn-secondary btn-sm" id="pi-backup-btn" onclick="triggerBackup()" title="Save all data to cloud now">☁ Backup Now</button>
+          <button class="btn btn-secondary btn-sm" id="pi-bucket-test-btn" onclick="testBucket()" title="Verify bucket can read & write">Test Bucket</button>
           <button class="btn btn-secondary btn-sm" id="pi-track-all-btn" onclick="trackAllPortfolio()" title="Track all untracked listings in Campaigns">Track All</button>
           <button class="btn btn-secondary btn-sm" onclick="clearPortfolioListings()" title="Remove all extracted listings">Clear All</button>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('portfolio-file-input').click()">↑ Upload Portfolio PDF</button>
@@ -930,7 +931,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </select>
         <select class="filter-select" id="pi-status-filter" onchange="renderPortfolioTable(S.portfolioData)">
           <option value="">All Statuses</option>
-          <option>Active</option><option>Tracking</option><option>Sold</option><option>Passed In</option><option>Withdrawn</option>
+          <option>Active</option><option>Sold</option><option>Passed In</option><option>Withdrawn</option>
         </select>
         <div class="ms-wrap" id="pi-suburbs-wrap">
           <button class="ms-btn" id="pi-suburbs-btn" onclick="togglePortfolioSuburbDD()">All Suburbs</button>
@@ -3139,6 +3140,25 @@ async function triggerBackup() {
   showToast('Data saved to cloud ☁');
 }
 
+async function testBucket() {
+  const btn = document.getElementById('pi-bucket-test-btn');
+  const el  = document.getElementById('pi-backup-status');
+  if (btn) { btn.disabled = true; btn.textContent = 'Testing…'; }
+  if (el)  el.innerHTML = '<span style="color:var(--muted)">Testing bucket connection…</span>';
+  const data = await GET('/admin/bucket-test');
+  if (btn) { btn.disabled = false; btn.textContent = 'Test Bucket'; }
+  if (!data) {
+    if (el) el.innerHTML = '<span style="color:var(--danger)">⚠ Test failed — no response</span>';
+    return;
+  }
+  if (data.ok) {
+    if (el) el.innerHTML = `<span style="color:var(--success)">✓ Bucket connected — read/write OK (${esc(data.bucket)})</span>`;
+    showToast('Bucket connected ✓');
+  } else {
+    if (el) el.innerHTML = `<span style="color:var(--danger)">⚠ Bucket error: ${esc(data.error)}</span>`;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // PREMIUM INVESTMENTS TRACKER
 // ═══════════════════════════════════════════════════════════════
@@ -3254,7 +3274,10 @@ function renderPortfolioTable(data) {
   const assetF = document.getElementById('pi-asset-filter')?.value || '';
   const statusF = document.getElementById('pi-status-filter')?.value || '';
 
-  let filtered = data;
+  // Tracked items have moved to Campaigns — always hide them from portfolio view
+  let filtered = data.filter(l => l.status !== 'Tracking');
+  const activeCount = filtered.length;
+
   if (search) filtered = filtered.filter(l =>
     (l.tenant||'').toLowerCase().includes(search) ||
     (l.address||'').toLowerCase().includes(search) ||
@@ -3265,13 +3288,17 @@ function renderPortfolioTable(data) {
   if (statusF) filtered = filtered.filter(l => l.status === statusF);
   if (S.piSuburbs.size) filtered = filtered.filter(l => S.piSuburbs.has(l.suburb || ''));
 
-  document.getElementById('pi-count-label').textContent = `${filtered.length} of ${data.length} listing${data.length !== 1 ? 's' : ''}`;
+  const hasFilters = search || stateF || assetF || statusF || S.piSuburbs.size;
+  document.getElementById('pi-count-label').textContent =
+    hasFilters ? `${filtered.length} of ${activeCount} listing${activeCount !== 1 ? 's' : ''}` :
+    activeCount ? `${activeCount} listing${activeCount !== 1 ? 's' : ''}` : '';
 
   const tbody = document.getElementById('portfolio-tbody');
   if (!filtered.length) {
+    const allTracked = data.length > 0 && activeCount === 0;
     tbody.innerHTML = `<tr><td colspan="13" class="empty-state" style="padding:50px 20px">
-      <h3>${data.length ? 'No results match your filters' : 'No portfolio loaded'}</h3>
-      <p>${data.length ? 'Try clearing the filters' : 'Drop a CBRE Burgess Rawson Portfolio PDF above'}</p>
+      <h3>${allTracked ? 'All listings moved to Campaigns' : data.length ? 'No results match your filters' : 'No portfolio loaded'}</h3>
+      <p>${allTracked ? 'Every listing from this portfolio is now being tracked in Active Campaigns.' : data.length ? 'Try clearing the filters' : 'Drop a CBRE Burgess Rawson Portfolio PDF above'}</p>
     </td></tr>`;
     return;
   }
@@ -3319,7 +3346,6 @@ function renderPortfolioTable(data) {
       <td>
         <select class="pi-status-select ${statusCls}" onchange="setPortfolioStatus('${l.id}', this.value, this)">
           <option value="Active"     ${l.status==='Active'     ?'selected':''}>Active</option>
-          <option value="Tracking"   ${l.status==='Tracking'   ?'selected':''}>Tracking</option>
           <option value="Sold"       ${l.status==='Sold'       ?'selected':''}>Sold ✓</option>
           <option value="Passed In"  ${l.status==='Passed In'  ?'selected':''}>Passed In</option>
           <option value="Withdrawn"  ${l.status==='Withdrawn'  ?'selected':''}>Withdrawn</option>
@@ -3605,22 +3631,23 @@ function trackPortfolioItem(id) {
     const data = await POST('/portfolio/' + id + '/track', body);
     if (data && !data.error) {
       closeModal();
-      const idx = S.portfolioData.findIndex(l => l.id === id);
-      if (idx >= 0) S.portfolioData[idx].status = 'Tracking';
+      S.portfolioData = S.portfolioData.filter(l => l.id !== id);
       renderPortfolioTable(S.portfolioData);
       updatePortfolioStats(S.portfolioData);
+      showToast('Added to Active Campaigns');
     }
   });
 }
 
 async function trackAllPortfolio() {
-  const untracked = S.portfolioData.filter(l => l.status !== 'Tracking' && l.status !== 'Sold' && l.status !== 'Withdrawn');
+  const untracked = S.portfolioData.filter(l => l.status !== 'Tracking' && l.status !== 'Sold' && l.status !== 'Withdrawn' && l.status !== 'Passed In');
   if (!untracked.length) { showToast('All listings are already tracked'); return; }
-  if (!confirm(`Track all ${untracked.length} untracked listing${untracked.length !== 1 ? 's' : ''} in the Campaigns tracker?`)) return;
+  if (!confirm(`Track all ${untracked.length} listing${untracked.length !== 1 ? 's' : ''} in Active Campaigns and remove them from this portfolio view?`)) return;
 
   const btn = document.getElementById('pi-track-all-btn');
   if (btn) { btn.disabled = true; btn.textContent = `Tracking 0/${untracked.length}…`; }
 
+  const trackedIds = new Set();
   let done = 0;
   for (const listing of untracked) {
     const body = {
@@ -3644,14 +3671,12 @@ async function trackAllPortfolio() {
       notes: [listing.tenant, listing.portfolio, listing.notes].filter(Boolean).join(' | '),
     };
     const data = await POST('/portfolio/' + listing.id + '/track', body);
-    if (data && !data.error) {
-      const idx = S.portfolioData.findIndex(l => l.id === listing.id);
-      if (idx >= 0) { S.portfolioData[idx].status = 'Tracking'; if (data.tracking) S.portfolioData[idx].tracking_id = data.tracking.id; }
-    }
+    if (data && !data.error) trackedIds.add(listing.id);
     done++;
     if (btn) btn.textContent = `Tracking ${done}/${untracked.length}…`;
   }
 
+  S.portfolioData = S.portfolioData.filter(l => !trackedIds.has(l.id));
   if (btn) { btn.disabled = false; btn.textContent = 'Track All'; }
   renderPortfolioTable(S.portfolioData);
   updatePortfolioStats(S.portfolioData);

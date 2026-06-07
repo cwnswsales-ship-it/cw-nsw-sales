@@ -1197,6 +1197,25 @@ app.post('/api/admin/backup', requireAuth, async (req, res) => {
   res.json({ ok, ...backupState });
 });
 
+// Bucket connectivity test — write a tiny probe object and read it back
+app.get('/api/admin/bucket-test', requireAuth, async (req, res) => {
+  const s3 = getS3();
+  const bucket = process.env.BUCKET_NAME;
+  if (!s3 || !bucket) return res.json({ ok: false, error: 'Bucket env vars not set' });
+  try {
+    const { PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const probe = `probe-${Date.now()}`;
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: '.probe', Body: probe, ContentType: 'text/plain' }));
+    const r = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: '.probe' }));
+    const chunks = []; for await (const c of r.Body) chunks.push(c);
+    const back = Buffer.concat(chunks).toString();
+    if (back !== probe) return res.json({ ok: false, error: 'Read-back mismatch' });
+    res.json({ ok: true, message: 'Bucket read/write verified ✓', endpoint: process.env.BUCKET_ENDPOINT_URL, bucket });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
 
 function applySeed() {
   // Prefer a JSON snapshot downloaded from the bucket (more recent than the committed seed)
