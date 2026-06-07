@@ -133,6 +133,13 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS deletions (
+    id TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    deleted_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (id, table_name)
+  );
 `);
 
 module.exports = db;

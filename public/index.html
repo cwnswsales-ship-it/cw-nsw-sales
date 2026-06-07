@@ -3108,7 +3108,7 @@ function renderBackupStatus(data) {
   if (!el) return;
 
   if (!data.bucketOk) {
-    el.innerHTML = `<span style="color:var(--danger)">⚠ Bucket not configured — data will be lost on redeploy</span>`;
+    el.innerHTML = `<span style="color:var(--danger)" title="Go to Railway → cw-nsw-sales → Variables and add the 5 BUCKET_* environment variables">⚠ Bucket not configured — add BUCKET_* vars in Railway to prevent data loss</span>`;
     if (btn) btn.style.display = 'none';
     return;
   }
@@ -3202,7 +3202,43 @@ function updatePortfolioCountdowns() {
 async function loadPortfolio() {
   const data = await GET('/portfolio');
   if (!data) return;
+
+  if (data.length === 0) {
+    // Server has no portfolio data — offer to restore from localStorage backup
+    const raw = localStorage.getItem('pi_local_backup');
+    if (raw) {
+      try {
+        const backup = JSON.parse(raw);
+        if (backup.listings && backup.listings.length > 0) {
+          const msg = `Your server lost its portfolio data (redeploy wiped the database).\n\n` +
+            `A local backup of ${backup.listings.length} listings from "${backup.portfolio || 'last upload'}" is available.\n\n` +
+            `Restore it now?`;
+          if (confirm(msg)) {
+            const saveRes = await POST('/portfolio/bulk', { listings: backup.listings });
+            if (saveRes && !saveRes.error) {
+              showToast(`Restored ${backup.listings.length} listings from local backup`);
+              loadPortfolio();
+              return;
+            }
+          }
+        }
+      } catch (e) { /* corrupt backup — ignore */ }
+    }
+  }
+
   S.portfolioData = data;
+  // Save to localStorage as a safety net against server-side data loss
+  if (data.length > 0) {
+    const portfolios = [...new Set(data.map(l => l.portfolio).filter(Boolean))];
+    try {
+      localStorage.setItem('pi_local_backup', JSON.stringify({
+        saved_at: new Date().toISOString(),
+        portfolio: portfolios.join(', '),
+        listings: data,
+      }));
+    } catch (e) { /* storage full — not critical */ }
+  }
+
   initPortfolioSuburbMS();
   renderPortfolioTable(data);
   updatePortfolioStats(data);

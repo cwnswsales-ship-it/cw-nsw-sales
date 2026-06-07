@@ -276,6 +276,8 @@ app.patch('/api/tracking/:id/status', requireAuth, (req, res) => {
 
 app.delete('/api/tracking/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM tracking WHERE id = ?').run(req.params.id);
+  db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'tracking')").run(req.params.id);
+  backupDb().catch(() => {});
   res.json({ ok: true });
 });
 
@@ -1001,6 +1003,7 @@ async function backupDb() {
       sales:             db.prepare('SELECT * FROM sales ORDER BY id').all(),
       tracking:          db.prepare('SELECT * FROM tracking ORDER BY id').all(),
       portfolio_listings: db.prepare('SELECT * FROM portfolio_listings ORDER BY id').all(),
+      deletions:         db.prepare('SELECT * FROM deletions').all(),
     };
     await s3.send(new PutObjectCommand({
       Bucket: bucket, Key: 'seed_backup.json',
@@ -1066,7 +1069,14 @@ function applySeed() {
     console.error('[seed] Failed to parse seed file:', e.message);
     return;
   }
-  const { sales = [], tracking = [], portfolio_listings = [] } = data;
+  const { sales = [], tracking = [], portfolio_listings = [], deletions = [] } = data;
+
+  // Restore deletions table first so subsequent seed steps respect them
+  try {
+    const ins = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name, deleted_at) VALUES (@id, @table_name, @deleted_at)");
+    db.transaction(() => { for (const r of deletions) ins.run(r); })();
+    if (deletions.length) console.log(`[seed] ${deletions.length} deletions restored`);
+  } catch (e) { console.error('[seed] Deletions error:', e.message); }
 
   // Each table seeded independently so one failure never blocks the others
   try {
@@ -1085,6 +1095,9 @@ function applySeed() {
   } catch (e) { console.error('[seed] Sales error:', e.message); }
 
   try {
+    const deletedIds = new Set(
+      db.prepare("SELECT id FROM deletions WHERE table_name='tracking'").all().map(r => r.id)
+    );
     const ins = db.prepare(`INSERT OR IGNORE INTO tracking (
       id,address,suburb,region,asset_class,process,status,price_guide,net_rent,
       estimated_yield,vendor,agent1,agent2,firm1,firm2,campaign_close_date,
@@ -1095,8 +1108,12 @@ function applySeed() {
       @expected_settlement_date,@year,@notes
     )`);
     let n = 0;
-    db.transaction(() => { for (const r of tracking) n += ins.run(r).changes; })();
-    console.log(`[seed] ${n}/${tracking.length} campaigns inserted`);
+    db.transaction(() => {
+      for (const r of tracking) {
+        if (!deletedIds.has(r.id)) n += ins.run(r).changes;
+      }
+    })();
+    console.log(`[seed] ${n}/${tracking.length} campaigns inserted (${deletedIds.size} deletions respected)`);
   } catch (e) { console.error('[seed] Tracking error:', e.message); }
 
   try {
