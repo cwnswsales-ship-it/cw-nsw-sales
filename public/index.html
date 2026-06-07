@@ -881,6 +881,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="header-actions">
           <span id="pi-backup-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"></span>
           <button class="btn btn-secondary btn-sm" id="pi-backup-btn" onclick="triggerBackup()" title="Save all data to cloud now">☁ Backup Now</button>
+          <button class="btn btn-secondary btn-sm" id="pi-track-all-btn" onclick="trackAllPortfolio()" title="Track all untracked listings in Campaigns">Track All</button>
           <button class="btn btn-secondary btn-sm" onclick="clearPortfolioListings()" title="Remove all extracted listings">Clear All</button>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('portfolio-file-input').click()">↑ Upload Portfolio PDF</button>
           <input type="file" id="portfolio-file-input" accept=".pdf" class="hidden" onchange="portfolioFileSelected(event)">
@@ -3588,6 +3589,51 @@ function trackPortfolioItem(id) {
       updatePortfolioStats(S.portfolioData);
     }
   });
+}
+
+async function trackAllPortfolio() {
+  const untracked = S.portfolioData.filter(l => l.status !== 'Tracking' && l.status !== 'Sold' && l.status !== 'Withdrawn');
+  if (!untracked.length) { showToast('All listings are already tracked'); return; }
+  if (!confirm(`Track all ${untracked.length} untracked listing${untracked.length !== 1 ? 's' : ''} in the Campaigns tracker?`)) return;
+
+  const btn = document.getElementById('pi-track-all-btn');
+  if (btn) { btn.disabled = true; btn.textContent = `Tracking 0/${untracked.length}…`; }
+
+  let done = 0;
+  for (const listing of untracked) {
+    const body = {
+      address: listing.address || (listing.tenant ? listing.tenant + ', ' + (listing.suburb||'') : ''),
+      suburb: listing.suburb || '',
+      region: listing.region || suburbToRegion(listing.suburb) || '',
+      asset_class: mapPortfolioAsset(listing.asset_class),
+      process: 'Auction',
+      status: 'Active Campaign',
+      price_guide: listing.price_guide || null,
+      net_rent: listing.net_rent || null,
+      estimated_yield: listing.yield_percent || null,
+      wale: listing.wale || null,
+      land_area: listing.land_area || null,
+      floor_area: listing.floor_area || null,
+      agent1: listing.agent1 || null,
+      firm1: listing.firm1 || null,
+      agent2: listing.agent2 || null,
+      firm2: listing.firm2 || null,
+      campaign_close_date: listing.auction_date || null,
+      notes: [listing.tenant, listing.portfolio, listing.notes].filter(Boolean).join(' | '),
+    };
+    const data = await POST('/portfolio/' + listing.id + '/track', body);
+    if (data && !data.error) {
+      const idx = S.portfolioData.findIndex(l => l.id === listing.id);
+      if (idx >= 0) { S.portfolioData[idx].status = 'Tracking'; if (data.tracking) S.portfolioData[idx].tracking_id = data.tracking.id; }
+    }
+    done++;
+    if (btn) btn.textContent = `Tracking ${done}/${untracked.length}…`;
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Track All'; }
+  renderPortfolioTable(S.portfolioData);
+  updatePortfolioStats(S.portfolioData);
+  showToast(`${done} listing${done !== 1 ? 's' : ''} added to Campaigns`);
 }
 
 function mapPortfolioAsset(cls) {
