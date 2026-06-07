@@ -362,33 +362,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .im-lib-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .im-lib-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 
-/* ── New Listings ── */
-.nl-status-bar{background:var(--navy);color:rgba(255,255,255,.55);font-size:12px;padding:12px 28px;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.nl-status-bar strong{color:#fff}
-.nl-grid{padding:24px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;align-items:start}
-.nl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:.15s}
-.nl-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:#cbd5e1}
-.nl-card-top{padding:14px 16px 10px;border-bottom:1px solid var(--border)}
-.nl-card-address{font-size:13px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px}
-.nl-card-suburb{font-size:11px;color:var(--muted)}
-.nl-card-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
-.nl-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
-.nl-badge.asset{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}
-.nl-badge.region{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
-.nl-card-desc{padding:10px 16px;font-size:12px;color:#374151;line-height:1.55;border-bottom:1px solid var(--border)}
-.nl-card-metrics{padding:8px 16px;display:flex;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
-.nl-metric{font-size:11px;color:var(--muted)}.nl-metric strong{color:var(--text);font-weight:700}
-.nl-card-agent{padding:6px 16px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)}
-.nl-card-agent span{color:var(--text);font-weight:600}
-.nl-card-actions{padding:10px 14px;display:flex;gap:7px;align-items:center}
-.nl-card-actions .btn-primary{flex:1;justify-content:center}
-.nl-empty{padding:60px 28px;text-align:center;color:var(--muted)}
-.nl-empty h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
-.nl-empty p{font-size:13px;line-height:1.6;max-width:440px;margin:0 auto}
-.nl-searching{padding:60px 28px;text-align:center;color:var(--muted)}
-.nl-spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:14px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.nl-error{background:#fff5f5;border:1px solid #fecaca;border-radius:6px;color:#991b1b;padding:14px 18px;margin:20px 28px;font-size:13px;line-height:1.5}
 
 /* ── Portfolio / Premium Investments ── */
 .pi-countdown-wrap{display:flex;gap:12px;padding:14px 28px;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap}
@@ -480,11 +453,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="nav-item" data-section="premium" onclick="showSection('premium')">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
         CBRE Portfolio
-      </div>
-      <div class="nav-item" data-section="newlistings" onclick="showSection('newlistings')">
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-        New Listings
-        <span class="nav-badge hidden" id="nl-badge">0</span>
       </div>
     </div>
     <div class="sidebar-footer">
@@ -997,38 +965,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       </div>
     </section>
 
-    <!-- ── New Listings ──────────────────────────────────────────── -->
-    <section id="section-newlistings" class="hidden">
-      <div class="sales-stats-bar">
-        <div class="ss-item"><div class="ss-val orange" id="nl-stat-pending">–</div><div class="ss-label">To Review</div></div>
-        <div class="ss-item"><div class="ss-val" id="nl-stat-tracked">–</div><div class="ss-label">Added to Campaigns</div></div>
-        <div class="ss-item"><div class="ss-val" id="nl-stat-dismissed">–</div><div class="ss-label">Dismissed</div></div>
-        <div class="ss-item" style="flex:2;border-right:none">
-          <div class="ss-val" style="font-size:12px;font-weight:500;color:rgba(255,255,255,.55);letter-spacing:0;line-height:1.5">AI searches Google for active NSW commercial investment listings and queues them for your review. Hit Search to find new ones — only properties you haven't seen before will appear.</div>
-        </div>
-      </div>
-      <div class="page-header">
-        <div>
-          <h1>New Listings</h1>
-          <div class="sub" id="nl-last-searched">NSW commercial investment properties · never searched</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-secondary btn-sm" id="nl-clear-btn" onclick="clearDismissed()">Clear Dismissed</button>
-          <button class="btn btn-primary" id="nl-search-btn" onclick="searchNewListings()">
-            <svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-            Search NSW
-          </button>
-        </div>
-      </div>
-      <div id="nl-status-bar" class="nl-status-bar hidden"></div>
-      <div id="nl-error" class="nl-error hidden"></div>
-      <div id="nl-body">
-        <div class="nl-empty">
-          <h3>Ready to search</h3>
-          <p>Click <strong>Search NSW</strong> to scan commercial property portals and agency sites for active NSW investment listings. New listings are added to this queue — you decide what's worth tracking.</p>
-        </div>
-      </div>
-    </section>
 
   </div><!-- /main-content -->
 </div><!-- /app -->
@@ -1066,8 +1002,7 @@ const S = {
   campaignProcess: '',
   portfolioData: [],
   piSuburbs: new Set(),
-  nlLastSearched: null,
-  nlPending: [],
+
 };
 
 const ASSET_CLASSES = ['Childcare','Commercial Office','Industrial','Retail','Strata Retail','Strata Office',
@@ -1136,7 +1071,6 @@ async function initApp() {
   loadDashboard();
   initYearMS('sf');
   initYearMS('tf');
-  loadNlBadge();
 }
 
 window.addEventListener('load', async () => {
@@ -1168,7 +1102,6 @@ function showSection(name) {
   if (name === 'agents') loadAgentAnalytics();
   if (name === 'brains') { /* loads on demand */ }
   if (name === 'premium') { updatePortfolioCountdowns(); loadPortfolio(); loadBackupStatus(); }
-  if (name === 'newlistings') loadNewListings();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3691,156 +3624,6 @@ function suburbToRegion(suburb) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// NEW LISTINGS
-// ═══════════════════════════════════════════════════════════════
-
-async function loadNlBadge() {
-  const data = await GET('/listings/pending-count');
-  if (!data) return;
-  const badge = document.getElementById('nl-badge');
-  if (data.count > 0) {
-    badge.textContent = data.count;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
-  }
-}
-
-async function loadNewListings() {
-  const data = await GET('/listings/pending');
-  if (!data) return;
-  S.nlPending = data;
-  renderNlStats();
-  renderNlCards(data);
-}
-
-async function renderNlStats() {
-  const pending   = await GET('/listings/pending-count');
-  const tracked   = await api('GET', '/validate?status=approved');
-  const dismissed = await api('GET', '/validate?status=dismissed');
-  if (pending)   document.getElementById('nl-stat-pending').textContent   = pending.count;
-  if (tracked)   document.getElementById('nl-stat-tracked').textContent   = Array.isArray(tracked) ? tracked.length : '–';
-  if (dismissed) document.getElementById('nl-stat-dismissed').textContent = Array.isArray(dismissed) ? dismissed.length : '–';
-}
-
-function renderNlCards(listings) {
-  const body = document.getElementById('nl-body');
-  if (!listings.length) {
-    body.innerHTML = `<div class="nl-empty">
-      <h3>No listings to review</h3>
-      <p>Hit <strong>Search NSW</strong> to scan commercial property portals for new active listings. Only properties you haven't seen before will appear here.</p>
-    </div>`;
-    return;
-  }
-
-  const fmt$ = v => v ? '$' + Number(v).toLocaleString('en-AU') : null;
-  const fmtM = v => v ? '$' + (Number(v)/1e6).toFixed(2) + 'M' : null;
-
-  body.innerHTML = `<div class="nl-grid">${listings.map(l => {
-    const price = fmtM(l.price_guide);
-    const rent  = fmt$(l.net_rent);
-    const metrics = [
-      price ? `<div class="nl-metric"><strong>${price}</strong> guide</div>` : '',
-      rent  ? `<div class="nl-metric"><strong>${rent}</strong> pa net</div>` : '',
-      l.wale ? `<div class="nl-metric"><strong>${l.wale}y</strong> WALE</div>` : '',
-    ].filter(Boolean).join('');
-
-    return `<div class="nl-card" id="nlcard-${l.id}">
-      <div class="nl-card-top">
-        <div class="nl-card-address">${esc(l.address || l.suburb || 'NSW Property')}</div>
-        ${l.suburb ? `<div class="nl-card-suburb">${esc(l.suburb)}${l.region ? ' · ' + esc(l.region) : ''}</div>` : ''}
-        <div class="nl-card-badges">
-          ${l.asset_class ? `<span class="nl-badge asset">${esc(l.asset_class)}</span>` : ''}
-          ${l.region ? `<span class="nl-badge region">${esc(l.region)}</span>` : ''}
-        </div>
-      </div>
-      ${l.description ? `<div class="nl-card-desc">${esc(l.description)}</div>` : ''}
-      ${metrics ? `<div class="nl-card-metrics">${metrics}</div>` : ''}
-      ${(l.agent || l.firm) ? `<div class="nl-card-agent">${l.agent ? `<span>${esc(l.agent)}</span>` : ''}${l.agent && l.firm ? ' · ' : ''}${l.firm ? esc(l.firm) : ''}</div>` : ''}
-      <div class="nl-card-actions">
-        ${l.source_url ? `<a href="${esc(l.source_url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View Listing ↗</a>` : ''}
-        <button class="btn btn-primary btn-sm" onclick="nlTrack('${l.id}')">+ Track</button>
-        <button class="btn btn-danger btn-sm" onclick="nlDismiss('${l.id}')">Dismiss</button>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
-}
-
-async function searchNewListings() {
-  const btn = document.getElementById('nl-search-btn');
-  const body = document.getElementById('nl-body');
-  const errEl = document.getElementById('nl-error');
-  errEl.classList.add('hidden');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="nl-spinner" style="width:14px;height:14px;border-width:2px;margin:0"></span> Searching…';
-  body.innerHTML = `<div class="nl-searching"><div class="nl-spinner"></div><div>Searching NSW commercial portals and agency sites…<br><small style="opacity:.6">This takes 15–30 seconds</small></div></div>`;
-
-  const result = await POST('/listings/search', {});
-
-  btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg> Search NSW`;
-
-  if (!result) {
-    errEl.textContent = 'Search failed — check your connection and try again.';
-    errEl.classList.remove('hidden');
-    body.innerHTML = '';
-    return;
-  }
-  if (result.error) {
-    errEl.textContent = result.error;
-    errEl.classList.remove('hidden');
-    body.innerHTML = '';
-    return;
-  }
-
-  S.nlLastSearched = new Date();
-  const sub = document.getElementById('nl-last-searched');
-  sub.textContent = `Last searched just now · ${result.searched} results scanned · ${result.added} new listing${result.added !== 1 ? 's' : ''} found`;
-
-  const statusBar = document.getElementById('nl-status-bar');
-  statusBar.innerHTML = `<strong>${result.added}</strong> new listing${result.added !== 1 ? 's' : ''} added to review queue &nbsp;·&nbsp; <strong>${result.found}</strong> total extracted from ${result.searched} search results`;
-  statusBar.classList.remove('hidden');
-
-  await loadNewListings();
-  loadNlBadge();
-}
-
-async function nlTrack(id) {
-  const card = document.getElementById('nlcard-' + id);
-  if (card) { card.style.opacity = '.4'; card.style.pointerEvents = 'none'; }
-  const result = await POST('/listings/' + id + '/track', {});
-  if (result && result.ok) {
-    if (card) card.remove();
-    S.nlPending = S.nlPending.filter(l => l.id !== id);
-    if (!document.querySelectorAll('.nl-card').length) renderNlCards([]);
-    renderNlStats();
-    loadNlBadge();
-    showToast('Added to Campaigns');
-  } else {
-    if (card) { card.style.opacity = ''; card.style.pointerEvents = ''; }
-  }
-}
-
-async function nlDismiss(id) {
-  const card = document.getElementById('nlcard-' + id);
-  if (card) { card.style.opacity = '.3'; card.style.pointerEvents = 'none'; }
-  await POST('/listings/' + id + '/dismiss', {});
-  if (card) card.remove();
-  S.nlPending = S.nlPending.filter(l => l.id !== id);
-  if (!document.querySelectorAll('.nl-card').length) renderNlCards([]);
-  renderNlStats();
-  loadNlBadge();
-}
-
-async function clearDismissed() {
-  if (!confirm('Remove all dismissed listings from the queue?')) return;
-  const dismissed = await api('GET', '/validate?status=dismissed');
-  if (Array.isArray(dismissed)) {
-    for (const d of dismissed) await DEL('/validate/' + d.id);
-  }
-  renderNlStats();
-  showToast('Dismissed listings cleared');
-}
 
 function showToast(msg) {
   let t = document.getElementById('nl-toast');
