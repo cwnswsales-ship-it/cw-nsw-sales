@@ -348,6 +348,192 @@ app.delete('/api/validate/:id', requireAuth, (req, res) => {
 
 
 // ── Excel Export ─────────────────────────────────────────────────────────────
+
+// C&W brand palette (ARGB)
+const XL = {
+  NAVY:   'FF0D2137', NAVY2:  'FF1A3A5C', NAVY3:  'FF091929',
+  ORANGE: 'FFE8732A', ORANGE2:'FFC45E1E',
+  WHITE:  'FFFFFFFF', LGREY:  'FFF8F9FB', MGREY:  'FFE2E8F0',
+  TEXT:   'FF0F172A', MUTED:  'FF64748B',
+};
+
+const XL_COLS = [
+  { header: 'Address',          key: 'address',         width: 36, type: 'text'    },
+  { header: 'Suburb',           key: 'suburb',          width: 15, type: 'text'    },
+  { header: 'Region',           key: 'region',          width: 18, type: 'text'    },
+  { header: 'Asset Class',      key: 'asset_class',     width: 20, type: 'text'    },
+  { header: 'Process',          key: 'process',         width: 14, type: 'text'    },
+  { header: 'Status',           key: 'status',          width: 10, type: 'text'    },
+  { header: 'Sale Price',       key: 'price',           width: 15, type: 'currency'},
+  { header: 'Price Guide',      key: 'price_guide',     width: 15, type: 'currency'},
+  { header: 'Net Rent p.a.',    key: 'net_rent',        width: 14, type: 'currency'},
+  { header: 'Yield %',          key: 'yield_percent',   width: 9,  type: 'pct'     },
+  { header: 'WALE (yrs)',       key: 'wale',            width: 10, type: 'num1'    },
+  { header: 'Land m²',         key: 'land_area',       width: 10, type: 'area'    },
+  { header: 'Floor m²',        key: 'floor_area',      width: 10, type: 'area'    },
+  { header: 'Zoning',           key: 'zoning',          width: 12, type: 'text'    },
+  { header: 'FSR',              key: 'fsr',             width: 7,  type: 'text'    },
+  { header: 'Agent 1',          key: 'agent1',          width: 24, type: 'text'    },
+  { header: 'Firm 1',           key: 'firm1',           width: 24, type: 'text'    },
+  { header: 'Agent 2',          key: 'agent2',          width: 24, type: 'text'    },
+  { header: 'Firm 2',           key: 'firm2',           width: 24, type: 'text'    },
+  { header: 'Vendor',           key: 'vendor',          width: 28, type: 'text'    },
+  { header: 'Purchaser',        key: 'purchaser',       width: 28, type: 'text'    },
+  { header: 'Exchange Date',    key: 'exchange_date',   width: 15, type: 'date'    },
+  { header: 'Settlement Date',  key: 'settlement_date', width: 16, type: 'date'    },
+  { header: 'Year',             key: 'year',            width: 7,  type: 'int'     },
+  { header: 'Notes',            key: 'notes',           width: 52, type: 'text'    },
+];
+
+function buildSalesWorkbook(rows, subtitle) {
+  const { Workbook } = require('exceljs');
+  const wb = new Workbook();
+  wb.creator = 'Cushman & Wakefield';
+  wb.lastModifiedBy = 'C&W NSW Sales Intelligence';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('NSW Investment Sales', {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    headerFooter: {
+      oddHeader: '&L&"Calibri,Bold"&14C&W NSW Sales Intelligence&R&D',
+      oddFooter: '&L&"Calibri"Cushman & Wakefield · Confidential&RPage &P of &N',
+    },
+  });
+
+  const nCols = XL_COLS.length;
+  const lastCol = String.fromCharCode(64 + nCols); // e.g. 'Y'
+
+  ws.columns = XL_COLS.map(c => ({ key: c.key, width: c.width }));
+
+  // ── Row 1: Brand banner ──────────────────────────────────────────────────
+  ws.addRow([`C&W  ·  NSW Sales Intelligence`]);
+  ws.mergeCells(`A1:${lastCol}1`);
+  const r1 = ws.getRow(1);
+  r1.height = 42;
+  const c1 = r1.getCell(1);
+  c1.value = 'C&W  ·  NSW Sales Intelligence';
+  c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY } };
+  c1.font = { name: 'Calibri', color: { argb: XL.WHITE }, bold: true, size: 18 };
+  c1.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
+
+  // ── Row 2: Report metadata ───────────────────────────────────────────────
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  ws.addRow([`${subtitle}   ·   ${rows.length} ${rows.length === 1 ? 'property' : 'properties'}   ·   Generated ${dateStr}`]);
+  ws.mergeCells(`A2:${lastCol}2`);
+  const r2 = ws.getRow(2);
+  r2.height = 22;
+  const c2 = r2.getCell(1);
+  c2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY2 } };
+  c2.font = { name: 'Calibri', color: { argb: 'FFCBD5E1' }, size: 10, italic: true };
+  c2.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
+
+  // ── Row 3: Orange accent bar ─────────────────────────────────────────────
+  ws.addRow([]);
+  ws.mergeCells(`A3:${lastCol}3`);
+  const r3 = ws.getRow(3);
+  r3.height = 5;
+  r3.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ORANGE } };
+
+  // ── Row 4: Column headers ────────────────────────────────────────────────
+  ws.addRow(XL_COLS.map(c => c.header));
+  const r4 = ws.getRow(4);
+  r4.height = 26;
+  r4.eachCell((cell, colNum) => {
+    const col = XL_COLS[colNum - 1];
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY } };
+    cell.font = { name: 'Calibri', color: { argb: XL.WHITE }, bold: true, size: 10 };
+    cell.alignment = {
+      vertical: 'middle',
+      horizontal: col && col.type !== 'text' && col.type !== 'date' ? 'right' : 'center',
+      wrapText: false,
+    };
+    cell.border = {
+      bottom: { style: 'medium', color: { argb: XL.ORANGE } },
+      right:  { style: 'thin',   color: { argb: XL.NAVY2  } },
+    };
+  });
+
+  // ── Data rows ────────────────────────────────────────────────────────────
+  const numFmt = { currency: '"$"#,##0', pct: '0.00"%"', num1: '0.0', area: '#,##0', int: '0' };
+
+  rows.forEach((r, idx) => {
+    const values = XL_COLS.map(c => {
+      const v = r[c.key];
+      if (v === null || v === undefined || v === '') return null;
+      if (c.type === 'currency' || c.type === 'pct' || c.type === 'num1' || c.type === 'area' || c.type === 'int') {
+        const n = Number(v);
+        return isNaN(n) ? null : n;
+      }
+      return v;
+    });
+    const row = ws.addRow(values);
+    row.height = 18;
+    const bg = idx % 2 === 0 ? XL.WHITE : XL.LGREY;
+
+    row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+      const col = XL_COLS[colNum - 1];
+      if (!col) return;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.font = { name: 'Calibri', color: { argb: XL.TEXT }, size: 10 };
+      cell.border = {
+        top:    { style: 'hair', color: { argb: XL.MGREY } },
+        bottom: { style: 'hair', color: { argb: XL.MGREY } },
+        left:   { style: 'hair', color: { argb: XL.MGREY } },
+        right:  { style: 'hair', color: { argb: XL.MGREY } },
+      };
+      if (col.type === 'text' || col.type === 'date') {
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: col.key === 'notes' };
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        if (numFmt[col.type]) cell.numFmt = numFmt[col.type];
+      }
+    });
+  });
+
+  // ── Summary row ──────────────────────────────────────────────────────────
+  if (rows.length > 0) {
+    const avg = (key) => {
+      const vals = rows.map(r => Number(r[key])).filter(n => !isNaN(n) && n > 0);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+    const sum = (key) => {
+      const vals = rows.map(r => Number(r[key])).filter(n => !isNaN(n) && n > 0);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+    };
+
+    ws.addRow([]); // blank spacer before summary
+    const summaryVals = XL_COLS.map(c => {
+      if (c.key === 'address')       return `SUMMARY  (${rows.length} properties)`;
+      if (c.key === 'price')         return sum('price');
+      if (c.key === 'net_rent')      return avg('net_rent');
+      if (c.key === 'yield_percent') return avg('yield_percent');
+      if (c.key === 'wale')         return avg('wale');
+      return null;
+    });
+    const sr = ws.addRow(summaryVals);
+    sr.height = 22;
+    sr.eachCell({ includeEmpty: true }, (cell, colNum) => {
+      const col = XL_COLS[colNum - 1];
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY2 } };
+      cell.font = { name: 'Calibri', color: { argb: XL.WHITE }, bold: true, size: 10 };
+      cell.border = { top: { style: 'medium', color: { argb: XL.ORANGE } } };
+      if (col && col.type !== 'text' && col.type !== 'date') {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        if (numFmt[col.type]) cell.numFmt = numFmt[col.type];
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'left', indent: col && col.key === 'address' ? 1 : 0 };
+      }
+    });
+  }
+
+  // Freeze header rows, add auto-filter
+  ws.views = [{ state: 'frozen', ySplit: 4, xSplit: 0 }];
+  ws.autoFilter = { from: 'A4', to: `${lastCol}4` };
+
+  return wb;
+}
+
 app.get('/api/sales/export', requireAuth, async (req, res) => {
   const { search, asset_class, process: proc, years, region, suburb } = req.query;
   let sql = 'SELECT * FROM sales WHERE 1=1';
@@ -368,73 +554,30 @@ app.get('/api/sales/export', requireAuth, async (req, res) => {
   sql += ' ORDER BY exchange_date DESC';
   const rows = db.prepare(sql).all(...params);
 
-  const NAVY = 'FF0D2137', ORANGE = 'FFE8732A', WHITE = 'FFFFFFFF', LGREY = 'FFF0F2F5';
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'Cushman & Wakefield';
-  const ws = wb.addWorksheet('NSW Investment Sales');
+  // Build subtitle from active filters
+  const parts = [];
+  if (asset_class) parts.push(asset_class);
+  if (region)      parts.push(region);
+  if (proc)        parts.push(proc);
+  if (years)       parts.push(years);
+  const subtitle = parts.length ? `NSW Investment Sales  ·  ${parts.join('  ·  ')}` : 'NSW Investment Sales Database';
 
-  ws.columns = [
-    { key: 'address',         width: 32 }, { key: 'suburb',          width: 15 },
-    { key: 'region',          width: 18 }, { key: 'asset_class',     width: 18 },
-    { key: 'process',         width: 16 }, { key: 'status',          width: 12 },
-    { key: 'price',           width: 16 }, { key: 'price_guide',     width: 16 },
-    { key: 'net_rent',        width: 14 }, { key: 'yield_percent',   width: 10 },
-    { key: 'wale',            width: 10 }, { key: 'land_area',       width: 10 },
-    { key: 'floor_area',      width: 10 }, { key: 'zoning',          width: 14 },
-    { key: 'fsr',             width: 8  }, { key: 'agent1',          width: 22 },
-    { key: 'firm1',           width: 22 }, { key: 'vendor',          width: 28 },
-    { key: 'purchaser',       width: 28 }, { key: 'exchange_date',   width: 14 },
-    { key: 'settlement_date', width: 14 }, { key: 'year',            width: 8  },
-    { key: 'notes',           width: 55 },
-  ];
-
-  // Title row
-  ws.addRow(['NSW Investment Sales — Cushman & Wakefield']);
-  ws.mergeCells('A1:W1');
-  const tc = ws.getCell('A1');
-  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } };
-  tc.font = { color: { argb: WHITE }, bold: true, size: 14 };
-  tc.alignment = { vertical: 'middle', horizontal: 'left' };
-  ws.getRow(1).height = 36;
-
-  // Header row
-  ws.addRow(['Address','Suburb','Region','Asset Class','Process','Status',
-    'Price','Price Guide','Net Rent (pa)','Yield %','WALE (yrs)','Land m²','Floor m²',
-    'Zoning','FSR','Agent','Firm','Vendor','Purchaser','Exchange Date','Settlement Date','Year','Notes']);
-  const hr = ws.getRow(2);
-  hr.height = 24;
-  hr.eachCell(cell => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } };
-    cell.font = { color: { argb: WHITE }, bold: true, size: 10 };
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    cell.border = { bottom: { style: 'medium', color: { argb: ORANGE } } };
-  });
-
-  // Data rows
-  rows.forEach((r, idx) => {
-    const row = ws.addRow([
-      r.address, r.suburb, r.region, r.asset_class, r.process, r.status,
-      r.price || null, r.price_guide || null, r.net_rent || null,
-      r.yield_percent || null, r.wale || null, r.land_area || null, r.floor_area || null,
-      r.zoning, r.fsr, r.agent1, r.firm1, r.vendor, r.purchaser,
-      r.exchange_date, r.settlement_date, r.year, r.notes,
-    ]);
-    row.height = 18;
-    const bg = idx % 2 === 0 ? WHITE : LGREY;
-    row.eachCell({ includeEmpty: true }, cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-      cell.alignment = { vertical: 'middle' };
-    });
-    ['G','H','I'].forEach(col => { const c = row.getCell(col); if (c.value) c.numFmt = '"$"#,##0'; });
-    const yc = row.getCell('J'); if (yc.value) yc.numFmt = '0.00"%"';
-    ['L','M'].forEach(col => { const c = row.getCell(col); if (c.value) c.numFmt = '#,##0'; });
-  });
-
-  ws.views = [{ state: 'frozen', ySplit: 2 }];
-  ws.autoFilter = { from: 'A2', to: 'W2' };
-
+  const wb = buildSalesWorkbook(rows, subtitle);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="nsw-investment-sales-${new Date().toISOString().slice(0,10)}.xlsx"`);
+  res.setHeader('Content-Disposition', `attachment; filename="CW-NSW-Sales-${new Date().toISOString().slice(0,10)}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+// Export a specific selection of sale IDs with same formatting
+app.post('/api/sales/export-selected', requireAuth, async (req, res) => {
+  const { ids = [] } = req.body;
+  if (!ids.length) return res.status(400).json({ error: 'No IDs provided' });
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT * FROM sales WHERE id IN (${placeholders}) ORDER BY exchange_date DESC`).all(...ids);
+  const wb = buildSalesWorkbook(rows, 'NSW Investment Sales — Selected Properties');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="CW-NSW-Sales-Selected-${new Date().toISOString().slice(0,10)}.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
 });

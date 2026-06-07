@@ -2350,35 +2350,21 @@ function clearSaleSelection() {
   updateSelectionBar();
 }
 
-function exportSelected() {
+async function exportSelected() {
   const selected = S.salesData.filter(s => S.selectedSales.has(s.id));
   if (!selected.length) return;
-  const rows = selected.map(s => ({
-    'Address': s.address || '',
-    'Suburb': s.suburb || '',
-    'Region': s.region || '',
-    'Asset Class': s.asset_class || '',
-    'Process': s.process || '',
-    'Price ($)': s.price || '',
-    'Net Rent ($/yr)': s.net_rent || '',
-    'Yield %': s.yield_percent || '',
-    'Land Area m²': s.land_area || '',
-    'Floor Area m²': s.floor_area || '',
-    'Agent': s.agent1 || '',
-    'Firm': s.firm1 || '',
-    'Vendor': s.vendor || '',
-    'Purchaser': s.purchaser || '',
-    'Exchange Date': s.exchange_date || '',
-    'Settlement Date': s.settlement_date || '',
-    'Year': s.year || '',
-    'Zoning': s.zoning || '',
-    'FSR': s.fsr || '',
-    'Notes': s.notes || '',
-  }));
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Selected Sales');
-  XLSX.writeFile(wb, `nsw-sales-selected-${new Date().toISOString().slice(0,10)}.xlsx`);
+  const ids = selected.map(s => s.id);
+  const resp = await fetch('/api/sales/export-selected', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + S.token },
+    body: JSON.stringify({ ids }),
+  });
+  if (!resp.ok) { alert('Export failed'); return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `CW-NSW-Sales-Selected-${new Date().toISOString().slice(0,10)}.xlsx`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ═══════════════════════════════════════════════════════════════
