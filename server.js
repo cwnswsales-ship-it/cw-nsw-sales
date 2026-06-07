@@ -236,7 +236,9 @@ app.post('/api/tracking', requireAuth, (req, res) => {
     body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.expected_settlement_date, year,
     body.notes, body.source_url, body.discovery_id || null);
-  res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(id));
+  const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
+  backupDb().catch(() => {});
+  res.json(row);
 });
 
 app.put('/api/tracking/:id', requireAuth, (req, res) => {
@@ -298,6 +300,7 @@ app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
     year, body.notes || tracked.notes, tracked.source_url);
   db.prepare("UPDATE tracking SET status='Converted to Sale', updated_at=datetime('now') WHERE id=?")
     .run(req.params.id);
+  backupDb().catch(() => {});
   res.json({ sale: db.prepare('SELECT * FROM sales WHERE id = ?').get(saleId) });
 });
 
@@ -801,6 +804,7 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   );
   db.prepare(`UPDATE portfolio_listings SET status='Tracking', tracking_id=?, updated_at=datetime('now') WHERE id=?`)
     .run(trackId, req.params.id);
+  backupDb().catch(() => {});
   res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId) });
 });
 
@@ -987,7 +991,22 @@ async function backupDb() {
       tracking:  db.prepare('SELECT COUNT(*) as c FROM tracking').get().c,
       portfolio: db.prepare('SELECT COUNT(*) as c FROM portfolio_listings').get().c,
     };
+
+    // Primary backup: raw SQLite file
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'sales.db', Body: fs.readFileSync(dbPath) }));
+
+    // Secondary backup: JSON snapshot — survives DB corruption and serves as seed fallback
+    const snapshot = {
+      backed_up_at: new Date().toISOString(),
+      sales:             db.prepare('SELECT * FROM sales ORDER BY id').all(),
+      tracking:          db.prepare('SELECT * FROM tracking ORDER BY id').all(),
+      portfolio_listings: db.prepare('SELECT * FROM portfolio_listings ORDER BY id').all(),
+    };
+    await s3.send(new PutObjectCommand({
+      Bucket: bucket, Key: 'seed_backup.json',
+      Body: JSON.stringify(snapshot), ContentType: 'application/json',
+    }));
+
     backupState.lastTime   = new Date().toISOString();
     backupState.lastStatus = 'ok';
     backupState.lastError  = null;
@@ -1034,8 +1053,11 @@ app.post('/api/admin/backup', requireAuth, async (req, res) => {
 
 
 function applySeed() {
-  const seedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
-  if (!fs.existsSync(seedPath)) { console.log('[seed] seeds/sales_2026.json not found — skipping'); return; }
+  // Prefer a JSON snapshot downloaded from the bucket (more recent than the committed seed)
+  const bucketSeedPath = path.join(DATA_DIR, 'latest_seed.json');
+  const committedSeedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
+  const seedPath = fs.existsSync(bucketSeedPath) ? bucketSeedPath : committedSeedPath;
+  if (!fs.existsSync(seedPath)) { console.log('[seed] No seed file found — skipping'); return; }
   console.log('[seed] Applying seed from', seedPath);
   let data;
   try {
@@ -1079,13 +1101,13 @@ function applySeed() {
 
   try {
     const ins = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (
-      id,tenant,address,suburb,state,asset_class,net_rent,price_guide,yield_percent,
+      id,tenant,address,suburb,state,region,asset_class,net_rent,price_guide,yield_percent,
       wale,land_area,floor_area,auction_date,auction_location,agent1,firm1,agent2,firm2,
-      portfolio,notes,status
+      portfolio,notes,status,result_price,tracking_id
     ) VALUES (
-      @id,@tenant,@address,@suburb,@state,@asset_class,@net_rent,@price_guide,@yield_percent,
+      @id,@tenant,@address,@suburb,@state,@region,@asset_class,@net_rent,@price_guide,@yield_percent,
       @wale,@land_area,@floor_area,@auction_date,@auction_location,@agent1,@firm1,@agent2,@firm2,
-      @portfolio,@notes,@status
+      @portfolio,@notes,@status,@result_price,@tracking_id
     )`);
     let n = 0;
     db.transaction(() => { for (const r of portfolio_listings) n += ins.run(r).changes; })();
@@ -1149,4 +1171,6 @@ app.get('/api/admin/export', requireAuth, (req, res) => {
 app.listen(PORT, () => {
   console.log(`NSW Investment Sales DB running on port ${PORT}`);
   console.log(`Default password: ${APP_PASSWORD === 'CW@Investment2025' ? '(default - set APP_PASSWORD env var)' : '(custom)'}`);
+  // Backup immediately on startup so the bucket is always current after a deploy
+  setTimeout(() => backupDb().catch(e => console.error('[db-backup] Startup backup failed:', e.message)), 3000);
 });
