@@ -232,14 +232,14 @@ app.post('/api/tracking', requireAuth, (req, res) => {
   db.prepare(`
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
       price_guide, net_rent, estimated_yield, wale, land_area, floor_area, zoning, fsr, height_limit,
-      vendor, agent1, agent2, firm1, firm2,
-      campaign_close_date, expected_settlement_date, year, notes, source_url, discovery_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      vendor, purchaser, agent1, agent2, firm1, firm2,
+      campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
-    body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
-    body.campaign_close_date, body.expected_settlement_date, year,
+    body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
+    body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
     body.notes, body.source_url, body.discovery_id || null);
   const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
   backupDb().catch(() => {});
@@ -253,16 +253,17 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
     UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
       price_guide=?, net_rent=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
       zoning=?, fsr=?, height_limit=?,
-      vendor=?, agent1=?, agent2=?, firm1=?, firm2=?,
-      campaign_close_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
+      vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
+      campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.net_rent, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
-    body.vendor, body.agent1, body.agent2, body.firm1, body.firm2,
-    body.campaign_close_date, body.expected_settlement_date, year,
+    body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
+    body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
     body.notes, body.source_url, req.params.id);
+  backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
 
@@ -287,24 +288,44 @@ app.delete('/api/tracking/:id', requireAuth, (req, res) => {
 });
 
 // Convert tracking → sale (settlement complete)
+// Every field falls back to the tracked record so the user only needs to supply
+// the final sale price and settlement date — everything captured during the
+// campaign / "Exchanged - Pending Settlement" stage carries over automatically.
 app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
   const tracked = db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id);
   if (!tracked) return res.status(404).json({ error: 'Not found' });
   const body = req.body;
   const saleId = uuidv4();
-  const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
+
+  // pick(bodyVal, trackedVal): use what's typed in the sell form, else the tracked value
+  const pick = (b, t) => (b !== undefined && b !== null && b !== '') ? b : (t ?? null);
+
+  const price        = pick(body.price, null);
+  const net_rent     = pick(body.net_rent, tracked.net_rent);
+  const wale         = pick(body.wale, tracked.wale);
+  const land_area    = pick(body.land_area, tracked.land_area);
+  const floor_area   = pick(body.floor_area, tracked.floor_area);
+  const purchaser    = pick(body.purchaser, tracked.purchaser);
+  const exchange_date = pick(body.exchange_date, tracked.exchange_date);
+  // Yield: prefer typed value, then tracked est. yield, then calc from price + net rent
+  let yield_percent  = pick(body.yield_percent, tracked.estimated_yield);
+  if ((yield_percent === null || yield_percent === '') && price > 0 && net_rent > 0) {
+    yield_percent = Math.round((net_rent / price) * 10000) / 100;
+  }
+  const year = body.year || (exchange_date ? new Date(exchange_date).getFullYear() : new Date().getFullYear());
+
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
-      vendor, purchaser, agent1, agent2, firm1, firm2,
+      zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(saleId, tracked.address, tracked.suburb, tracked.region, tracked.asset_class,
-    tracked.process, 'Sold', body.price, tracked.price_guide, body.net_rent || tracked.net_rent,
-    body.yield_percent, body.wale, body.land_area, body.floor_area,
-    tracked.vendor, body.purchaser, tracked.agent1, tracked.agent2, tracked.firm1, tracked.firm2,
-    body.exchange_date, body.settlement_date, tracked.campaign_close_date,
-    year, body.notes || tracked.notes, tracked.source_url);
+    tracked.process, 'Sold', price, tracked.price_guide, net_rent, yield_percent, wale,
+    land_area, floor_area, tracked.zoning, tracked.fsr, tracked.height_limit,
+    tracked.vendor, purchaser, tracked.agent1, tracked.agent2, tracked.firm1, tracked.firm2,
+    exchange_date, pick(body.settlement_date, tracked.expected_settlement_date),
+    tracked.campaign_close_date, year, body.notes || tracked.notes, tracked.source_url);
   db.prepare("UPDATE tracking SET status='Converted to Sale', updated_at=datetime('now') WHERE id=?")
     .run(req.params.id);
   backupDb().catch(() => {});
@@ -1300,19 +1321,18 @@ function applySeed() {
     const deletedIds = new Set(
       db.prepare("SELECT id FROM deletions WHERE table_name='tracking'").all().map(r => r.id)
     );
-    const ins = db.prepare(`INSERT OR IGNORE INTO tracking (
-      id,address,suburb,region,asset_class,process,status,price_guide,net_rent,
-      estimated_yield,vendor,agent1,agent2,firm1,firm2,campaign_close_date,
-      expected_settlement_date,year,notes
-    ) VALUES (
-      @id,@address,@suburb,@region,@asset_class,@process,@status,@price_guide,@net_rent,
-      @estimated_yield,@vendor,@agent1,@agent2,@firm1,@firm2,@campaign_close_date,
-      @expected_settlement_date,@year,@notes
-    )`);
+    const trackCols = ['id','address','suburb','region','asset_class','process','status',
+      'price_guide','net_rent','estimated_yield','wale','land_area','floor_area','zoning',
+      'fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
+      'campaign_close_date','exchange_date','expected_settlement_date','year','notes','source_url'];
+    const ins = db.prepare(`INSERT OR IGNORE INTO tracking (${trackCols.join(',')})
+      VALUES (${trackCols.map(c => '@' + c).join(',')})`);
+    // Normalize each row so missing keys (older seeds/snapshots) bind as null
+    const norm = r => Object.fromEntries(trackCols.map(c => [c, r[c] ?? null]));
     let n = 0;
     db.transaction(() => {
       for (const r of tracking) {
-        if (!deletedIds.has(r.id)) n += ins.run(r).changes;
+        if (!deletedIds.has(r.id)) n += ins.run(norm(r)).changes;
       }
     })();
     console.log(`[seed] ${n}/${tracking.length} campaigns inserted (${deletedIds.size} deletions respected)`);

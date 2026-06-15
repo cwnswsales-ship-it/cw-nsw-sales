@@ -64,11 +64,13 @@ db.exec(`
     fsr TEXT,
     height_limit TEXT,
     vendor TEXT,
+    purchaser TEXT,
     agent1 TEXT,
     agent2 TEXT,
     firm1 TEXT,
     firm2 TEXT,
     campaign_close_date TEXT,
+    exchange_date TEXT,
     expected_settlement_date TEXT,
     year INTEGER,
     notes TEXT,
@@ -146,3 +148,8 @@ module.exports = db;
 
 // Add region column to portfolio_listings if it doesn't exist yet (safe on existing DBs)
 try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN region TEXT'); } catch(e) {}
+
+// Add purchaser + exchange_date to tracking so deal details captured at the
+// "Exchanged - Pending Settlement" stage carry over when marked Sold (safe on existing DBs)
+try { db.exec('ALTER TABLE tracking ADD COLUMN purchaser TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE tracking ADD COLUMN exchange_date TEXT'); } catch(e) {}

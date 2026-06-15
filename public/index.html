@@ -1750,9 +1750,11 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}"></div>
     <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(t.agent2)}"></div>
     <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(t.firm2)}"></div>
-    <div class="form-group full"><label>Vendor</label><input name="vendor" value="${esc(t.vendor)}"></div>
+    <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(t.vendor)}"></div>
+    <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}" placeholder="Add once exchanged"></div>
     <div class="form-section">Dates</div>
     <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${t.campaign_close_date||''}"></div>
+    <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date" value="${t.exchange_date||''}"></div>
     <div class="form-group"><label>Exp. Settlement Date</label><input name="expected_settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(t.notes)}</textarea></div>
     <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(t.source_url)}"></div>
@@ -1763,17 +1765,26 @@ function convertForm(t={}) {
   return `<form id="convert-form" class="form-grid" onsubmit="return false">
     <div class="form-group full" style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted)">
       Converting <strong style="color:var(--text)">${t.address}</strong> to a finalised sale.
+      Details below carry over from the campaign — <strong style="color:var(--text)">just confirm the sale price &amp; settlement date.</strong>
     </div>
-    <div class="form-group"><label>Sale Price ($) *</label><input name="price" type="number" step="1000" required></div>
-    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" type="number" step="100" value="${t.net_rent||''}"></div>
-    <div class="form-group"><label>Yield %</label><input name="yield_percent" type="number" step="0.01"></div>
-    <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1"></div>
-    <div class="form-group"><label>Purchaser</label><input name="purchaser"></div>
-    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1"></div>
-    <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date"></div>
-    <div class="form-group"><label>Settlement Date</label><input name="settlement_date" type="date"></div>
-    <div class="form-group full"><label>Additional Notes</label><textarea name="notes"></textarea></div>
+    <div class="form-group"><label>Sale Price ($) *</label><input name="price" id="cf-price" type="number" step="1000" required placeholder="${t.price_guide ? 'Guide was $'+Number(t.price_guide).toLocaleString() : 'Enter final sale price'}" oninput="calcConvertYield()"></div>
+    <div class="form-group"><label>Settlement Date *</label><input name="settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
+    <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="cf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcConvertYield()"></div>
+    <div class="form-group"><label>Yield %</label><input name="yield_percent" id="cf-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
+    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
+    <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}"></div>
+    <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date" value="${t.exchange_date||''}"></div>
+    <div class="form-group full"><label>Additional Notes</label><textarea name="notes">${esc(t.notes)}</textarea></div>
   </form>`;
+}
+
+// Auto-calculate yield in the sell modal from sale price + net rent
+function calcConvertYield() {
+  const price = parseFloat(document.getElementById('cf-price')?.value);
+  const rent  = parseFloat(document.getElementById('cf-net-rent')?.value);
+  const yEl   = document.getElementById('cf-yield');
+  if (yEl && price > 0 && rent > 0) yEl.value = (rent / price * 100).toFixed(2);
 }
 
 // ═══════════════════════════════════════════════════════════════
