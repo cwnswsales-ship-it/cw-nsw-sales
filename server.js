@@ -1335,6 +1335,33 @@ function applySeed() {
 }
 applySeed();
 
+// ── One-time asset class fixes (idempotent — safe to run on every startup) ────
+(function fixAssetClasses() {
+  try {
+    // All sales with no asset_class are Development Sites (Western Sydney growth corridors)
+    const r1 = db.prepare("UPDATE sales SET asset_class='Development Site' WHERE asset_class IS NULL OR asset_class=''").run();
+    // Specific reclassifications backed by tenancy/notes evidence
+    const fixes = [
+      { id: '416f8985-42c9-4424-a418-478183b243bf', cls: 'Retail' },       // 97-99 Queen St Woollahra – Post Office + Bonhams
+      { id: 'b72d8c17-3f2d-4c82-85c2-158d71a08010', cls: 'Retail' },       // 354 Oxford St Paddington – Pet Barn 100% occupier
+      { id: '9f07836e-8dbf-4dca-a4f2-a2298af852a5', cls: 'Shop Top' },     // 181A Edgecliff Rd – 3 retail + 4 residential flats
+      { id: '6c130c5c-e365-4e28-aaf0-f1d8504281e7', cls: 'Shop Top' },     // 286-294a Campbell Pde North Bondi – 4 retail + 6 resi
+      { id: '86d8821f-d20c-46f8-9a66-891036dcd7c7', cls: 'Industrial' },   // 48 Oxford St Woollahra – warehouse/tyre tenant
+    ];
+    const upd = db.prepare("UPDATE sales SET asset_class=? WHERE id=?");
+    let n = 0;
+    db.transaction(() => { for (const {id, cls} of fixes) n += upd.run(cls, id).changes; })();
+    // 47-51 Riley Street Woolloomooloo – DA for commercial development
+    const r2 = db.prepare("UPDATE sales SET asset_class='Development Site' WHERE address LIKE '47-51 Riley Street%' AND asset_class='Commercial'").run();
+    // Recalculate yield_percent where price + net_rent exist but yield is missing
+    const r3 = db.prepare("UPDATE sales SET yield_percent=ROUND(net_rent/price*100,2) WHERE price>0 AND net_rent>0 AND yield_percent IS NULL").run();
+    if (r1.changes || n || r2.changes || r3.changes) {
+      console.log(`[fixup] Asset classes fixed: ${r1.changes} null, ${n} specific, ${r2.changes} Riley St. Yields: ${r3.changes}`);
+    }
+  } catch (e) { console.error('[fixup] Asset class fix error:', e.message); }
+})();
+
+
 // ── Force reseed endpoint — call this to immediately restore all data ──────────
 app.post('/api/admin/reseed', requireAuth, (req, res) => {
   try {

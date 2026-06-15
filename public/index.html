@@ -476,15 +476,15 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div><h1>Dashboard</h1><div class="sub" id="dash-date-sub">NSW Investment Sales Intelligence</div></div>
       </div>
       <div class="dash-content">
-        <!-- row 1: notable sales + upcoming closes -->
+        <!-- row 1: upcoming closes + CBRE portfolio countdown -->
         <div class="dash-2col">
-          <div class="dash-panel">
-            <div class="dash-panel-header">Notable Recent Sales <span class="dash-panel-sub">highest value · recent years</span></div>
-            <div id="dash-notable-sales"></div>
-          </div>
           <div class="dash-panel">
             <div class="dash-panel-header">Upcoming Closes &amp; Auctions <span class="dash-panel-sub">next 14 days</span></div>
             <div id="dash-upcoming-closes"></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">CBRE Burgess Rawson Portfolio <span class="dash-panel-sub">next auction countdown</span></div>
+            <div id="dash-portfolio-countdown"></div>
           </div>
         </div>
         <!-- row 2: asset class + campaign status -->
@@ -1130,21 +1130,8 @@ async function loadDashboard() {
     item.querySelector('.ss-label').textContent = kpiLabels[i];
   });
 
-  // Notable recent sales
-  document.getElementById('dash-notable-sales').innerHTML = data.notableSales.length
-    ? data.notableSales.map(s => `
-        <div class="dash-row" style="cursor:pointer" onclick="showSection('sales')">
-          <div class="dash-row-left">
-            <div style="font-weight:600;font-size:12.5px">${s.address}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${[s.suburb, s.asset_class].filter(Boolean).join(' · ')}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px">${processBadge(s.process)}&nbsp;${s.exchange_date ? fmtDate(s.exchange_date) : (s.year||'')}</div>
-          </div>
-          <div class="dash-row-right">
-            ${s.price ? `<div class="dash-notable-price">$${fmtVol(s.price)}</div>` : ''}
-            ${s.yield_percent ? `<div class="dash-notable-yield">${s.yield_percent.toFixed(2)}% yield</div>` : ''}
-          </div>
-        </div>`).join('')
-    : '<div class="dash-empty">No sales recorded yet</div>';
+  // CBRE Burgess Rawson portfolio countdown
+  renderPortfolioCountdown();
 
   // Upcoming closes
   document.getElementById('dash-upcoming-closes').innerHTML = data.upcomingCloses.length
@@ -1202,6 +1189,52 @@ function daysUntilClose(dateStr) {
   today.setHours(0,0,0,0);
   d.setHours(0,0,0,0);
   return Math.round((d - today) / 86400000);
+}
+
+// CBRE Burgess Rawson portfolio auction dates — update as each auction is announced
+const CBRE_PORTFOLIO_AUCTIONS = [
+  { city: 'Sydney',    date: '2026-06-23', time: '10:30am AEST', location: 'CBRE, Level 21, 363 George Street Sydney' },
+  { city: 'Sydney',    date: '2026-07-21', time: '10:30am AEST', location: 'TBC' },
+  { city: 'Sydney',    date: '2026-08-18', time: '10:30am AEST', location: 'TBC' },
+];
+
+function renderPortfolioCountdown() {
+  const el = document.getElementById('dash-portfolio-countdown');
+  if (!el) return;
+
+  const now = new Date();
+  const enriched = CBRE_PORTFOLIO_AUCTIONS.map(a => {
+    const auctionDt = new Date(a.date + 'T10:30:00+10:00');
+    const days = Math.round((auctionDt - now) / 86400000);
+    return { ...a, days };
+  }).sort((a, b) => a.days - b.days);
+
+  // Show next upcoming (or most recent if all passed)
+  const upcoming = enriched.filter(a => a.days >= 0);
+  const toShow   = upcoming.length ? upcoming : enriched.slice(-1);
+
+  el.innerHTML = toShow.map((a, i) => {
+    const isPast    = a.days < 0;
+    const isToday   = a.days === 0;
+    const isSoon    = a.days > 0 && a.days <= 7;
+    const color     = isPast ? 'var(--muted)' : isToday || isSoon ? 'var(--accent)' : 'var(--success)';
+    const label     = isPast ? `${Math.abs(a.days)}d ago` : isToday ? 'TODAY' : a.days === 1 ? 'Tomorrow' : `${a.days}`;
+    const sublabel  = isPast ? '' : isToday ? '' : a.days === 1 ? '' : 'days away';
+    const isNext    = i === 0 && !isPast;
+
+    return `
+    <div class="dash-row" style="cursor:pointer" onclick="showSection('premium')" title="Go to CBRE Portfolio Tracker">
+      <div class="dash-row-left">
+        <div style="font-weight:600;font-size:13px">${a.city} Portfolio Auction${isNext ? ' <span style="font-size:10px;color:var(--accent);font-weight:700">NEXT</span>' : ''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${fmtDate(a.date)} · ${a.time}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.location}</div>
+      </div>
+      <div class="dash-row-right" style="text-align:right">
+        <div style="font-size:28px;font-weight:900;color:${color};line-height:1;letter-spacing:-1px">${label}</div>
+        ${sublabel ? `<div style="font-size:10px;color:var(--muted)">${sublabel}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
