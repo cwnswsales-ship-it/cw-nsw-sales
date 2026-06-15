@@ -163,6 +163,7 @@ app.post('/api/sales', requireAuth, (req, res) => {
     body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
     body.campaign_close_date, year, body.notes, body.source_url);
+  backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
 
@@ -182,11 +183,15 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
     body.notes, body.source_url, req.params.id);
+  backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
 });
 
 app.delete('/api/sales/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM sales WHERE id = ?').run(req.params.id);
+  // Record the deletion so a redeploy/reseed never resurrects it
+  db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'sales')").run(req.params.id);
+  backupDb().catch(() => {});
   res.json({ ok: true });
 });
 
@@ -1112,7 +1117,15 @@ function getS3() {
   const region    = process.env.BUCKET_REGION || 'auto';
   if (!endpoint || !accessKey || !secretKey) return null;
   const { S3Client } = require('@aws-sdk/client-s3');
-  s3Client = new S3Client({ endpoint, region, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey }, forcePathStyle: true });
+  s3Client = new S3Client({
+    endpoint, region,
+    credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
+    forcePathStyle: true,
+    maxAttempts: 3,
+    // Fail fast instead of hanging forever if the bucket endpoint is slow/unreachable.
+    // The SDK builds a NodeHttpHandler from these options.
+    requestHandler: { connectionTimeout: 5000, requestTimeout: 15000 },
+  });
   return s3Client;
 }
 
@@ -1266,6 +1279,9 @@ function applySeed() {
 
   // Each table seeded independently so one failure never blocks the others
   try {
+    const deletedSaleIds = new Set(
+      db.prepare("SELECT id FROM deletions WHERE table_name='sales'").all().map(r => r.id)
+    );
     const ins = db.prepare(`INSERT OR IGNORE INTO sales (
       id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
       yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
@@ -1276,8 +1292,8 @@ function applySeed() {
       @agent1,@agent2,@firm1,@firm2,@exchange_date,@settlement_date,@campaign_close_date,@year,@notes
     )`);
     let n = 0;
-    db.transaction(() => { for (const r of sales) n += ins.run(r).changes; })();
-    console.log(`[seed] ${n}/${sales.length} sales inserted`);
+    db.transaction(() => { for (const r of sales) { if (!deletedSaleIds.has(r.id)) n += ins.run(r).changes; } })();
+    console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected)`);
   } catch (e) { console.error('[seed] Sales error:', e.message); }
 
   try {

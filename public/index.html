@@ -880,9 +880,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </div>
         <div class="header-actions">
           <span id="pi-backup-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"></span>
-          <button class="btn btn-secondary btn-sm" id="pi-backup-btn" onclick="triggerBackup()" title="Save all data to cloud now">☁ Backup Now</button>
-          <button class="btn btn-secondary btn-sm" id="pi-bucket-test-btn" onclick="testBucket()" title="Verify bucket can read & write">Test Bucket</button>
-          <button class="btn btn-secondary btn-sm" id="pi-track-all-btn" onclick="trackAllPortfolio()" title="Track all untracked listings in Campaigns">Track All</button>
+          <button class="btn btn-primary btn-sm" id="pi-track-all-btn" onclick="trackAllPortfolio()" title="Track all listings — moves them to Campaigns active pipeline">→ Track All in Campaigns</button>
           <button class="btn btn-secondary btn-sm" onclick="clearPortfolioListings()" title="Remove all extracted listings">Clear All</button>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('portfolio-file-input').click()">↑ Upload Portfolio PDF</button>
           <input type="file" id="portfolio-file-input" accept=".pdf" class="hidden" onchange="portfolioFileSelected(event)">
@@ -3091,12 +3089,10 @@ async function loadBackupStatus() {
 
 function renderBackupStatus(data) {
   const el = document.getElementById('pi-backup-status');
-  const btn = document.getElementById('pi-backup-btn');
   if (!el) return;
 
   if (!data.bucketOk) {
     el.innerHTML = `<span style="color:var(--danger)" title="Go to Railway → cw-nsw-sales → Variables and add the 5 BUCKET_* environment variables">⚠ Bucket not configured — add BUCKET_* vars in Railway to prevent data loss</span>`;
-    if (btn) btn.style.display = 'none';
     return;
   }
 
@@ -3117,47 +3113,6 @@ function timeSince(date) {
   if (secs < 3600) return Math.floor(secs / 60) + 'm ago';
   if (secs < 86400) return Math.floor(secs / 3600) + 'h ago';
   return Math.floor(secs / 86400) + 'd ago';
-}
-
-async function triggerBackup() {
-  const btn = document.getElementById('pi-backup-btn');
-  const el  = document.getElementById('pi-backup-status');
-  if (btn) { btn.disabled = true; btn.textContent = '☁ Saving…'; }
-  if (el)  el.innerHTML = '<span style="color:var(--muted)">Backing up…</span>';
-
-  const data = await POST('/admin/backup', {});
-  if (btn) { btn.disabled = false; btn.textContent = '☁ Backup Now'; }
-
-  if (!data) {
-    if (el) el.innerHTML = '<span style="color:var(--danger)">Backup failed — check connection</span>';
-    return;
-  }
-  if (data.error) {
-    if (el) el.innerHTML = `<span style="color:var(--danger)">⚠ ${esc(data.error)}</span>`;
-    return;
-  }
-  renderBackupStatus(data);
-  showToast('Data saved to cloud ☁');
-}
-
-async function testBucket() {
-  const btn = document.getElementById('pi-bucket-test-btn');
-  const el  = document.getElementById('pi-backup-status');
-  if (btn) { btn.disabled = true; btn.textContent = 'Testing…'; }
-  if (el)  el.innerHTML = '<span style="color:var(--muted)">Testing bucket connection…</span>';
-  const data = await GET('/admin/bucket-test');
-  if (btn) { btn.disabled = false; btn.textContent = 'Test Bucket'; }
-  if (!data) {
-    if (el) el.innerHTML = '<span style="color:var(--danger)">⚠ Test failed — no response</span>';
-    return;
-  }
-  if (data.ok) {
-    if (el) el.innerHTML = `<span style="color:var(--success)">✓ Bucket connected — read/write OK (${esc(data.bucket)})</span>`;
-    showToast('Bucket connected ✓');
-  } else {
-    const detail = [data.error, data.code].filter(Boolean).join(' · ');
-    if (el) el.innerHTML = `<span style="color:var(--danger)" title="${esc(JSON.stringify(data.diag||{}))}">⚠ ${esc(detail || 'Bucket error — check Railway Console for details')}</span>`;
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3678,10 +3633,10 @@ async function trackAllPortfolio() {
   }
 
   S.portfolioData = S.portfolioData.filter(l => !trackedIds.has(l.id));
-  if (btn) { btn.disabled = false; btn.textContent = 'Track All'; }
+  if (btn) { btn.disabled = false; btn.textContent = '→ Track All in Campaigns'; }
   renderPortfolioTable(S.portfolioData);
   updatePortfolioStats(S.portfolioData);
-  showToast(`${done} listing${done !== 1 ? 's' : ''} added to Campaigns`);
+  showToast(`${trackedIds.size} listing${trackedIds.size !== 1 ? 's' : ''} added to Campaigns active pipeline`);
 }
 
 function mapPortfolioAsset(cls) {
