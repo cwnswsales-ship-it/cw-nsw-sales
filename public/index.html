@@ -3155,7 +3155,8 @@ async function testBucket() {
     if (el) el.innerHTML = `<span style="color:var(--success)">✓ Bucket connected — read/write OK (${esc(data.bucket)})</span>`;
     showToast('Bucket connected ✓');
   } else {
-    if (el) el.innerHTML = `<span style="color:var(--danger)">⚠ Bucket error: ${esc(data.error)}</span>`;
+    const detail = [data.error, data.code].filter(Boolean).join(' · ');
+    if (el) el.innerHTML = `<span style="color:var(--danger)" title="${esc(JSON.stringify(data.diag||{}))}">⚠ ${esc(detail || 'Bucket error — check Railway Console for details')}</span>`;
   }
 }
 

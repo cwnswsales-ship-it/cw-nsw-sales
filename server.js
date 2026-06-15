@@ -1199,20 +1199,44 @@ app.post('/api/admin/backup', requireAuth, async (req, res) => {
 
 // Bucket connectivity test — write a tiny probe object and read it back
 app.get('/api/admin/bucket-test', requireAuth, async (req, res) => {
-  const s3 = getS3();
-  const bucket = process.env.BUCKET_NAME;
-  if (!s3 || !bucket) return res.json({ ok: false, error: 'Bucket env vars not set' });
+  const endpoint  = process.env.BUCKET_ENDPOINT_URL;
+  const bucket    = process.env.BUCKET_NAME;
+  const accessKey = process.env.BUCKET_ACCESS_KEY_ID;
+  const secretKey = process.env.BUCKET_SECRET_ACCESS_KEY;
+  const region    = process.env.BUCKET_REGION || 'auto';
+
+  const missing = ['BUCKET_ENDPOINT_URL','BUCKET_NAME','BUCKET_ACCESS_KEY_ID','BUCKET_SECRET_ACCESS_KEY']
+    .filter(k => !process.env[k]);
+  if (missing.length) return res.json({ ok: false, error: `Missing env vars: ${missing.join(', ')}` });
+
+  const diag = { endpoint, bucket, region, keyPrefix: accessKey ? accessKey.slice(0,8) + '…' : 'MISSING' };
+
   try {
-    const { PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+    // Always create a fresh client here so we test current env vars, not a cached client
+    const testS3 = new S3Client({
+      endpoint, region,
+      credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
+      forcePathStyle: true,
+    });
     const probe = `probe-${Date.now()}`;
-    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: '.probe', Body: probe, ContentType: 'text/plain' }));
-    const r = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: '.probe' }));
+    await testS3.send(new PutObjectCommand({ Bucket: bucket, Key: '.probe', Body: probe, ContentType: 'text/plain' }));
+    const r = await testS3.send(new GetObjectCommand({ Bucket: bucket, Key: '.probe' }));
     const chunks = []; for await (const c of r.Body) chunks.push(c);
     const back = Buffer.concat(chunks).toString();
-    if (back !== probe) return res.json({ ok: false, error: 'Read-back mismatch' });
-    res.json({ ok: true, message: 'Bucket read/write verified ✓', endpoint: process.env.BUCKET_ENDPOINT_URL, bucket });
+    if (back !== probe) return res.json({ ok: false, error: 'Read-back mismatch', diag });
+    console.log('[bucket-test] ✓ Connected to', endpoint, '/', bucket);
+    res.json({ ok: true, message: 'Bucket read/write verified ✓', endpoint, bucket });
   } catch (e) {
-    res.json({ ok: false, error: e.message });
+    const code = e.Code || e.code || e.name || '';
+    let hint = '';
+    if (code === 'InvalidAccessKeyId' || code.includes('AccessDenied')) hint = 'Wrong BUCKET_ACCESS_KEY_ID';
+    else if (code === 'SignatureDoesNotMatch') hint = 'Wrong BUCKET_SECRET_ACCESS_KEY';
+    else if (code === 'NoSuchBucket') hint = 'Wrong BUCKET_NAME';
+    else if (e.message && e.message.includes('ECONNREFUSED')) hint = 'Cannot reach BUCKET_ENDPOINT_URL';
+    else if (e.message && e.message.includes('getaddrinfo')) hint = 'Cannot resolve BUCKET_ENDPOINT_URL hostname';
+    console.error('[bucket-test] ✗', code, e.message);
+    res.json({ ok: false, error: hint || e.message || code || 'Unknown error', code, diag });
   }
 });
 
