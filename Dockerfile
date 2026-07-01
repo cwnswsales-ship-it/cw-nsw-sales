@@ -5,4 +5,4 @@ RUN npm install --production
 COPY . .
 RUN mkdir -p data public
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

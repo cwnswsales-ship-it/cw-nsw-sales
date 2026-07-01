@@ -937,12 +937,21 @@ app.put('/api/portfolio/:id', requireAuth, (req, res) => {
 // Delete one portfolio listing
 app.delete('/api/portfolio/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM portfolio_listings WHERE id = ?').run(req.params.id);
+  db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listings')").run(req.params.id);
+  backupDb().catch(() => {});
   res.json({ ok: true });
 });
 
 // Clear all portfolio listings
 app.delete('/api/portfolio', requireAuth, (req, res) => {
-  db.prepare('DELETE FROM portfolio_listings').run();
+  // Record every id so the boot-time snapshot merge can't resurrect them
+  const ids = db.prepare('SELECT id FROM portfolio_listings').all();
+  const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listings')");
+  db.transaction(() => {
+    for (const { id } of ids) rec.run(id);
+    db.prepare('DELETE FROM portfolio_listings').run();
+  })();
+  backupDb().catch(() => {});
   res.json({ ok: true });
 });
 
@@ -1121,11 +1130,11 @@ app.post('/api/listings/:id/dismiss', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// SPA fallback
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  }
+// SPA fallback — MUST pass /api requests through to routes registered below
+// (previously it swallowed them: no response, no next() → requests hung forever)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 
@@ -1146,6 +1155,10 @@ function getS3() {
     // Fail fast instead of hanging forever if the bucket endpoint is slow/unreachable.
     // The SDK builds a NodeHttpHandler from these options.
     requestHandler: { connectionTimeout: 5000, requestTimeout: 15000 },
+    // Newer AWS SDKs attach CRC32 checksums by default; several S3-compatible
+    // providers reject or stall on them. Only send checksums when the API requires it.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
   return s3Client;
 }
@@ -1171,7 +1184,10 @@ async function backupDb() {
       portfolio: db.prepare('SELECT COUNT(*) as c FROM portfolio_listings').get().c,
     };
 
-    // Primary backup: raw SQLite file
+    // Primary backup: raw SQLite file.
+    // The DB runs in WAL mode — recent writes live in sales.db-wal until a checkpoint,
+    // so flush the WAL into the main file first or the upload misses the latest sales.
+    try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (e) { console.error('[db-backup] WAL checkpoint failed:', e.message); }
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: 'sales.db', Body: fs.readFileSync(dbPath) }));
 
     // Secondary backup: JSON snapshot — survives DB corruption and serves as seed fallback
@@ -1212,6 +1228,13 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+// True when DATA_DIR sits on a different filesystem than the app code —
+// i.e. a mounted Railway volume that survives redeploys.
+function hasPersistentDisk() {
+  try { return fs.statSync(DATA_DIR).dev !== fs.statSync(__dirname).dev; }
+  catch { return false; }
+}
+
 app.get('/api/admin/backup-status', requireAuth, (req, res) => {
   const bucketOk = !!(process.env.BUCKET_ENDPOINT_URL && process.env.BUCKET_NAME &&
     process.env.BUCKET_ACCESS_KEY_ID && process.env.BUCKET_SECRET_ACCESS_KEY);
@@ -1220,7 +1243,7 @@ app.get('/api/admin/backup-status', requireAuth, (req, res) => {
     tracking:  db.prepare('SELECT COUNT(*) as c FROM tracking').get().c,
     portfolio: db.prepare('SELECT COUNT(*) as c FROM portfolio_listings').get().c,
   };
-  res.json({ ...backupState, bucketOk, counts });
+  res.json({ ...backupState, bucketOk, persistentDisk: hasPersistentDisk(), counts });
 });
 
 app.post('/api/admin/backup', requireAuth, async (req, res) => {
@@ -1252,6 +1275,10 @@ app.get('/api/admin/bucket-test', requireAuth, async (req, res) => {
       endpoint, region,
       credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
       forcePathStyle: true,
+      maxAttempts: 1,
+      requestHandler: { connectionTimeout: 5000, requestTimeout: 15000 },
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
     const probe = `probe-${Date.now()}`;
     await testS3.send(new PutObjectCommand({ Bucket: bucket, Key: '.probe', Body: probe, ContentType: 'text/plain' }));
@@ -1339,18 +1366,22 @@ function applySeed() {
   } catch (e) { console.error('[seed] Tracking error:', e.message); }
 
   try {
-    const ins = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (
-      id,tenant,address,suburb,state,region,asset_class,net_rent,price_guide,yield_percent,
-      wale,land_area,floor_area,auction_date,auction_location,agent1,firm1,agent2,firm2,
-      portfolio,notes,status,result_price,tracking_id
-    ) VALUES (
-      @id,@tenant,@address,@suburb,@state,@region,@asset_class,@net_rent,@price_guide,@yield_percent,
-      @wale,@land_area,@floor_area,@auction_date,@auction_location,@agent1,@firm1,@agent2,@firm2,
-      @portfolio,@notes,@status,@result_price,@tracking_id
-    )`);
+    const deletedPortfolioIds = new Set(
+      db.prepare("SELECT id FROM deletions WHERE table_name='portfolio_listings'").all().map(r => r.id)
+    );
+    const pCols = ['id','tenant','address','suburb','state','region','asset_class','net_rent',
+      'price_guide','yield_percent','wale','land_area','floor_area','auction_date','auction_location',
+      'agent1','firm1','agent2','firm2','portfolio','notes','status','result_price','tracking_id'];
+    const ins = db.prepare(`INSERT OR IGNORE INTO portfolio_listings (${pCols.join(',')})
+      VALUES (${pCols.map(c => '@' + c).join(',')})`);
+    const norm = r => Object.fromEntries(pCols.map(c => [c, r[c] ?? null]));
     let n = 0;
-    db.transaction(() => { for (const r of portfolio_listings) n += ins.run(r).changes; })();
-    if (portfolio_listings.length) console.log(`[seed] ${n}/${portfolio_listings.length} portfolio listings inserted`);
+    db.transaction(() => {
+      for (const r of portfolio_listings) {
+        if (!deletedPortfolioIds.has(r.id)) n += ins.run(norm(r)).changes;
+      }
+    })();
+    if (portfolio_listings.length) console.log(`[seed] ${n}/${portfolio_listings.length} portfolio listings inserted (${deletedPortfolioIds.size} deletions respected)`);
   } catch (e) { console.error('[seed] Portfolio error:', e.message); }
 }
 applySeed();
@@ -1437,6 +1468,9 @@ app.get('/api/admin/export', requireAuth, (req, res) => {
 app.listen(PORT, () => {
   console.log(`NSW Investment Sales DB running on port ${PORT}`);
   console.log(`Default password: ${APP_PASSWORD === 'CW@Investment2025' ? '(default - set APP_PASSWORD env var)' : '(custom)'}`);
+  console.log(hasPersistentDisk()
+    ? `[storage] ✓ ${DATA_DIR} is on a persistent volume — data survives redeploys`
+    : `[storage] ⚠ ${DATA_DIR} is EPHEMERAL — data survives redeploys only via bucket backup. Mount a Railway volume at ${DATA_DIR} to fix permanently.`);
   // Backup immediately on startup so the bucket is always current after a deploy
   setTimeout(() => backupDb().catch(e => console.error('[db-backup] Startup backup failed:', e.message)), 3000);
 });

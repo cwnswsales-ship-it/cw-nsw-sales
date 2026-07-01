@@ -3135,19 +3135,26 @@ function renderBackupStatus(data) {
   const el = document.getElementById('pi-backup-status');
   if (!el) return;
 
-  if (!data.bucketOk) {
-    el.innerHTML = `<span style="color:var(--danger)" title="Go to Railway → cw-nsw-sales → Variables and add the 5 BUCKET_* environment variables">⚠ Bucket not configured — add BUCKET_* vars in Railway to prevent data loss</span>`;
+  // Persistent volume = data survives redeploys no matter what
+  const disk = data.persistentDisk
+    ? `<span style="color:var(--success)" title="A persistent volume is mounted — the database survives redeploys">⛁ Volume ✓</span>`
+    : `<span style="color:var(--accent)" title="No persistent volume mounted — data relies on cloud backup. In Railway: right-click the service → Attach Volume → mount path /app/data">⛁ No volume</span>`;
+
+  if (!data.bucketOk && !data.persistentDisk) {
+    el.innerHTML = `${disk} <span style="color:var(--danger)" title="Go to Railway → cw-nsw-sales → Variables and add the 5 BUCKET_* environment variables">⚠ No backup configured — data WILL be lost on redeploy</span>`;
     return;
   }
 
   if (data.lastStatus === 'never') {
-    el.innerHTML = `<span style="color:var(--accent)">☁ Not yet backed up</span>`;
+    el.innerHTML = `${disk} <span style="color:var(--accent)">☁ Not yet backed up</span>`;
   } else if (data.lastStatus === 'ok' && data.lastTime) {
     const ago = timeSince(new Date(data.lastTime));
-    el.innerHTML = `<span style="color:var(--success)">☁ Backed up ${ago}</span>
+    el.innerHTML = `${disk} <span style="color:var(--success)">☁ Backed up ${ago}</span>
       <span style="color:var(--muted);font-size:10px">${data.counts.sales}s · ${data.counts.tracking}c · ${data.counts.portfolio}p</span>`;
   } else if (data.lastStatus === 'error') {
-    el.innerHTML = `<span style="color:var(--danger)" title="${esc(data.lastError||'')}">☁ Backup failed</span>`;
+    el.innerHTML = `${disk} <span style="color:var(--danger)" title="${esc(data.lastError||'')}">☁ Backup failed — ${esc((data.lastError||'').slice(0,80))}</span>`;
+  } else if (data.lastStatus === 'no-bucket') {
+    el.innerHTML = `${disk} <span style="color:var(--danger)">☁ Bucket not reachable</span>`;
   }
 }
 
