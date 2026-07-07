@@ -1546,6 +1546,59 @@ applySeed();
       console.log(`[fixup] Asset classes fixed: ${r1.changes} null, ${n} specific, ${r2.changes} Riley St. Yields: ${r3.changes}`);
     }
   } catch (e) { console.error('[fixup] Asset class fix error:', e.message); }
+
+  // ── Comparables deep-dive (Jul 2026): evidence-based reclassifications ──────
+  try {
+    const reclass = [
+      ['874f42d9-e985-4f02-85e3-a69ea705fa8c', 'Shop Top'],        // 56 Campbell Pde — 4 apts + cafe
+      ['d3d595ff-55e3-4426-965b-f78426eb50a0', 'Shop Top'],        // 16-18 McKeon St — units + GF shop
+      ['71746875-63dd-4f15-8698-7c48dc5af840', 'Apartment Blocks'],// 346 Arden St — existing 4x2-bed block
+      ['b5439dab-7aff-4a00-be03-a9f4a6c3091b', 'Shop Top'],        // 217-221 Coogee Bay Rd — 2 shops + 4 units
+      ['e2356c2c-fa85-4747-a70a-0155d3d934e4', 'Retail'],          // 115 Avoca St — yielding retail freehold
+      ['98b0df2e-8fa5-4685-b9a6-175a9fe5c007', 'Retail'],          // 41 Hall St — retail + commercial freehold
+      ['fe569af7-5aa2-4ad6-8b55-190f483a5af8', 'Shop Top'],        // 27 Hall St — 6 apts + 2 retail
+      ['c2ceccf9-95c9-429a-93ab-e750373d0e04', 'Retail'],          // 27-29 Knox St — ANZ branch
+      ['03837b23-8ec5-4126-ba31-abbf8f4cae5f', 'Shop Top'],        // 32 Campbell Pde
+      ['1a6413d0-3307-4df8-a49d-1afd8ed46003', 'Shop Top'],        // 433 Crown St
+      ['1a92bd80-f9f2-4b03-8235-d1a5d8fb7cc3', 'Shop Top'],        // 317 Clovelly Rd
+      ['2bb209a1-1b1b-4291-9626-0d8802e59697', 'Shop Top'],        // 33 St Pauls St
+      ['31875715-eccb-4595-a850-089fad207a87', 'Shop Top'],        // 58 William St
+      ['87861383-1b7d-4831-ad36-16e9fae690fa', 'Shop Top'],        // 358 Botany Rd
+      ['94458987-e4b3-478b-9adc-7639016fe76b', 'Shop Top'],        // 1 Belmore Rd
+      ['ae62e2a7-446c-4f88-a868-d0946bea8405', 'Shop Top'],        // 130-132 Coogee Bay Rd
+      ['b96a4e66-1fc3-4bfb-9af5-df398f59dc7c', 'Shop Top'],        // 164-166 Edgecliff Rd
+      ['cf5d32a8-a68f-4744-a987-952880e8dde1', 'Shop Top'],        // 5 Canberra St
+      ['43da1c7f-cf49-4f9d-926b-596bd4705951', 'Shop Top'],        // 307 Clovelly Rd — "shop top" in notes
+      ['2a467025-73d8-45e1-a0a8-0a37ce47e260', 'Retail'],          // 246 Coogee Bay Rd — commercial both levels
+    ];
+    const upd = db.prepare('UPDATE sales SET asset_class=? WHERE id=? AND asset_class != ?');
+    let n = 0;
+    db.transaction(() => { for (const [id, cls] of reclass) n += upd.run(cls, id, cls).changes; })();
+
+    // 250 Terrigal Drive is in Erina (Central Coast), not Sydney
+    db.prepare("UPDATE sales SET suburb='Erina', region='Regional NSW' WHERE id='12b7c51a-5ca0-4164-b661-2e1cba221b3a' AND suburb='Sydney'").run();
+
+    // Duplicate comparables (same property + price recorded twice) — remove and
+    // record in deletions so snapshot merges can't bring them back
+    const dupIds = [
+      '0c465a11-27c6-4769-a13b-9f94a0047f30','0eecbe06-d9f7-48c9-a18c-e070d78869d1',
+      '19026f19-61d1-4e33-8c50-98942278830f','2be7d934-452d-4774-ab85-51022541500d',
+      '4451eee6-1aa3-4c09-8c28-2fb2f13fa696','4edc24df-b9f5-4015-a133-010b04b5dc3a',
+      '5bac5226-13f0-4c1d-b4e0-1a1d2bd63f02','662c3a68-e4ae-4d28-b156-8ffc08660b06',
+      '663f2894-9be0-4c3c-bc7e-8747bcc66e90','9dee972e-cf1f-4cba-9fcd-aa08503e4b09',
+      'bc5da840-ae05-4472-ab32-b806feaef83d','be999281-e9d0-4f25-b1fc-3c8d7c05c0b8',
+      'c2bec978-43fa-4cd6-b16a-65f0958639ce','ce2e29dd-a5e5-4a8a-973c-4ec6efc4056f',
+      'd8055d3c-62a8-44f4-a8a6-260c259c20e1','d8313233-c9fa-45f3-aa64-7db0dc77180c',
+      'dcce9cad-b801-41cf-ae3a-a3c01fea30e1','eb7df54a-bcc3-4de6-be20-5de094cb87db',
+      'ff205920-7ac7-4e0e-9de0-4dee5311e6cc',
+    ];
+    const del = db.prepare('DELETE FROM sales WHERE id = ?');
+    const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'sales')");
+    let removed = 0;
+    db.transaction(() => { for (const id of dupIds) { removed += del.run(id).changes; rec.run(id); } })();
+
+    if (n || removed) console.log(`[fixup] Comparables deep-dive: ${n} reclassified, ${removed} duplicates removed`);
+  } catch (e) { console.error('[fixup] Comparables fix error:', e.message); }
 })();
 
 // Remove any duplicate campaigns on every boot (idempotent) — the snapshot
