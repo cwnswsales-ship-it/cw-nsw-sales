@@ -525,7 +525,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <!-- IM Upload Zone (Sales) -->
       <div class="im-upload-zone" id="sale-im-drop-zone"
            ondragover="saleImDragOver(event)" ondragleave="saleImDragLeave(event)" ondrop="saleImDrop(event)">
-        <input type="file" id="sale-im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="saleImFileSelected(event)">
+        <input type="file" id="sale-im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.csv" class="hidden" onchange="saleImFileSelected(event)">
         <div class="im-upload-inner" id="sale-im-upload-inner" onclick="document.getElementById('sale-im-file-input').click()">
           <div class="im-upload-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -533,8 +533,8 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
             </svg>
           </div>
           <div class="im-upload-text">
-            <div class="im-upload-title">Drop an Information Memorandum to add a sale</div>
-            <div class="im-upload-sub">AI extracts address, price, yield, tenancy, agents · file saved as Suburb, Address — Agency</div>
+            <div class="im-upload-title">Drop an IM, comps spreadsheet or photo to add sales</div>
+            <div class="im-upload-sub">PDF, Excel (.xlsx), CSV or image · single IMs prefill the form · comps tables bulk-add every sale</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="im-upload-btn" onclick="event.stopPropagation();window.open('https://cushwake1.sharepoint.com/:f:/r/sites/InvestmentSalesNSW/Shared%20Documents/Investment%20Sales%20-%20NSW/3.%20Information%20Memorandums?csf=1&web=1&e=TsdfGZ','_blank')">📁 Library</button>
@@ -3244,9 +3244,16 @@ function setSaleIMState(state, msg) {
 }
 
 async function processSaleIMFile(file) {
-  const allowed = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp','image/gif'];
-  if (!allowed.includes(file.type)) {
-    setSaleIMState('error', `Unsupported: ${file.name}. Use PDF or image.`);
+  const name = (file.name || '').toLowerCase();
+  const allowed = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp','image/gif',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','text/csv'];
+  const okByExt = /\.(pdf|png|jpe?g|webp|gif|xlsx|csv)$/.test(name);
+  if (!allowed.includes(file.type) && !okByExt) {
+    setSaleIMState('error', `Unsupported: ${file.name}. Use PDF, image, .xlsx or .csv.`);
+    return;
+  }
+  if (name.endsWith('.xls') && !name.endsWith('.xlsx')) {
+    setSaleIMState('error', 'Old .xls format not supported — re-save as .xlsx first.');
     return;
   }
   setSaleIMState('loading', `Reading ${file.name}…`);
@@ -3256,24 +3263,88 @@ async function processSaleIMFile(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
-  setSaleIMState('loading', `Extracting data from ${file.name} with AI…`);
-  const result = await POST('/extract-im', { filename: file.name, mimeType: file.type, data: base64 });
+  setSaleIMState('loading', `Extracting sales from ${file.name} with AI…`);
+  const result = await POST('/extract-sales-batch', { filename: file.name, mimeType: file.type, data: base64 });
   if (!result || result.error) {
     setSaleIMState('error', result?.error || 'Server error — extraction failed.');
     return;
   }
-  const d = result.data;
-  setSaleIMState('success', `${file.name} — extracted. Saving file…`);
-  // Auto-save the IM file to the server library
-  const agency = d.firm1 || d.agent1 || '';
-  const saveRes = await POST('/save-im', {
-    data: base64, mimeType: file.type,
-    suburb: d.suburb || '', address: d.address || '', agency
-  });
-  if (saveRes && saveRes.filename) {
-    setSaleIMState('success', `Saved as "${saveRes.filename}" — review form below`);
+  if (!result.sales.length) {
+    setSaleIMState('error', 'No sales found in that file.');
+    return;
   }
-  openAddSaleFromIM(d, file.name);
+
+  if (result.sales.length === 1) {
+    // Single property — same flow as before: save to IM library, prefill the form
+    const d = result.sales[0];
+    setSaleIMState('success', `${file.name} — extracted. Saving file…`);
+    const isDoc = file.type === 'application/pdf' || file.type.startsWith('image/');
+    if (isDoc) {
+      const saveRes = await POST('/save-im', {
+        data: base64, mimeType: file.type,
+        suburb: d.suburb || '', address: d.address || '', agency: d.firm1 || d.agent1 || ''
+      });
+      if (saveRes && saveRes.filename) setSaleIMState('success', `Saved as "${saveRes.filename}" — review form below`);
+    }
+    openAddSaleFromIM(d, file.name);
+    return;
+  }
+
+  // Multiple sales — bulk review
+  setSaleIMState('success', `${result.sales.length} sales extracted — review below`);
+  openBulkSalesReview(result.sales, file.name);
+}
+
+// ── Bulk sales review (comps spreadsheet / photo of a sales table) ────────────
+let bulkSalesData = null;
+
+function openBulkSalesReview(sales, filename) {
+  bulkSalesData = sales;
+  const clsOptions = (sel) => ASSET_CLASSES.map(c => `<option value="${c}" ${c === sel ? 'selected' : ''}>${c}</option>`).join('');
+  const rows = sales.map((s, i) => `
+    <div style="display:grid;grid-template-columns:24px 1fr 150px;gap:8px;align-items:center;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg)">
+      <input type="checkbox" id="bs-inc-${i}" checked>
+      <div>
+        <div style="font-weight:700;font-size:12.5px">${esc(s.address)}${s.suburb ? ', ' + esc(s.suburb) : ''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          ${s.price ? '<strong style="color:var(--text)">$' + Number(s.price).toLocaleString() + '</strong>' : 'no price'}
+          ${s.exchange_date ? ' · ' + fmtDate(s.exchange_date) : ''}
+          ${s.net_rent ? ' · rent $' + Number(s.net_rent).toLocaleString() : ''}
+          ${s.yield_percent ? ' · ' + s.yield_percent + '%' : ''}
+          ${s.land_area ? ' · ' + s.land_area + 'sqm' : ''}
+        </div>
+        ${s.notes ? `<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${esc(s.notes)}</div>` : ''}
+      </div>
+      <select id="bs-cls-${i}" style="font-size:12px">${clsOptions(s.asset_class || 'Commercial')}</select>
+    </div>`).join('');
+
+  openModal(`${sales.length} Sales Extracted — ${esc(filename)}`, `
+    <div style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <span>Review below, then save. Duplicates already in the database are skipped automatically.</span>
+      <span style="display:flex;gap:6px;align-items:center;font-size:12px">Set all:
+        <select id="bs-cls-all" onchange="document.querySelectorAll('[id^=bs-cls-]').forEach(el=>{if(el.id!=='bs-cls-all')el.value=this.value})" style="font-size:12px">
+          <option value="">— asset class —</option>${ASSET_CLASSES.map(c => `<option>${c}</option>`).join('')}
+        </select>
+      </span>
+    </div>
+    ${rows}`, applyBulkSales, 'Save All Sales');
+}
+
+async function applyBulkSales() {
+  if (!bulkSalesData) return;
+  const toSave = bulkSalesData
+    .map((s, i) => ({ ...s, asset_class: document.getElementById(`bs-cls-${i}`)?.value || s.asset_class || null, _inc: document.getElementById(`bs-inc-${i}`)?.checked }))
+    .filter(s => s._inc);
+  if (!toSave.length) { showToast('Nothing selected'); return; }
+  const btn = document.getElementById('modal-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  const res = await POST('/sales/bulk', { sales: toSave.map(({_inc, ...s}) => s) });
+  if (btn) { btn.disabled = false; btn.textContent = 'Save All Sales'; }
+  if (!res || res.error) { showToast('Save failed: ' + (res?.error || 'no response')); return; }
+  closeModal();
+  bulkSalesData = null;
+  showToast(`${res.inserted} sale${res.inserted !== 1 ? 's' : ''} added${res.skipped ? ` · ${res.skipped} duplicate${res.skipped !== 1 ? 's' : ''} skipped` : ''}`);
+  loadSalesYears(); loadSales();
 }
 
 function openAddSaleFromIM(d, filename) {

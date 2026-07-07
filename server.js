@@ -167,6 +167,45 @@ app.post('/api/sales', requireAuth, (req, res) => {
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
 
+// Bulk insert extracted sales (from comps spreadsheet/photo). Skips records that
+// look like an existing sale: same street number+name, compatible suburb, ~same price.
+app.post('/api/sales/bulk', requireAuth, (req, res) => {
+  const { sales: incoming = [] } = req.body || {};
+  if (!Array.isArray(incoming) || !incoming.length) return res.status(400).json({ error: 'No sales provided.' });
+  const existing = db.prepare('SELECT id, address, suburb, price FROM sales').all();
+  const isDup = (r) => existing.some(e =>
+    trackDupKey(e) === trackDupKey(r) && suburbsCompatible(e, r) &&
+    (r.price == null || e.price == null || Math.abs(e.price - r.price) <= Math.max(e.price, r.price) * 0.01)
+  );
+  const ins = db.prepare(`
+    INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
+      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
+      zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `);
+  let inserted = 0, skipped = 0;
+  db.transaction(() => {
+    for (const r of incoming) {
+      if (!r.address) { skipped++; continue; }
+      if (isDup(r)) { skipped++; continue; }
+      const year = r.year || (r.exchange_date ? new Date(r.exchange_date).getFullYear() : new Date().getFullYear());
+      let yieldPct = r.yield_percent;
+      if (yieldPct == null && r.price > 0 && r.net_rent > 0) yieldPct = Math.round(r.net_rent / r.price * 10000) / 100;
+      ins.run(uuidv4(), r.address, r.suburb || null, r.region || null, r.asset_class || null,
+        r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
+        r.net_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
+        r.zoning || null, r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
+        r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
+        r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
+        year, r.notes || null, r.source_url || null);
+      inserted++;
+    }
+  })();
+  backupDb().catch(() => {});
+  res.json({ inserted, skipped });
+});
+
 app.put('/api/sales/:id', requireAuth, (req, res) => {
   const body = req.body;
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
@@ -695,6 +734,99 @@ app.post('/api/extract-im', requireAuth, async (req, res) => {
     res.json({ success: true, data: extracted, filename });
   } catch (err) {
     console.error('IM extraction error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Batch sales extraction: IM, comps spreadsheet, or photo of a sales table ──
+const SALES_BATCH_PROMPT = `You are a commercial real estate analyst. This document contains one or more completed property SALES — it may be a single-property Information Memorandum, a comparable-sales table, an agency results sheet, or a screenshot/photo of a spreadsheet.
+
+Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown fences:
+
+{
+  "sales": [
+    {
+      "address": "street address without the suburb, e.g. '93 Wentworth Street'",
+      "suburb": "suburb name",
+      "price": null or integer (sale price in whole dollars),
+      "exchange_date": "YYYY-MM-DD" or null (if only month/year given, use the 1st of the month),
+      "land_area": null or number (site/land area in sqm),
+      "floor_area": null or number (building/GLA in sqm),
+      "net_rent": null or integer (passing/net rent $ pa),
+      "yield_percent": null or number (net initial or passing yield, e.g. 3.07),
+      "wale": null or number,
+      "asset_class": "best fit from exactly: Apartment Blocks | Car Park | Childcare | Co-Living | Commercial | Commercial Office | Development Site | Fast Food/QSR | Industrial | Medical/Healthcare | Pub/Hotel | Retail | Service Station | Shop Top | Strata Office | Strata Retail",
+      "zoning": null or "zoning code",
+      "vendor": null or "vendor name",
+      "purchaser": null or "purchaser name",
+      "agent1": null or "agent name",
+      "firm1": null or "agency name",
+      "notes": "other useful metrics — e.g. '9 units · $777,777/unit · Market rent $284,039 pa · Equivalent yield 4.03%' — max 200 chars"
+    }
+  ]
+}
+
+Blocks of residential units/flats are "Apartment Blocks". Shops with residences above are "Shop Top". Return ONLY the JSON object.`;
+
+app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
+  const { filename = '', mimeType = '', data } = req.body;
+  if (!data) return res.status(400).json({ error: 'No file data provided.' });
+
+  const lowerName = filename.toLowerCase();
+  const supportedImages = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
+  const isPDF   = mimeType === 'application/pdf' || lowerName.endsWith('.pdf');
+  const isImage = supportedImages.includes(mimeType.toLowerCase());
+  const isXlsx  = lowerName.endsWith('.xlsx') || mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const isCsv   = lowerName.endsWith('.csv');
+  if (lowerName.endsWith('.xls') && !isXlsx) {
+    return res.status(400).json({ error: 'Old .xls format not supported — please re-save as .xlsx and upload again.' });
+  }
+  if (!isPDF && !isImage && !isXlsx && !isCsv) {
+    return res.status(400).json({ error: `Unsupported file type: ${mimeType || filename}. Use PDF, image, .xlsx or .csv.` });
+  }
+
+  try {
+    let contentBlock;
+    if (isXlsx) {
+      // Convert the spreadsheet to plain text for the model
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(Buffer.from(data, 'base64'));
+      const lines = [];
+      wb.eachSheet(ws => {
+        lines.push(`--- Sheet: ${ws.name} ---`);
+        ws.eachRow({ includeEmpty: false }, row => {
+          const cells = [];
+          row.eachCell({ includeEmpty: true }, c => {
+            let v = c.value;
+            if (v && typeof v === 'object') v = v.result ?? v.text ?? v.richText?.map(t => t.text).join('') ?? '';
+            cells.push(v == null ? '' : String(v));
+          });
+          if (cells.some(x => x !== '')) lines.push(cells.join('\t'));
+        });
+      });
+      contentBlock = { type: 'text', text: 'Spreadsheet contents:\n' + lines.join('\n').slice(0, 100000) };
+    } else if (isCsv) {
+      contentBlock = { type: 'text', text: 'CSV contents:\n' + Buffer.from(data, 'base64').toString('utf8').slice(0, 100000) };
+    } else if (isPDF) {
+      contentBlock = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } };
+    } else {
+      contentBlock = { type: 'image', source: { type: 'base64', media_type: mimeType, data } };
+    }
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: SALES_BATCH_PROMPT }] }],
+    });
+    const text = (message.content[0]?.text || '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Claude did not return JSON. Response: ' + text.slice(0, 200));
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed.sales)) throw new Error('Expected a sales array.');
+    res.json({ success: true, count: parsed.sales.length, sales: parsed.sales, filename });
+  } catch (err) {
+    console.error('Sales batch extraction error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1438,12 +1570,21 @@ app.get('/api/admin/bucket-test', requireAuth, async (req, res) => {
 });
 
 
-function applySeed() {
-  // Prefer a JSON snapshot downloaded from the bucket (more recent than the committed seed)
+// Apply BOTH seed sources on boot: the bucket snapshot (live data) first, then
+// the committed seed (curated additions). INSERT OR IGNORE + the deletions table
+// make this a safe merge — committed-seed additions reach production even when
+// a bucket snapshot exists, and deleted records never come back.
+function applySeeds() {
   const bucketSeedPath = path.join(DATA_DIR, 'latest_seed.json');
   const committedSeedPath = path.join(__dirname, 'seeds', 'sales_2026.json');
-  const seedPath = fs.existsSync(bucketSeedPath) ? bucketSeedPath : committedSeedPath;
-  if (!fs.existsSync(seedPath)) { console.log('[seed] No seed file found — skipping'); return; }
+  let any = false;
+  for (const p of [bucketSeedPath, committedSeedPath]) {
+    if (fs.existsSync(p)) { applySeed(p); any = true; }
+  }
+  if (!any) console.log('[seed] No seed file found — skipping');
+}
+
+function applySeed(seedPath) {
   console.log('[seed] Applying seed from', seedPath);
   let data;
   try {
@@ -1520,7 +1661,7 @@ function applySeed() {
     if (portfolio_listings.length) console.log(`[seed] ${n}/${portfolio_listings.length} portfolio listings inserted (${deletedPortfolioIds.size} deletions respected)`);
   } catch (e) { console.error('[seed] Portfolio error:', e.message); }
 }
-applySeed();
+applySeeds();
 
 // ── One-time asset class fixes (idempotent — safe to run on every startup) ────
 (function fixAssetClasses() {
