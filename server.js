@@ -196,6 +196,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
+  const insertedIds = [];
   db.transaction(() => {
     for (const r of incoming) {
       if (!r.address) { skipped++; continue; }
@@ -203,7 +204,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       const year = r.year || (r.exchange_date ? new Date(r.exchange_date).getFullYear() : new Date().getFullYear());
       let yieldPct = r.yield_percent;
       if (yieldPct == null && r.price > 0 && r.net_rent > 0) yieldPct = Math.round(r.net_rent / r.price * 10000) / 100;
-      ins.run(uuidv4(), r.address, r.suburb || null, r.region || null, r.asset_class || null,
+      const newId = uuidv4();
+      insertedIds.push(newId);
+      ins.run(newId, r.address, r.suburb || null, r.region || null, r.asset_class || null,
         r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
         r.net_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
         r.units || null, r.parking || null,
@@ -215,7 +218,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
     }
   })();
   backupDb().catch(() => {});
-  res.json({ inserted, skipped });
+  res.json({ inserted, skipped, insertedIds });
 });
 
 // Move a sale record into Campaigns (it was added to the wrong place).
@@ -1868,6 +1871,78 @@ applySeeds();
 // Remove any duplicate campaigns on every boot (idempotent) — the snapshot
 // merge can introduce same-property rows with different ids from older backups
 try { dedupeTracking(); } catch (e) { console.error('[dedupe] Startup dedupe error:', e.message); }
+
+// ── Dev-comps enrichment (Jul 2026): purchaser/agent/GFA/units from network
+//    evidence table — fills blanks only; explicit price fix for 12 Cross St ────
+(function enrichDevComps() {
+  try {
+    const E = [
+      ['781a9797-8be9-4f71-af7a-dd6afc90f905', {purchaser:'Market Buyer', firm1:'Savills', exchange_date:'2025-05-01', year:2025, units:39, floor_area:4580, zoning:'R4'}],
+      ['b75b09c2-597a-4f26-b611-2bddf2c4a1ee', {purchaser:'Market Buyer', exchange_date:'2025-04-01', year:2025, units:26, floor_area:4571, zoning:'R3'}],
+      ['1f8178d4-c014-4836-888d-f59bc9226328', {purchaser:'Premium Private', exchange_date:'2025-04-01', year:2025, units:12, floor_area:1779, zoning:'R3'}],
+      ['ad5637f8-cd48-436a-9fbd-e0f322bcc1d5', {purchaser:'Local Syndicate', exchange_date:'2024-09-01', year:2024, units:10, floor_area:1175, zoning:'E1'}],
+      ['b6985c49-652d-4721-bb5d-496d5554958e', {purchaser:'Private Developer', exchange_date:'2024-04-01', year:2024, units:12, floor_area:1118, zoning:'R4'}],
+      ['c55be61b-2d4f-4f1c-92b6-4e05e8e3bcce', {purchaser:'Private Group', exchange_date:'2023-12-01', year:2023, units:15, floor_area:2021, zoning:'E1'}],
+      ['c5db767f-ee8c-4e04-978f-376e973bdb74', {purchaser:'Market Buyer', exchange_date:'2023-12-01', year:2023, units:15, floor_area:2257, zoning:'R4'}],
+      ['99a51ae7-4894-452e-98f4-9c035ff21be5', {purchaser:'Wirra Luxury Dev', firm1:'Colliers', exchange_date:'2023-12-01', year:2023, units:20, floor_area:2635, zoning:'R4', suburb:'Neutral Bay'}],
+      ['4f9c8ddb-3cee-4d7e-a52d-57497e7670c8', {purchaser:'Private Builder', exchange_date:'2023-05-01', year:2023, units:12, floor_area:1484, zoning:'R3'}],
+      ['8d44d3b2-a7d6-4314-bbbe-77fc5277541b', {purchaser:'Private Builder', exchange_date:'2023-10-01', year:2023, units:60, floor_area:5045, fsr:'1.42:1'}],
+      ['0855857d-bd00-4e0f-95f0-f1567b137610', {firm1:'CBRE (Off-Market)', exchange_date:'2024-02-01', year:2024, units:140, floor_area:12836, fsr:'2.50:1'}],
+      ['9668252d-0efc-4ea5-96aa-aedc56f7461f', {purchaser:'Pallas Capital', firm1:'CBRE (Off-Market)', exchange_date:'2022-04-01', year:2022, units:45, floor_area:4855, zoning:'E1', fsr:'2.50:1'}],
+      ['76cbab2b-e610-43e4-ab91-28dee9b36fe3', {purchaser:'Pallas Capital', firm1:'Colliers / Ray White', exchange_date:'2024-10-01', year:2024, fsr:'2.50:1'}],
+      ['c57e4e56-2fe1-4688-93ef-43a123b11a56', {purchaser:'Pallas Capital', exchange_date:'2025-02-01', year:2025, floor_area:1012, fsr:'2.50:1', zoning:'E1'}],
+      ['3b0f3079-ecf0-4acf-bb15-083109a0ade0', {firm1:'Colliers / Ray White', exchange_date:'2024-08-01', year:2024, floor_area:2215, fsr:'2.50:1', zoning:'E1'}],
+      ['d2a5b61b-2cfb-4fe2-b63f-799c0a728bd4', {firm1:'Colliers / CBRE', exchange_date:'2024-06-01', year:2024, units:116, floor_area:8730, fsr:'5.00:1', zoning:'MU1'}],
+    ];
+    let n = 0;
+    db.transaction(() => {
+      for (const [id, vals] of E) {
+        for (const [col, v] of Object.entries(vals)) {
+          n += db.prepare(`UPDATE sales SET ${col}=? WHERE id=? AND (${col} IS NULL OR ${col}='')`).run(v, id).changes;
+        }
+      }
+      // Explicit price correction per network evidence: 12 Cross St $26.4m (was $26.65m)
+      db.prepare("UPDATE sales SET price=26400000 WHERE id='c57e4e56-2fe1-4688-93ef-43a123b11a56' AND price=26650000").run();
+    })();
+    if (n) console.log(`[fixup] Dev comps enriched: ${n} fields filled`);
+  } catch (e) { console.error('[fixup] Dev comps enrichment error:', e.message); }
+})();
+
+// ── Sales dedupe on every boot (idempotent, conservative): same street number
+//    + name, compatible suburb, price within 1% — keeps the most complete row ──
+function dedupeSales() {
+  const rows = db.prepare('SELECT * FROM sales').all();
+  const groups = new Map();
+  for (const r of rows) {
+    const key = trackDupKey(r);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  const filledCount = r => Object.values(r).filter(v => v !== null && v !== '').length;
+  const toDelete = [];
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i], b = group[j];
+        if (toDelete.includes(a.id) || toDelete.includes(b.id)) continue;
+        if (!suburbsCompatible(a, b)) continue;
+        const samePrice = a.price != null && b.price != null &&
+          Math.abs(a.price - b.price) <= Math.max(a.price, b.price) * 0.01;
+        if (!samePrice) continue;
+        toDelete.push(filledCount(a) >= filledCount(b) ? b.id : a.id);
+      }
+    }
+  }
+  if (toDelete.length) {
+    const del = db.prepare('DELETE FROM sales WHERE id = ?');
+    const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'sales')");
+    db.transaction(() => { for (const id of toDelete) { del.run(id); rec.run(id); } })();
+    console.log(`[dedupe] Removed ${toDelete.length} duplicate sale(s)`);
+  }
+  return toDelete.length;
+}
+try { dedupeSales(); } catch (e) { console.error('[dedupe] Sales dedupe error:', e.message); }
 
 // ── Backfill units + parking for apartment blocks from notes (idempotent) ─────
 (function backfillUnitsParking() {

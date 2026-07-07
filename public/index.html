@@ -523,6 +523,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="page-header">
         <div><h1>Sales Database</h1><div class="sub" id="sales-count">Finalised investment sales</div></div>
         <div class="header-actions">
+          <button class="btn btn-secondary btn-sm hidden" id="sales-undo-btn" onclick="undoLastSalesAdd()" title="Remove the sales added in the last entry">↩ Undo Last Add</button>
           <button class="btn btn-secondary btn-sm" onclick="exportSales()">↓ Export Excel</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('rpdata-file').click()">↑ Import RPData</button>
           <input type="file" id="rpdata-file" accept=".xlsx,.xls" class="hidden" onchange="handleRPDataFile(event)">
@@ -1140,7 +1141,7 @@ function showSection(name) {
   document.getElementById('section-' + name).classList.remove('hidden');
   document.querySelector('.nav-item[data-section="' + name + '"]').classList.add('active');
   if (name === 'dashboard') loadDashboard();
-  if (name === 'sales') { loadSalesYears(); loadSales(); }
+  if (name === 'sales') { loadSalesYears(); loadSales(); updateUndoButton(); }
   if (name === 'tracking') { loadTrackingYears(); loadTracking(); }
   if (name === 'analytics') loadAnalytics();
   if (name === 'agents') loadAgentAnalytics();
@@ -1558,8 +1559,40 @@ function openAddSale() {
     const body = getFormData('sale-form');
     if (!body.address) return alert('Address is required');
     const data = await POST('/sales', body);
-    if (data && !data.error) { closeModal(); loadSales(); }
+    if (data && !data.error) { rememberSalesAdd([data.id], data.address); closeModal(); loadSales(); }
   });
+}
+
+// ── Undo the last data entry (single add, IM add, or bulk upload) ─────────────
+function rememberSalesAdd(ids, label) {
+  if (!ids || !ids.length) return;
+  try { localStorage.setItem('sales_undo', JSON.stringify({ ids, label: label || `${ids.length} sales`, at: Date.now() })); } catch (e) {}
+  updateUndoButton();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('sales-undo-btn');
+  if (!btn) return;
+  let u = null;
+  try { u = JSON.parse(localStorage.getItem('sales_undo') || 'null'); } catch (e) {}
+  const valid = u && u.ids && u.ids.length;
+  btn.classList.toggle('hidden', !valid);
+  if (valid) btn.title = `Remove the last entry: ${u.label}`;
+}
+
+async function undoLastSalesAdd() {
+  let u = null;
+  try { u = JSON.parse(localStorage.getItem('sales_undo') || 'null'); } catch (e) {}
+  if (!u || !u.ids || !u.ids.length) { showToast('Nothing to undo'); return; }
+  if (!confirm(`Undo the last entry — remove ${u.label} from the Sales Database?`)) return;
+  const btn = document.getElementById('sales-undo-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Undoing…'; }
+  for (const id of u.ids) await DEL('/sales/' + id);
+  if (btn) { btn.disabled = false; btn.textContent = '↩ Undo Last Add'; }
+  localStorage.removeItem('sales_undo');
+  updateUndoButton();
+  showToast(`Undone — ${u.label} removed`);
+  loadSales();
 }
 
 async function openEditSale(id) {
@@ -3513,6 +3546,7 @@ async function applyBulkSales() {
   if (!res || res.error) { showToast('Save failed: ' + (res?.error || 'no response')); return; }
   closeModal();
   bulkSalesData = null;
+  if (res.insertedIds && res.insertedIds.length) rememberSalesAdd(res.insertedIds, `${res.inserted} uploaded sales`);
   showToast(`${res.inserted} sale${res.inserted !== 1 ? 's' : ''} added${res.skipped ? ` · ${res.skipped} duplicate${res.skipped !== 1 ? 's' : ''} skipped` : ''}`);
   loadSalesYears(); loadSales();
 }
@@ -3531,6 +3565,8 @@ function openAddSaleFromIM(d, filename) {
     wale: d.wale || '',
     land_area: d.land_area || '',
     floor_area: d.floor_area || '',
+    units: d.units || '',
+    parking: d.parking || '',
     zoning: d.zoning || '',
     fsr: d.fsr || '',
     agent1: d.agent1 || '',
@@ -3545,7 +3581,7 @@ function openAddSaleFromIM(d, filename) {
     const body = getFormData('sale-form');
     if (!body.address) return alert('Address is required');
     const data = await POST('/sales', body);
-    if (data && !data.error) { closeModal(); loadSales(); }
+    if (data && !data.error) { rememberSalesAdd([data.id], data.address); closeModal(); loadSales(); }
   });
 }
 
@@ -3693,41 +3729,11 @@ async function loadPortfolio() {
   const data = await GET('/portfolio');
   if (!data) return;
 
-  if (data.length === 0) {
-    // Server has no portfolio data — offer to restore from localStorage backup
-    const raw = localStorage.getItem('pi_local_backup');
-    if (raw) {
-      try {
-        const backup = JSON.parse(raw);
-        if (backup.listings && backup.listings.length > 0) {
-          const msg = `Your server lost its portfolio data (redeploy wiped the database).\n\n` +
-            `A local backup of ${backup.listings.length} listings from "${backup.portfolio || 'last upload'}" is available.\n\n` +
-            `Restore it now?`;
-          if (confirm(msg)) {
-            const saveRes = await POST('/portfolio/bulk', { listings: backup.listings });
-            if (saveRes && !saveRes.error) {
-              showToast(`Restored ${backup.listings.length} listings from local backup`);
-              loadPortfolio();
-              return;
-            }
-          }
-        }
-      } catch (e) { /* corrupt backup — ignore */ }
-    }
-  }
-
   S.portfolioData = data;
-  // Save to localStorage as a safety net against server-side data loss
-  if (data.length > 0) {
-    const portfolios = [...new Set(data.map(l => l.portfolio).filter(Boolean))];
-    try {
-      localStorage.setItem('pi_local_backup', JSON.stringify({
-        saved_at: new Date().toISOString(),
-        portfolio: portfolios.join(', '),
-        listings: data,
-      }));
-    } catch (e) { /* storage full — not critical */ }
-  }
+  // The old localStorage restore prompt is gone — server persistence (bucket
+  // backup + deletions + volume) is the source of truth, and the prompt kept
+  // resurrecting listings that had already been moved to the Campaigns tracker.
+  try { localStorage.removeItem('pi_local_backup'); } catch (e) {}
 
   initPortfolioSuburbMS();
   renderPortfolioTable(data);
