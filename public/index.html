@@ -652,6 +652,8 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="page-header">
         <div><h1>Campaigns</h1><div class="sub" id="tracking-count">Loading…</div></div>
         <div class="header-actions">
+          <button class="btn btn-primary btn-sm" id="auction-results-btn" onclick="document.getElementById('auction-results-file').click()" title="Upload an auction results PDF — AI matches each result to your tracked campaigns and fills in the sale intel">↑ Upload Auction Results</button>
+          <input type="file" id="auction-results-file" accept=".pdf" class="hidden" onchange="auctionResultsFileSelected(event)">
           <button class="btn btn-secondary btn-sm" onclick="openAddTracking()">+ Add Manually</button>
         </div>
       </div>
@@ -1785,6 +1787,191 @@ function calcConvertYield() {
   const rent  = parseFloat(document.getElementById('cf-net-rent')?.value);
   const yEl   = document.getElementById('cf-yield');
   if (yEl && price > 0 && rent > 0) yEl.value = (rent / price * 100).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUCTION RESULTS UPLOAD — match results to tracked campaigns
+// ═══════════════════════════════════════════════════════════════
+let auctionReview = null; // { auction_date, venue, results: [...] }
+
+function auctionResultsFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) processAuctionResults(file);
+  e.target.value = '';
+}
+
+async function processAuctionResults(file) {
+  const btn = document.getElementById('auction-results-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Reading results…'; }
+
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const result = await POST('/extract-auction-results', { filename: file.name, mimeType: file.type, data: base64 });
+  if (btn) { btn.disabled = false; btn.textContent = '↑ Upload Auction Results'; }
+
+  if (!result || result.error) {
+    showToast('Extraction failed: ' + (result?.error || 'no response'));
+    return;
+  }
+  if (!result.results.length) { showToast('No auction results found in that PDF'); return; }
+
+  // Make sure campaign data is loaded for matching
+  if (!S.trackingData || !S.trackingData.length) {
+    const t = await GET('/tracking');
+    if (t) S.trackingData = t;
+  }
+
+  auctionReview = result;
+  openAuctionReviewModal(result);
+}
+
+// ── Address matching ─────────────────────────────────────────────
+function arNorm(s) {
+  return (s || '').toLowerCase().replace(/[.,]/g, ' ').replace(/\bnsw\b/g, '')
+    .replace(/\b2\d{3}\b/g, '').replace(/\s+/g, ' ').trim();
+}
+// Primary street number: "33/305 Botany Rd" -> "305", "118-120 Olsen Ave" -> "118"
+function arStreetNum(addr) {
+  const a = arNorm(addr);
+  const m = a.match(/(?:\d+[a-z]?\s*\/\s*)?(\d+[a-z]?)/);
+  return m ? m[1] : '';
+}
+// First word of the street name (after the number): "190 Woniora Road" -> "woniora"
+function arStreetName(addr) {
+  const a = arNorm(addr).replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '');
+  return (a.split(' ')[0] || '');
+}
+
+function matchCampaign(result) {
+  const rNum = arStreetNum(result.address);
+  const rStreet = arStreetName(result.address);
+  const rSuburb = arNorm(result.suburb);
+  let best = null, bestScore = 0;
+  for (const t of (S.trackingData || [])) {
+    if (t.status === 'Converted to Sale') continue;
+    const tNum = arStreetNum(t.address), tStreet = arStreetName(t.address);
+    const tSuburb = arNorm(t.suburb) || '';
+    // Hard veto: both sides name a suburb and they disagree
+    if (rSuburb && tSuburb && tSuburb !== rSuburb && !arNorm(t.address).includes(rSuburb)) continue;
+    let score = 0;
+    if (rStreet && rStreet === tStreet) score += 2;
+    if (rNum && rNum === tNum) score += 2;
+    if (rSuburb && (tSuburb === rSuburb || arNorm(t.address).includes(rSuburb))) score += 1;
+    // Require street name + (number or suburb) so "Smith St Bondi" can't match "Smith St Manly"
+    if (score >= 4 || (rStreet && rStreet === tStreet && score >= 3)) {
+      if (score > bestScore) { best = t; bestScore = score; }
+    }
+  }
+  return best;
+}
+
+// ── Review modal ─────────────────────────────────────────────────
+function arOutcomeBadge(outcome) {
+  const sold = (outcome || '').startsWith('Sold');
+  const color = sold ? 'var(--success)' : outcome === 'Withdrawn' ? 'var(--muted)' : 'var(--accent)';
+  return `<span style="color:${color};font-weight:700;font-size:11px">${esc(outcome || '?')}</span>`;
+}
+
+function openAuctionReviewModal(data) {
+  const campaigns = (S.trackingData || []).filter(t => t.status !== 'Converted to Sale');
+  const campOptions = id =>
+    `<option value="">— no campaign —</option>` + campaigns.map(t =>
+      `<option value="${t.id}" ${t.id === id ? 'selected' : ''}>${esc(t.address)}${t.suburb ? ', ' + esc(t.suburb) : ''}</option>`).join('');
+
+  const rows = data.results.map((r, i) => {
+    const match = matchCampaign(r);
+    const sold = (r.outcome || '').startsWith('Sold');
+    const defaultAction = !match ? 'skip' : sold ? 'sold' : r.outcome === 'Withdrawn' ? 'withdrawn' : 'note';
+    return `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg)">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <div>
+          <div style="font-weight:700;font-size:13px">${esc(r.address)}${r.suburb ? ', ' + esc(r.suburb) : ''}</div>
+          <div style="margin-top:3px">${arOutcomeBadge(r.outcome)}
+            ${r.price ? `<span style="font-weight:800;font-size:13px;margin-left:8px">$${Number(r.price).toLocaleString()}</span>` : '<span style="color:var(--muted);font-size:11px;margin-left:8px">no price disclosed</span>'}
+            ${r.agency ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${esc(r.agency)}</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:11px;color:${match ? 'var(--success)' : 'var(--accent)'};align-self:center">
+          ${match ? '✓ Matched to campaign' : '⚠ No match found'}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 150px 130px;gap:8px">
+        <select id="ar-camp-${i}" style="font-size:12px">${campOptions(match ? match.id : '')}</select>
+        <select id="ar-action-${i}" style="font-size:12px">
+          <option value="sold" ${defaultAction === 'sold' ? 'selected' : ''}>Mark as Sold</option>
+          <option value="note" ${defaultAction === 'note' ? 'selected' : ''}>Passed In — add note</option>
+          <option value="withdrawn" ${defaultAction === 'withdrawn' ? 'selected' : ''}>Mark Withdrawn</option>
+          <option value="skip" ${defaultAction === 'skip' ? 'selected' : ''}>Skip</option>
+        </select>
+        <input id="ar-price-${i}" type="number" step="1000" placeholder="Sale price $" value="${r.price || ''}" style="font-size:12px">
+      </div>
+    </div>`;
+  }).join('');
+
+  const matched = data.results.filter(r => matchCampaign(r)).length;
+  openModal(`Auction Results — ${data.auction_date ? fmtDate(data.auction_date) : 'review'}`, `
+    <div style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted);margin-bottom:12px">
+      ${data.results.length} result${data.results.length !== 1 ? 's' : ''} extracted${data.venue ? ' · ' + esc(data.venue) : ''} —
+      <strong style="color:var(--text)">${matched} matched to your tracked campaigns.</strong>
+      Sold results convert the campaign to a finalised sale with the hammer price; all campaign intel (rent, yield, WALE, agents) carries over automatically.
+    </div>
+    ${rows}`, applyAuctionResults, 'Apply Results');
+}
+
+async function applyAuctionResults() {
+  const data = auctionReview;
+  if (!data) return;
+  const auctionDate = data.auction_date || new Date().toISOString().slice(0, 10);
+  let soldN = 0, noteN = 0, wdN = 0, skipN = 0, failN = 0;
+
+  const submitBtn = document.getElementById('modal-submit');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Applying…'; }
+
+  for (let i = 0; i < data.results.length; i++) {
+    const r = data.results[i];
+    const cid    = document.getElementById(`ar-camp-${i}`)?.value;
+    const action = document.getElementById(`ar-action-${i}`)?.value;
+    const price  = parseFloat(document.getElementById(`ar-price-${i}`)?.value) || null;
+    if (!cid || action === 'skip') { skipN++; continue; }
+    const t = (S.trackingData || []).find(x => x.id === cid);
+    if (!t) { skipN++; continue; }
+
+    if (action === 'sold') {
+      if (!price) { failN++; continue; } // price required to finalise a sale
+      const marker = `${r.outcome || 'Sold'} at auction ${auctionDate}${r.auctioneer ? ' — ' + r.auctioneer : ''}`;
+      const res = await POST('/tracking/' + cid + '/sell', {
+        price,
+        exchange_date: auctionDate,
+        notes: [t.notes, marker].filter(Boolean).join(' | '),
+      });
+      res && !res.error ? soldN++ : failN++;
+    } else if (action === 'withdrawn') {
+      const res = await PATCH('/tracking/' + cid + '/status', { status: 'Withdrawn' });
+      res && !res.error ? wdN++ : failN++;
+    } else if (action === 'note') {
+      const marker = `Passed in at auction ${auctionDate}${r.price ? ' (highest bid $' + Number(r.price).toLocaleString() + ')' : ''}`;
+      const res = await PUT('/tracking/' + cid, { ...t, notes: [t.notes, marker].filter(Boolean).join(' | ') });
+      res && !res.error ? noteN++ : failN++;
+    }
+  }
+
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Apply Results'; }
+  closeModal();
+  auctionReview = null;
+  loadTracking();
+  const parts = [];
+  if (soldN) parts.push(`${soldN} sold → Sales Database`);
+  if (noteN) parts.push(`${noteN} passed in`);
+  if (wdN)   parts.push(`${wdN} withdrawn`);
+  if (skipN) parts.push(`${skipN} skipped`);
+  if (failN) parts.push(`${failN} failed`);
+  showToast(parts.length ? 'Auction results applied: ' + parts.join(' · ') : 'Nothing to apply');
 }
 
 // ═══════════════════════════════════════════════════════════════

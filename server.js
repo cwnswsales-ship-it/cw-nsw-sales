@@ -857,6 +857,56 @@ Each element represents one NSW property:
 
 NSW properties only — exclude all other states. Return ONLY the JSON array.`;
 
+const AUCTION_RESULTS_PROMPT = `You are a commercial real estate analyst processing auction results (e.g. an AuctionWORKS results page, agency results sheet, or similar).
+
+Extract every property result from this document and return ONLY a valid JSON object — no prose, no markdown fences, no commentary.
+
+{
+  "auction_date": "YYYY-MM-DD" or null (the auction session date, e.g. "23 Jun 2026" -> "2026-06-23"),
+  "venue": "auction venue/session name" or null,
+  "results": [
+    {
+      "suburb": "suburb name in normal case, e.g. 'South Hurstville' (source often shows it in ALL CAPS)",
+      "address": "street address only, e.g. '190 Woniora Road' (do NOT repeat the suburb)",
+      "outcome": "one of exactly: Sold Under Hammer | Sold Prior | Sold After | Passed In | Withdrawn",
+      "price": null or integer (sale price in whole dollars, e.g. 'AU $2,670,000.00' -> 2670000; null if no price shown),
+      "asset_class": "as shown, e.g. Commercial | Retail | Industrial" or null,
+      "agency": "selling agency e.g. CBRE" or null,
+      "auctioneer": "auctioneer name" or null
+    }
+  ]
+}
+
+Include every property, even ones without a price. Return ONLY the JSON object.`;
+
+app.post('/api/extract-auction-results', requireAuth, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
+  const { filename, mimeType, data } = req.body;
+  if (!data || mimeType !== 'application/pdf') return res.status(400).json({ error: 'PDF required.' });
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } },
+          { type: 'text', text: AUCTION_RESULTS_PROMPT }
+        ]
+      }]
+    });
+    const text = (message.content[0]?.text || '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Claude did not return JSON. Response: ' + text.slice(0, 200));
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed.results)) throw new Error('Expected a results array.');
+    res.json({ success: true, count: parsed.results.length, ...parsed, filename });
+  } catch (err) {
+    console.error('Auction results extraction error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/extract-portfolio', requireAuth, async (req, res) => {
   if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
   const { filename, mimeType, data } = req.body;
