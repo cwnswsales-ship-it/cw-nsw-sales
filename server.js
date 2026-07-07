@@ -1908,6 +1908,64 @@ try { dedupeTracking(); } catch (e) { console.error('[dedupe] Startup dedupe err
   } catch (e) { console.error('[fixup] Dev comps enrichment error:', e.message); }
 })();
 
+// ── Data hygiene (idempotent): fill region from suburb, year from exchange
+//    date; fix known typos and remove the Nelson Rd double-count ──────────────
+(function fillSalesGaps() {
+  try {
+    // Known dup: '2 Nelson Rd' stub + 'Lot 2 Nelson Rd' — same $27m sale as 107-111 Nelson Rd
+    const dupIds = ['f73d800d-1c94-4988-9e6c-575da73d1d5e', 'c42744f6-deb0-48e6-bb3f-bae9e69348b2'];
+    const del = db.prepare('DELETE FROM sales WHERE id = ?');
+    const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'sales')");
+    let removed = 0;
+    db.transaction(() => { for (const id of dupIds) { removed += del.run(id).changes; rec.run(id); } })();
+
+    // Address typos
+    db.prepare("UPDATE sales SET address='21 Madeline Avenue' WHERE address='21 Madeline Aenue'").run();
+    db.prepare("UPDATE sales SET address='3 Montague Street, Balmain' WHERE address='3 Montage Street, Balmain'").run();
+    db.prepare("UPDATE sales SET address='125 Manning Road, Woollahra' WHERE address='125 Manning Road , Woollahra'").run();
+    db.prepare("UPDATE sales SET address='23 Terry Road, Box Hill' WHERE address='23 Terry Toad, Box Hill'").run();
+
+    // Year from exchange date
+    const y = db.prepare("UPDATE sales SET year = CAST(strftime('%Y', exchange_date) AS INTEGER) WHERE year IS NULL AND exchange_date IS NOT NULL").run();
+
+    // Region from suburb where missing (majority conventions in this dataset)
+    const REGION_MAP = {
+      'Bondi Beach':'Eastern Suburbs','Bondi':'Eastern Suburbs','North Bondi':'Eastern Suburbs',
+      'Bondi Junction':'Eastern Suburbs','Tamarama':'Eastern Suburbs','Bronte':'Eastern Suburbs',
+      'Clovelly':'Eastern Suburbs','Coogee':'Eastern Suburbs','Randwick':'Eastern Suburbs',
+      'Maroubra':'Eastern Suburbs','Matraville':'Eastern Suburbs','Vaucluse':'Eastern Suburbs',
+      'Dover Heights':'Eastern Suburbs','Rose Bay':'Eastern Suburbs','Double Bay':'Eastern Suburbs',
+      'Bellevue Hill':'Eastern Suburbs','Darling Point':'Eastern Suburbs','Edgecliff':'Eastern Suburbs',
+      'Woollahra':'Eastern Suburbs','Paddington':'Eastern Suburbs','Watsons Bay':'Eastern Suburbs',
+      'Waverley':'Eastern Suburbs','Darlinghurst':'Eastern Suburbs','Woolloomooloo':'Eastern Suburbs',
+      'Balmain':'Inner West','Rozelle':'Inner West','Birchgrove':'Inner West','Marrickville':'Inner West',
+      'Dulwich Hill':'Inner West','Ashfield':'Inner West','Summer Hill':'Inner West','Ashbury':'Inner West',
+      'Newtown':'Inner West','Glebe':'Inner West',
+      'Mosman':'North Shore','Cremorne':'North Shore','Neutral Bay':'North Shore','Kirribilli':'North Shore',
+      'Greenwich':'North Shore','St Leonards':'North Shore',
+      'Manly':'Northern Beaches','Queenscliff':'Northern Beaches','Freshwater':'Northern Beaches',
+      'Dee Why':'Northern Beaches','Brookvale':'Northern Beaches','Mona Vale':'Northern Beaches',
+      'Newport':'Northern Beaches','Balgowlah':'Northern Beaches','Bilgola Plateau':'Northern Beaches',
+      'Surry Hills':'City Fringe','Chippendale':'City Fringe','Redfern':'City Fringe',
+      'Camperdown':'City Fringe','Potts Point':'City Fringe','Millers Point':'City Fringe',
+      'The Rocks':'City Fringe','Waterloo':'City Fringe','Zetland':'City Fringe','Beaconsfield':'City Fringe',
+    };
+    let regions = 0;
+    const updR = db.prepare("UPDATE sales SET region=? WHERE suburb=? AND (region IS NULL OR region='')");
+    db.transaction(() => { for (const [sub, reg] of Object.entries(REGION_MAP)) regions += updR.run(reg, sub).changes; })();
+    // Obvious error: Mosman is North Shore
+    db.prepare("UPDATE sales SET region='North Shore' WHERE suburb='Mosman' AND region='Eastern Suburbs'").run();
+
+    // Suburbs embedded in the address but missing from the suburb field
+    db.prepare("UPDATE sales SET suburb='Rosebery', region=COALESCE(region,'City Fringe') WHERE (suburb IS NULL OR suburb='') AND address LIKE '%, Rosebery%'").run();
+    db.prepare("UPDATE sales SET suburb='Concord', region=COALESCE(region,'Inner West') WHERE (suburb IS NULL OR suburb='') AND address LIKE '%, Concord%'").run();
+    db.prepare("UPDATE sales SET suburb='Kirribilli', region=COALESCE(region,'North Shore'), address='14 McDougall Street' WHERE address='Kirribilli, 14 Mcdougall Street'").run();
+    db.prepare("UPDATE sales SET region='Western Sydney' WHERE suburb='Auburn' AND (region IS NULL OR region='')").run();
+
+    if (removed || y.changes || regions) console.log(`[fixup] Gaps: ${removed} dup removed, ${y.changes} years derived, ${regions} regions filled`);
+  } catch (e) { console.error('[fixup] Gap fill error:', e.message); }
+})();
+
 // ── Sales dedupe on every boot (idempotent, conservative): same street number
 //    + name, compatible suburb, price within 1% — keeps the most complete row ──
 function dedupeSales() {
