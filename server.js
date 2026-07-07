@@ -227,6 +227,12 @@ app.get('/api/tracking', requireAuth, (req, res) => {
 
 app.post('/api/tracking', requireAuth, (req, res) => {
   const body = req.body;
+  // Block duplicates: same street number + name with a compatible suburb
+  const existing = db.prepare("SELECT * FROM tracking WHERE status != 'Converted to Sale'").all()
+    .find(t => trackDupKey(t) === trackDupKey(body) && suburbsCompatible(t, body));
+  if (existing && !body.force) {
+    return res.json({ duplicate: true, existing });
+  }
   const id = uuidv4();
   const year = body.year || new Date().getFullYear();
   db.prepare(`
@@ -1005,11 +1011,91 @@ app.delete('/api/portfolio', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Tracking duplicate detection ──────────────────────────────────────────────
+// Same street number + street name, and suburbs that don't conflict = duplicate.
+function trackNorm(s) {
+  return String(s || '').toLowerCase().replace(/[.,]/g, ' ').replace(/\bnsw\b/g, '')
+    .replace(/\b2\d{3}\b/g, '').replace(/\s+/g, ' ').trim();
+}
+function trackDupKey(r) {
+  const a = trackNorm(r.address);
+  const m = a.match(/(?:\d+[a-z]?\s*\/\s*)?(\d+[a-z]?)/);
+  const num = m ? m[1] : a; // no street number -> fall back to full address
+  const street = a.replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '').split(' ')[0] || '';
+  return num + '|' + street;
+}
+function suburbsCompatible(a, b) {
+  const sa = trackNorm(a.suburb), sb = trackNorm(b.suburb);
+  if (!sa || !sb) return true;
+  return sa === sb || trackNorm(a.address).includes(sb) || trackNorm(b.address).includes(sa);
+}
+const TRACK_STATUS_PRIORITY = {
+  'Converted to Sale': 5, 'Exchanged - Awaiting Settlement': 4,
+  'Under Offer': 3, 'Active Campaign': 2, 'Withdrawn': 1,
+};
+function trackRowScore(r) {
+  const filled = ['price_guide','net_rent','estimated_yield','wale','land_area','floor_area',
+    'vendor','purchaser','agent1','firm1','campaign_close_date','exchange_date','notes','source_url']
+    .filter(k => r[k] !== null && r[k] !== undefined && r[k] !== '').length;
+  return (TRACK_STATUS_PRIORITY[r.status] || 0) * 100 + filled;
+}
+// Remove duplicate campaigns, keeping the most advanced/complete row per property.
+// Deleted ids are recorded in deletions so snapshot merges can't resurrect them.
+function dedupeTracking() {
+  const rows = db.prepare('SELECT * FROM tracking').all();
+  const groups = new Map();
+  for (const r of rows) {
+    const key = trackDupKey(r);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  const toDelete = [];
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    // Sub-partition: only rows with non-conflicting suburbs are true duplicates
+    const buckets = [];
+    for (const r of group) {
+      const b = buckets.find(bk => bk.every(x => suburbsCompatible(x, r)));
+      if (b) b.push(r); else buckets.push([r]);
+    }
+    for (const bucket of buckets) {
+      if (bucket.length < 2) continue;
+      bucket.sort((a, b) => trackRowScore(b) - trackRowScore(a) ||
+        String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+      toDelete.push(...bucket.slice(1).map(r => r.id));
+    }
+  }
+  if (toDelete.length) {
+    const del = db.prepare('DELETE FROM tracking WHERE id = ?');
+    const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'tracking')");
+    db.transaction(() => { for (const id of toDelete) { del.run(id); rec.run(id); } })();
+    console.log(`[dedupe] Removed ${toDelete.length} duplicate campaign(s)`);
+  }
+  return toDelete.length;
+}
+
+app.post('/api/tracking/dedupe', requireAuth, (req, res) => {
+  const removed = dedupeTracking();
+  if (removed) backupDb().catch(() => {});
+  res.json({ ok: true, removed });
+});
+
 // Convert portfolio listing → tracking campaign
 app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   const listing = db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id);
   if (!listing) return res.status(404).json({ error: 'Not found' });
   const body = req.body;
+
+  // Already tracked? Link to the existing campaign instead of creating a duplicate
+  const probe = { address: body.address || listing.address, suburb: body.suburb || listing.suburb };
+  const existing = db.prepare("SELECT * FROM tracking WHERE status != 'Converted to Sale'").all()
+    .find(t => trackDupKey(t) === trackDupKey(probe) && suburbsCompatible(t, probe));
+  if (existing) {
+    db.prepare(`UPDATE portfolio_listings SET status='Tracking', tracking_id=?, updated_at=datetime('now') WHERE id=?`)
+      .run(existing.id, req.params.id);
+    return res.json({ tracking: existing, duplicate: true });
+  }
+
   const trackId = uuidv4();
   db.prepare(`
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
@@ -1461,6 +1547,10 @@ applySeed();
     }
   } catch (e) { console.error('[fixup] Asset class fix error:', e.message); }
 })();
+
+// Remove any duplicate campaigns on every boot (idempotent) — the snapshot
+// merge can introduce same-property rows with different ids from older backups
+try { dedupeTracking(); } catch (e) { console.error('[dedupe] Startup dedupe error:', e.message); }
 
 
 // ── Force reseed endpoint — call this to immediately restore all data ──────────

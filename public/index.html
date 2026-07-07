@@ -619,6 +619,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="ss-item"><div class="ss-val" id="cst-active">–</div><div class="ss-label">Active Campaign</div></div>
         <div class="ss-item"><div class="ss-val orange" id="cst-offer">–</div><div class="ss-label">Under Offer</div></div>
         <div class="ss-item"><div class="ss-val orange" id="cst-exchanged">–</div><div class="ss-label">Exchanged</div></div>
+        <div class="ss-item"><div class="ss-val" id="cst-expired">–</div><div class="ss-label">Expired</div></div>
         <div class="ss-item"><div class="ss-val" id="cst-closing">–</div><div class="ss-label">Closing This Week</div></div>
         <div class="ss-item"><div class="ss-val" id="cst-withdrawn">–</div><div class="ss-label">Withdrawn</div></div>
       </div>
@@ -654,6 +655,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="header-actions">
           <button class="btn btn-primary btn-sm" id="auction-results-btn" onclick="document.getElementById('auction-results-file').click()" title="Upload an auction results PDF — AI matches each result to your tracked campaigns and fills in the sale intel">↑ Upload Auction Results</button>
           <input type="file" id="auction-results-file" accept=".pdf" class="hidden" onchange="auctionResultsFileSelected(event)">
+          <button class="btn btn-secondary btn-sm" id="dedupe-btn" onclick="dedupeCampaigns()" title="Remove duplicate campaigns — keeps the most advanced, most complete record for each property">Remove Duplicates</button>
           <button class="btn btn-secondary btn-sm" onclick="openAddTracking()">+ Add Manually</button>
         </div>
       </div>
@@ -661,6 +663,9 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="campaign-tabs">
         <button class="ctab active" id="ctab-active" onclick="setCampaignTab('active')">
           Active Pipeline <span class="ctab-count" id="ctab-active-count">0</span>
+        </button>
+        <button class="ctab" id="ctab-expired" onclick="setCampaignTab('expired')" title="Campaigns past their close date with no outcome recorded yet">
+          Expired Listings <span class="ctab-count" id="ctab-expired-count">0</span>
         </button>
         <button class="ctab ctab-exchanged" id="ctab-exchanged" onclick="setCampaignTab('exchanged')">
           Exchanged — Pending Settlement <span class="ctab-count" id="ctab-exchanged-count">0</span>
@@ -1574,24 +1579,38 @@ async function loadTracking() {
   renderTrackingFiltered();
 }
 
+// Past its close date but no outcome recorded yet -> Expired Listings tab
+function isExpiredCampaign(t) {
+  if (t.status !== 'Active Campaign' && t.status !== 'Under Offer') return false;
+  const d = daysUntilClose(t.campaign_close_date);
+  return d !== null && d < 0;
+}
+
 function renderTrackingFiltered() {
   const all = S.trackingData;
-  const activeCount    = all.filter(t => t.status === 'Active Campaign' || t.status === 'Under Offer').length;
+  const isLive = t => (t.status === 'Active Campaign' || t.status === 'Under Offer') && !isExpiredCampaign(t);
+  const activeCount    = all.filter(isLive).length;
+  const expiredCount   = all.filter(isExpiredCampaign).length;
   const exchangedCount = all.filter(t => t.status === 'Exchanged - Awaiting Settlement').length;
   document.getElementById('ctab-active-count').textContent    = activeCount;
+  document.getElementById('ctab-expired-count').textContent   = expiredCount;
   document.getElementById('ctab-exchanged-count').textContent = exchangedCount;
 
-  let data;
+  let data, label;
   if (S.campaignTab === 'exchanged') {
     data = all.filter(t => t.status === 'Exchanged - Awaiting Settlement');
+    label = `${data.length} propert${data.length!==1?'ies':'y'} exchanged — pending settlement`;
+  } else if (S.campaignTab === 'expired') {
+    // Most recently expired first — record the outcome (Sold / Withdraw) to clear them
+    data = all.filter(isExpiredCampaign)
+      .sort((a, b) => String(b.campaign_close_date||'').localeCompare(String(a.campaign_close_date||'')));
+    label = `${data.length} expired listing${data.length!==1?'s':''} — past close date, outcome not yet recorded`;
   } else {
-    data = all.filter(t => t.status === 'Active Campaign' || t.status === 'Under Offer' || t.status === 'Withdrawn');
+    data = all.filter(t => isLive(t) || t.status === 'Withdrawn');
     if (S.campaignProcess) data = data.filter(t => t.process === S.campaignProcess);
+    label = `${data.length} active campaign${data.length!==1?'s':''}${S.campaignProcess ? ' · ' + S.campaignProcess : ''}`;
   }
 
-  const label = S.campaignTab === 'exchanged'
-    ? `${data.length} propert${data.length!==1?'ies':'y'} exchanged — pending settlement`
-    : `${data.length} active campaign${data.length!==1?'s':''}${S.campaignProcess ? ' · ' + S.campaignProcess : ''}`;
   document.getElementById('tracking-count').textContent = label;
   renderTracking(data);
 }
@@ -1617,7 +1636,13 @@ function setCampaignProcess(proc) {
 function renderTracking(data) {
   const tbody = document.getElementById('tracking-tbody');
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><h3>No properties tracked</h3><p>Add properties manually</p></div></td></tr>`;
+    const empty = S.campaignTab === 'expired'
+      ? '<h3>No expired listings</h3><p>Campaigns move here automatically once they pass their close date without an outcome</p>'
+      : S.campaignTab === 'exchanged'
+      ? '<h3>Nothing pending settlement</h3><p>Campaigns marked Exchanged — Awaiting Settlement appear here</p>'
+      : '<h3>No properties tracked</h3><p>Add properties manually</p>';
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">${empty}</div></td></tr>`;
+    renderCampaignStats();
     return;
   }
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1663,24 +1688,30 @@ function renderTracking(data) {
       </td>
     </tr>`;
   }).join('');
-  renderCampaignStats(data);
+  renderCampaignStats();
 }
 
-function renderCampaignStats(data) {
-  const counts = { 'Active Campaign': 0, 'Under Offer': 0, 'Exchanged - Awaiting Settlement': 0, 'Withdrawn': 0 };
-  let closingThisWeek = 0;
+function renderCampaignStats() {
+  // Always compute from the full pipeline, not the current tab's slice
+  const data = S.trackingData || [];
+  let active = 0, offer = 0, exchanged = 0, withdrawn = 0, expired = 0, closingThisWeek = 0;
   data.forEach(t => {
-    if (t.status in counts) counts[t.status]++;
+    if (isExpiredCampaign(t)) { expired++; }
+    else if (t.status === 'Active Campaign') active++;
+    else if (t.status === 'Under Offer') offer++;
+    if (t.status === 'Exchanged - Awaiting Settlement') exchanged++;
+    if (t.status === 'Withdrawn') withdrawn++;
     const d = daysUntilClose(t.campaign_close_date);
     if (d !== null && d >= 0 && d <= 7 && t.status !== 'Withdrawn') closingThisWeek++;
   });
   const el = id => document.getElementById(id);
   if (el('cst-active')) {
-    el('cst-active').textContent = counts['Active Campaign'];
-    el('cst-offer').textContent = counts['Under Offer'];
-    el('cst-exchanged').textContent = counts['Exchanged - Awaiting Settlement'];
+    el('cst-active').textContent = active;
+    el('cst-offer').textContent = offer;
+    el('cst-exchanged').textContent = exchanged;
+    el('cst-expired').textContent = expired;
     el('cst-closing').textContent = closingThisWeek;
-    el('cst-withdrawn').textContent = counts['Withdrawn'];
+    el('cst-withdrawn').textContent = withdrawn;
   }
 }
 
@@ -1697,8 +1728,25 @@ function openAddTracking(prefill={}) {
     const body = getFormData('tracking-form');
     if (!body.address) return alert('Address is required');
     const data = await POST('/tracking', {...body, ...prefill});
+    if (data && data.duplicate) {
+      if (confirm(`"${data.existing.address}" is already being tracked (${data.existing.status}). Add anyway?`)) {
+        const forced = await POST('/tracking', {...body, ...prefill, force: true});
+        if (forced && !forced.error) { closeModal(); loadTracking(); }
+      }
+      return;
+    }
     if (data && !data.error) { closeModal(); loadTracking(); }
   });
+}
+
+async function dedupeCampaigns() {
+  const btn = document.getElementById('dedupe-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
+  const data = await POST('/tracking/dedupe', {});
+  if (btn) { btn.disabled = false; btn.textContent = 'Remove Duplicates'; }
+  if (!data || data.error) { showToast('Dedupe failed'); return; }
+  showToast(data.removed ? `${data.removed} duplicate${data.removed !== 1 ? 's' : ''} removed` : 'No duplicates found');
+  if (data.removed) loadTracking();
 }
 
 async function openEditTracking(id) {
