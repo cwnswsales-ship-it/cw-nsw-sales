@@ -102,8 +102,19 @@ app.get('/api/stats', requireAuth, (req, res) => {
     WHERE status NOT IN ('Converted to Sale','Withdrawn')
       AND campaign_close_date IS NOT NULL
       AND campaign_close_date >= date('now','-1 day')
-      AND campaign_close_date <= date('now','+14 days')
-    ORDER BY campaign_close_date ASC LIMIT 10
+      AND campaign_close_date <= date('now','+31 days')
+    ORDER BY campaign_close_date ASC LIMIT 14
+  `).all();
+
+  // Portfolio auctions in the same window — shown alongside campaign closes
+  const upcomingAuctions = db.prepare(`
+    SELECT id, address, suburb, tenant, asset_class, price_guide, auction_date, auction_location
+    FROM portfolio_listings
+    WHERE status NOT IN ('Sold','Withdrawn','Passed In')
+      AND auction_date IS NOT NULL
+      AND auction_date >= date('now','-1 day')
+      AND auction_date <= date('now','+31 days')
+    ORDER BY auction_date ASC LIMIT 14
   `).all();
 
   const trackingByStatus = db.prepare(
@@ -114,7 +125,7 @@ app.get('/api/stats', requireAuth, (req, res) => {
     "SELECT asset_class, COUNT(*) as count FROM sales WHERE asset_class IS NOT NULL GROUP BY asset_class ORDER BY count DESC LIMIT 8"
   ).all();
 
-  res.json({ totalSales, totalVolume, avgYield, totalActive, closingThisWeek, notableSales, upcomingCloses, trackingByStatus, byAsset });
+  res.json({ totalSales, totalVolume, avgYield, totalActive, closingThisWeek, notableSales, upcomingCloses, upcomingAuctions, trackingByStatus, byAsset });
 });
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
@@ -153,14 +164,14 @@ app.post('/api/sales', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
+      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area, units, parking,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Sold', body.price, body.price_guide, body.net_rent,
-    body.yield_percent, body.wale, body.land_area, body.floor_area, body.zoning,
-    body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
+    body.yield_percent, body.wale, body.land_area, body.floor_area, body.units || null, body.parking || null,
+    body.zoning, body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
     body.campaign_close_date, year, body.notes, body.source_url);
   backupDb().catch(() => {});
@@ -179,10 +190,10 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   );
   const ins = db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area,
+      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area, units, parking,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   db.transaction(() => {
@@ -195,6 +206,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       ins.run(uuidv4(), r.address, r.suburb || null, r.region || null, r.asset_class || null,
         r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
         r.net_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
+        r.units || null, r.parking || null,
         r.zoning || null, r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
         r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
         r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
@@ -206,19 +218,52 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   res.json({ inserted, skipped });
 });
 
+// Move a sale record into Campaigns (it was added to the wrong place).
+// Creates a tracking record from the sale's fields, then removes the sale.
+app.post('/api/sales/:id/to-campaign', requireAuth, (req, res) => {
+  const s = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Not found' });
+
+  // Already tracked? Just remove the sale and point at the existing campaign
+  const existing = db.prepare("SELECT * FROM tracking WHERE status != 'Converted to Sale'").all()
+    .find(t => trackDupKey(t) === trackDupKey(s) && suburbsCompatible(t, s));
+  let tracking = existing;
+  if (!existing) {
+    const trackId = uuidv4();
+    db.prepare(`
+      INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
+        price_guide, net_rent, estimated_yield, wale, land_area, floor_area, zoning, fsr, height_limit,
+        vendor, purchaser, agent1, agent2, firm1, firm2,
+        campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(trackId, s.address, s.suburb, s.region, s.asset_class, s.process, 'Active Campaign',
+      s.price || s.price_guide, s.net_rent, s.yield_percent, s.wale, s.land_area, s.floor_area,
+      s.zoning, s.fsr, s.height_limit, s.vendor, s.purchaser, s.agent1, s.agent2, s.firm1, s.firm2,
+      s.campaign_close_date, s.exchange_date, s.settlement_date,
+      s.year || new Date().getFullYear(), s.notes, s.source_url);
+    tracking = db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId);
+  }
+  db.prepare('DELETE FROM sales WHERE id = ?').run(s.id);
+  db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'sales')").run(s.id);
+  backupDb().catch(() => {});
+  res.json({ tracking, linkedExisting: !!existing });
+});
+
 app.put('/api/sales/:id', requireAuth, (req, res) => {
   const body = req.body;
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
   db.prepare(`
     UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
       price=?, price_guide=?, net_rent=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
+      units=?, parking=?,
       zoning=?, fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
     body.price, body.price_guide, body.net_rent, body.yield_percent, body.wale,
-    body.land_area, body.floor_area, body.zoning, body.fsr, body.height_limit,
+    body.land_area, body.floor_area, body.units || null, body.parking || null,
+    body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
     body.notes, body.source_url, req.params.id);
@@ -755,6 +800,8 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
       "net_rent": null or integer (passing/net rent $ pa),
       "yield_percent": null or number (net initial or passing yield, e.g. 3.07),
       "wale": null or number,
+      "units": null or integer (number of units/flats for apartment blocks — sum the unit mix if needed, e.g. '4 x 2-bed + 3 x 1-bed' -> 7),
+      "parking": null or integer (car spaces / lock-up garages / LUGs),
       "asset_class": "best fit from exactly: Apartment Blocks | Car Park | Childcare | Co-Living | Commercial | Commercial Office | Development Site | Fast Food/QSR | Industrial | Medical/Healthcare | Pub/Hotel | Retail | Service Station | Shop Top | Strata Office | Strata Retail",
       "zoning": null or "zoning code",
       "vendor": null or "vendor name",
@@ -827,6 +874,84 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
     res.json({ success: true, count: parsed.sales.length, sales: parsed.sales, filename });
   } catch (err) {
     console.error('Sales batch extraction error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Deal Intelligence: proactive AI briefing over the whole dataset ──────────
+app.post('/api/ai-insights', requireAuth, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
+  try {
+    const byAssetYear = db.prepare(`
+      SELECT asset_class, year, COUNT(*) n, SUM(price) vol, ROUND(AVG(yield_percent),2) avg_yield
+      FROM sales WHERE asset_class IS NOT NULL AND year >= 2023
+      GROUP BY asset_class, year ORDER BY year DESC, vol DESC`).all();
+    const byQuarter = db.prepare(`
+      SELECT substr(exchange_date,1,7) month, COUNT(*) n, SUM(price) vol
+      FROM sales WHERE exchange_date >= date('now','-18 months')
+      GROUP BY month ORDER BY month`).all();
+    const buyers = db.prepare(`
+      SELECT purchaser, COUNT(*) n, SUM(price) vol, GROUP_CONCAT(asset_class) classes
+      FROM sales WHERE purchaser IS NOT NULL AND purchaser != ''
+      GROUP BY purchaser ORDER BY n DESC, vol DESC LIMIT 20`).all();
+    const vendors = db.prepare(`
+      SELECT vendor, COUNT(*) n, SUM(price) vol FROM sales
+      WHERE vendor IS NOT NULL AND vendor != '' GROUP BY vendor ORDER BY n DESC LIMIT 10`).all();
+    const topFirms = db.prepare(`
+      SELECT firm1 firm, COUNT(*) n, SUM(price) vol FROM sales
+      WHERE firm1 IS NOT NULL AND year >= 2024 GROUP BY firm1 ORDER BY vol DESC LIMIT 12`).all();
+    const bySuburb = db.prepare(`
+      SELECT suburb, COUNT(*) n, SUM(price) vol, ROUND(AVG(yield_percent),2) avg_yield
+      FROM sales WHERE suburb IS NOT NULL AND year >= 2024
+      GROUP BY suburb HAVING n >= 3 ORDER BY n DESC LIMIT 20`).all();
+    const recentSales = db.prepare(`
+      SELECT address, suburb, asset_class, price, yield_percent, units, exchange_date, purchaser, firm1
+      FROM sales WHERE exchange_date >= date('now','-120 days')
+      ORDER BY exchange_date DESC LIMIT 30`).all();
+    const activeCampaigns = db.prepare(`
+      SELECT address, suburb, asset_class, process, status, price_guide, campaign_close_date, agent1, firm1
+      FROM tracking WHERE status IN ('Active Campaign','Under Offer') ORDER BY campaign_close_date`).all();
+    const expired = db.prepare(`
+      SELECT address, suburb, asset_class, price_guide, campaign_close_date, agent1, firm1
+      FROM tracking WHERE status IN ('Active Campaign','Under Offer')
+        AND campaign_close_date < date('now') ORDER BY campaign_close_date DESC LIMIT 25`).all();
+    const pendingSettlement = db.prepare(`
+      SELECT address, suburb, purchaser, expected_settlement_date FROM tracking
+      WHERE status = 'Exchanged - Awaiting Settlement'`).all();
+    const pipeline = db.prepare(`
+      SELECT address, suburb, tenant, asset_class, auction_date FROM portfolio_listings
+      WHERE status NOT IN ('Sold','Withdrawn') AND auction_date >= date('now') LIMIT 20`).all();
+
+    const dataBlock = JSON.stringify({
+      salesByAssetClassAndYear: byAssetYear, volumeByMonth: byQuarter,
+      repeatBuyers: buyers, activeVendors: vendors, competitorFirms: topFirms,
+      hotSuburbs: bySuburb, last120DaysSales: recentSales,
+      liveCampaigns: activeCampaigns, expiredCampaignsNoOutcome: expired,
+      exchangedPendingSettlement: pendingSettlement, upcomingPortfolioAuctions: pipeline,
+    });
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 3000,
+      messages: [{
+        role: 'user',
+        content: `You are the head of research for a Cushman & Wakefield NSW investment sales team (commercial property, metro Sydney). Below is the team's full sales database and pipeline as JSON. Produce a sharp, actionable intelligence briefing for the agents. Use markdown with ## section headings and tight bullet points. Every claim must cite specific numbers, names, suburbs or addresses from the data — no generic advice.
+
+Sections:
+## Market Pulse — what's moving: asset classes and suburbs trending up or down, volume momentum, where yields sit
+## Key Buyers to Call — repeat purchasers and who to pitch what (match buyer history to live stock or likely vendors)
+## Hot Stock — the asset classes and suburbs with the deepest recent demand where new listings would move fastest
+## Follow-Ups This Week — expired campaigns with no recorded outcome (chase the result or relist), settlements coming up, campaigns closing soon
+## Where to Hunt Listings — specific angles: suburbs with high turnover, owners who bought 3+ years ago in hot pockets, vendor types active now, competitor activity worth countering
+
+DATA:
+${dataBlock}`,
+      }],
+    });
+    const text = (message.content[0]?.text || '').trim();
+    res.json({ ok: true, briefing: text, generated_at: new Date().toISOString() });
+  } catch (err) {
+    console.error('AI insights error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1607,17 +1732,15 @@ function applySeed(seedPath) {
     const deletedSaleIds = new Set(
       db.prepare("SELECT id FROM deletions WHERE table_name='sales'").all().map(r => r.id)
     );
-    const ins = db.prepare(`INSERT OR IGNORE INTO sales (
-      id,address,suburb,region,asset_class,process,status,price,price_guide,net_rent,
-      yield_percent,wale,land_area,floor_area,zoning,fsr,height_limit,vendor,purchaser,
-      agent1,agent2,firm1,firm2,exchange_date,settlement_date,campaign_close_date,year,notes
-    ) VALUES (
-      @id,@address,@suburb,@region,@asset_class,@process,@status,@price,@price_guide,@net_rent,
-      @yield_percent,@wale,@land_area,@floor_area,@zoning,@fsr,@height_limit,@vendor,@purchaser,
-      @agent1,@agent2,@firm1,@firm2,@exchange_date,@settlement_date,@campaign_close_date,@year,@notes
-    )`);
+    const saleCols = ['id','address','suburb','region','asset_class','process','status','price',
+      'price_guide','net_rent','yield_percent','wale','land_area','floor_area','units','parking',
+      'zoning','fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
+      'exchange_date','settlement_date','campaign_close_date','year','notes'];
+    const ins = db.prepare(`INSERT OR IGNORE INTO sales (${saleCols.join(',')})
+      VALUES (${saleCols.map(c => '@' + c).join(',')})`);
+    const norm = r => Object.fromEntries(saleCols.map(c => [c, r[c] ?? null]));
     let n = 0;
-    db.transaction(() => { for (const r of sales) { if (!deletedSaleIds.has(r.id)) n += ins.run(r).changes; } })();
+    db.transaction(() => { for (const r of sales) { if (!deletedSaleIds.has(r.id)) n += ins.run(norm(r)).changes; } })();
     console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected)`);
   } catch (e) { console.error('[seed] Sales error:', e.message); }
 
@@ -1745,6 +1868,35 @@ applySeeds();
 // Remove any duplicate campaigns on every boot (idempotent) — the snapshot
 // merge can introduce same-property rows with different ids from older backups
 try { dedupeTracking(); } catch (e) { console.error('[dedupe] Startup dedupe error:', e.message); }
+
+// ── Backfill units + parking for apartment blocks from notes (idempotent) ─────
+(function backfillUnitsParking() {
+  try {
+    const rows = db.prepare(
+      "SELECT id, notes FROM sales WHERE asset_class='Apartment Blocks' AND (units IS NULL OR parking IS NULL) AND notes IS NOT NULL"
+    ).all();
+    const upd = db.prepare('UPDATE sales SET units=COALESCE(units,?), parking=COALESCE(parking,?) WHERE id=?');
+    let n = 0;
+    db.transaction(() => {
+      for (const { id, notes } of rows) {
+        let units = null, parking = null;
+        // Explicit "12 units" / "Block of six units" (digits only)
+        const um = notes.match(/(\d+)\s*(?:x\s*)?units?\b/i) || notes.match(/block of (\d+)/i);
+        if (um) units = parseInt(um[1]);
+        // Otherwise sum bedroom-mix patterns: "4 x 2-Beds + 3 x 1-Beds"
+        if (!units) {
+          const mix = [...notes.matchAll(/(\d+)\s*x\s*(?:\d+(?:\.\d+)?[\s-]*(?:bed|br)|studio)/gi)];
+          if (mix.length) units = mix.reduce((t, m) => t + parseInt(m[1]), 0);
+        }
+        // Parking: "4 car spaces" / "3 x LUGs" / "6 garages" / "9 cars"
+        const pm = notes.match(/(\d+)\s*(?:x\s*)?(?:car\s*spaces?|cars?\b|lugs?\b|garages?\b|lock\s*up)/i);
+        if (pm) parking = parseInt(pm[1]);
+        if (units || parking) { upd.run(units, parking, id); n++; }
+      }
+    })();
+    if (n) console.log(`[fixup] Units/parking backfilled from notes for ${n} apartment block sales`);
+  } catch (e) { console.error('[fixup] Units/parking backfill error:', e.message); }
+})();
 
 
 // ── Force reseed endpoint — call this to immediately restore all data ──────────

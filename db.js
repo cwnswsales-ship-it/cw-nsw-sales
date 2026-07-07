@@ -27,6 +27,8 @@ db.exec(`
     wale REAL,
     land_area REAL,
     floor_area REAL,
+    units INTEGER,
+    parking INTEGER,
     zoning TEXT,
     fsr TEXT,
     height_limit TEXT,
@@ -153,3 +155,7 @@ try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN region TEXT'); } catch(
 // "Exchanged - Pending Settlement" stage carry over when marked Sold (safe on existing DBs)
 try { db.exec('ALTER TABLE tracking ADD COLUMN purchaser TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE tracking ADD COLUMN exchange_date TEXT'); } catch(e) {}
+
+// Units + parking for apartment block analysis (price per unit, parking spots)
+try { db.exec('ALTER TABLE sales ADD COLUMN units INTEGER'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN parking INTEGER'); } catch(e) {}

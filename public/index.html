@@ -46,6 +46,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;transition:all .15s;border-left:2px solid transparent;position:relative}
 .nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.9)}
 .nav-item.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--accent)}
+.nav-item.drop-hot{background:rgba(232,115,42,.25);color:#fff;border-left-color:var(--accent);outline:2px dashed var(--accent);outline-offset:-2px}
+tr[draggable="true"]{cursor:grab}
+tr[draggable="true"]:active{cursor:grabbing}
 .nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
 .nav-item.active svg{opacity:1}
 .nav-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto}
@@ -428,11 +431,13 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
         Dashboard
       </div>
-      <div class="nav-item" data-section="sales" onclick="showSection('sales')">
+      <div class="nav-item" data-section="sales" onclick="showSection('sales')"
+           ondragover="dragOverNav(event,'campaign')" ondragleave="dragLeaveNav(event)" ondrop="dropOnSalesNav(event)">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
         Sales Database
       </div>
-      <div class="nav-item" data-section="tracking" onclick="showSection('tracking')">
+      <div class="nav-item" data-section="tracking" onclick="showSection('tracking')"
+           ondragover="dragOverNav(event,'sale')" ondragleave="dragLeaveNav(event)" ondrop="dropOnCampaignsNav(event)">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
         Campaigns
       </div>
@@ -448,6 +453,10 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="nav-item" data-section="brains" onclick="showSection('brains')">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
         Brains Trust
+      </div>
+      <div class="nav-item" data-section="insights" onclick="showSection('insights')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 1.887.87 3.568 2.23 4.668.27.218.42.55.42.898V14a1 1 0 001 1h4.7a1 1 0 001-1v-.434c0-.347.15-.68.42-.898A5.99 5.99 0 0016 8a6 6 0 00-6-6zM8.65 16a.5.5 0 000 1h2.7a.5.5 0 000-1h-2.7zM9 18.5a.5.5 0 01.5-.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5z"/></svg>
+        Deal Intel
       </div>
       <div class="nav-section" style="margin-top:6px">Portfolios</div>
       <div class="nav-item" data-section="premium" onclick="showSection('premium')">
@@ -479,7 +488,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <!-- row 1: upcoming closes + CBRE portfolio countdown -->
         <div class="dash-2col">
           <div class="dash-panel">
-            <div class="dash-panel-header">Upcoming Closes &amp; Auctions <span class="dash-panel-sub">next 14 days</span></div>
+            <div class="dash-panel-header">Upcoming Closes &amp; Auctions <span class="dash-panel-sub">next 31 days · campaigns + portfolio</span></div>
             <div id="dash-upcoming-closes"></div>
           </div>
           <div class="dash-panel">
@@ -681,6 +690,12 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <button class="pchip pchip-treaty" id="pchip-Private Treaty" onclick="setCampaignProcess('Private Treaty')">Private Treaty</button>
         <button class="pchip pchip-offmarket" id="pchip-Off-Market" onclick="setCampaignProcess('Off-Market')">Off-Market</button>
       </div>
+      <!-- Expired tab sort (shown only on Expired Listings) -->
+      <div class="process-chips hidden" id="expired-sort-chips">
+        <span class="process-chips-label">Sort by days expired</span>
+        <button class="pchip active" id="exsort-newest" onclick="setExpiredSort('newest')">Newest first</button>
+        <button class="pchip" id="exsort-oldest" onclick="setExpiredSort('oldest')">Oldest first</button>
+      </div>
       <div class="filters-bar">
         <input class="filter-input" id="tf-search" placeholder="Search address, agent, vendor..." oninput="debounce(loadTracking,400)()">
         <select class="filter-select" id="tf-asset" onchange="loadTracking()">
@@ -859,6 +874,27 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </div>
       </div>
       <div id="bt-results" style="padding:20px 28px"></div>
+    </section>
+
+    <!-- ── Deal Intel: proactive AI briefing ────────────────────── -->
+    <section id="section-insights" class="hidden">
+      <div class="sales-stats-bar">
+        <div class="ss-item" style="flex:3;border-right:none">
+          <div class="ss-val" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:0;line-height:1.4">AI analyses your entire sales database and pipeline — trends, key buyers, hot asset classes, follow-ups your agents should be chasing, and where to hunt for the next listing.</div>
+        </div>
+      </div>
+      <div class="page-header">
+        <div><h1>Deal Intel</h1><div class="sub" id="di-sub">AI briefing across sales, campaigns &amp; pipeline</div></div>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" id="di-generate-btn" onclick="generateInsights()">⚡ Generate Briefing</button>
+        </div>
+      </div>
+      <div id="di-result" style="padding:20px 28px;max-width:900px">
+        <div class="empty-state" style="padding:60px 20px">
+          <h3>No briefing yet</h3>
+          <p>Click <strong>Generate Briefing</strong> — the AI reads every sale, campaign and pipeline entry and reports what your agents should act on.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ── Premium Investments Tracker ─────────────────────────── -->
@@ -1109,6 +1145,7 @@ function showSection(name) {
   if (name === 'analytics') loadAnalytics();
   if (name === 'agents') loadAgentAnalytics();
   if (name === 'brains') { /* loads on demand */ }
+  if (name === 'insights') loadCachedInsights();
   if (name === 'premium') { updatePortfolioCountdowns(); loadPortfolio(); loadBackupStatus(); }
 }
 
@@ -1141,29 +1178,39 @@ async function loadDashboard() {
   // CBRE Burgess Rawson portfolio countdown
   renderPortfolioCountdown();
 
-  // Upcoming closes
-  document.getElementById('dash-upcoming-closes').innerHTML = data.upcomingCloses.length
-    ? data.upcomingCloses.map(t => {
-        const days = daysUntilClose(t.campaign_close_date);
+  // Upcoming closes & auctions — campaign close dates + CBRE portfolio auction dates, merged by date
+  const upcoming = [
+    ...data.upcomingCloses.map(t => ({ ...t, _date: t.campaign_close_date, _kind: 'close' })),
+    ...(data.upcomingAuctions || []).map(a => ({ ...a, _date: a.auction_date, _kind: 'auction' })),
+  ].sort((a, b) => String(a._date).localeCompare(String(b._date)));
+
+  document.getElementById('dash-upcoming-closes').innerHTML = upcoming.length
+    ? upcoming.map(t => {
+        const days = daysUntilClose(t._date);
         const daysLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' :
           days < 0 ? `${Math.abs(days)}d ago` : `${days} days`;
         const cls = days < 0 ? 'dash-close-urgent' : days <= 3 ? 'dash-close-urgent' :
           days <= 7 ? 'dash-close-soon' : 'dash-close-ok';
+        const isAuction = t._kind === 'auction';
+        const target = isAuction ? 'premium' : 'tracking';
         return `
-        <div class="dash-row" style="cursor:pointer" onclick="showSection('tracking')">
+        <div class="dash-row" style="cursor:pointer" onclick="showSection('${target}')">
           <div class="dash-row-left">
-            <div style="font-weight:600;font-size:12.5px">${t.address}</div>
+            <div style="font-weight:600;font-size:12.5px">${t.address}${isAuction && t.tenant ? ` <span style="color:var(--muted);font-weight:400">(${t.tenant})</span>` : ''}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">${[t.suburb, t.asset_class].filter(Boolean).join(' · ')}</div>
-            <div style="font-size:11px;margin-top:1px">${processBadge(t.process)}&nbsp;${trackStatusBadge(t.status)}</div>
+            <div style="font-size:11px;margin-top:1px">${isAuction
+              ? '<span class="badge-pill" style="background:rgba(232,115,42,.15);color:var(--accent)">CBRE AUCTION</span>'
+              : processBadge(t.process) + '&nbsp;' + trackStatusBadge(t.status)}</div>
           </div>
           <div class="dash-row-right">
             <div class="dash-close-date ${cls}">${daysLabel}</div>
+            <div class="dash-close-meta">${fmtDate(t._date)}</div>
             ${t.price_guide ? `<div class="dash-close-meta">Guide: $${fmtVol(t.price_guide)}</div>` : ''}
             ${t.agent1 ? `<div class="dash-close-meta">${t.agent1}</div>` : ''}
           </div>
         </div>`;
       }).join('')
-    : '<div class="dash-empty">No campaigns closing in the next 14 days</div>';
+    : '<div class="dash-empty">Nothing closing or going to auction in the next 31 days</div>';
 
   // By asset class
   const maxCount = data.byAsset.length ? Math.max(...data.byAsset.map(r => r.count)) : 1;
@@ -1470,11 +1517,20 @@ function renderSales(data) {
     const { gfaRate, daGfaRate } = calcGFARates(s);
     const checked = S.selectedSales.has(s.id) ? 'checked' : '';
     const rowCls = S.selectedSales.has(s.id) ? 'row-selected' : '';
+    const isApt = s.asset_class === 'Apartment Blocks';
+    const perUnit = (isApt && s.price && s.units) ? Math.round(s.price / s.units) : null;
+    const aptMeta = isApt && (s.units || s.parking)
+      ? `<small style="display:block;color:var(--accent);font-size:10.5px;font-weight:600">${[
+          s.units ? s.units + ' units' : '',
+          perUnit ? '$' + fmt(perUnit) + '/unit' : '',
+          s.parking != null ? (s.parking ? s.parking + ' cars' : 'no parking') : '',
+        ].filter(Boolean).join(' · ')}</small>`
+      : '';
     return `
-    <tr class="${rowCls}" id="row-${s.id}">
+    <tr class="${rowCls}" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
       <td class="td-addr">${s.address}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
-      <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}</td>
+      <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${aptMeta}</td>
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
       <td>${assetBadge(s.asset_class)}</td>
       <td class="td-mono ${s.yield_percent?'td-yield-good':''}">${s.yield_percent ? s.yield_percent.toFixed(2)+'%' : '–'}</td>
@@ -1488,6 +1544,7 @@ function renderSales(data) {
       <td class="td-truncate" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes||'–'}</td>
       <td class="td-actions">
         ${s.source_url ? `<a href="${s.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="moveSaleToCampaigns('${s.id}')" title="Move to Campaigns (or drag the row onto the Campaigns menu)">⇄</button>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditSale('${s.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSale('${s.id}')" title="Delete">🗑</button>
       </td>
@@ -1537,6 +1594,8 @@ function saleForm(s={}) {
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${s.land_area||''}"></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
+    <div class="form-group"><label>No. of Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Apartment blocks" title="Price per unit is calculated automatically"></div>
+    <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}"></div>
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(s.firm1)}"></div>
@@ -1602,9 +1661,10 @@ function renderTrackingFiltered() {
     data = all.filter(t => t.status === 'Exchanged - Awaiting Settlement');
     label = `${data.length} propert${data.length!==1?'ies':'y'} exchanged — pending settlement`;
   } else if (S.campaignTab === 'expired') {
-    // Most recently expired first — record the outcome (Sold / Withdraw) to clear them
+    // Sortable: newest = most recently expired first, oldest = longest-expired first
+    const dir = (S.expiredSort || 'newest') === 'oldest' ? 1 : -1;
     data = all.filter(isExpiredCampaign)
-      .sort((a, b) => String(b.campaign_close_date||'').localeCompare(String(a.campaign_close_date||'')));
+      .sort((a, b) => dir * String(a.campaign_close_date||'').localeCompare(String(b.campaign_close_date||'')));
     label = `${data.length} expired listing${data.length!==1?'s':''} — past close date, outcome not yet recorded`;
   } else {
     data = all.filter(t => isLive(t) || t.status === 'Withdrawn');
@@ -1622,6 +1682,15 @@ function setCampaignTab(tab) {
   document.getElementById('ctab-' + tab).classList.add('active');
   const chips = document.getElementById('process-chips');
   if (chips) chips.classList.toggle('hidden', tab !== 'active');
+  const exChips = document.getElementById('expired-sort-chips');
+  if (exChips) exChips.classList.toggle('hidden', tab !== 'expired');
+  renderTrackingFiltered();
+}
+
+function setExpiredSort(dir) {
+  S.expiredSort = dir;
+  document.getElementById('exsort-newest')?.classList.toggle('active', dir === 'newest');
+  document.getElementById('exsort-oldest')?.classList.toggle('active', dir === 'oldest');
   renderTrackingFiltered();
 }
 
@@ -1662,7 +1731,7 @@ function renderTracking(data) {
       `<option value="${s}"${s===t.status?' selected':''}>${s}</option>`).join('');
     const statusCls = statusSelectClass(t.status);
     return `
-    <tr class="${urgencyClass}">
+    <tr class="${urgencyClass}" draggable="true" ondragstart="dragRecordStart(event,'campaign','${t.id}')">
       <td class="td-addr">${t.address}<small>${[t.suburb,t.region].filter(Boolean).join(' · ')}</small></td>
       <td>${assetBadge(t.asset_class)}</td>
       <td>${processBadge(t.process)}</td>
@@ -2021,6 +2090,107 @@ async function applyAuctionResults() {
   if (skipN) parts.push(`${skipN} skipped`);
   if (failN) parts.push(`${failN} failed`);
   showToast(parts.length ? 'Auction results applied: ' + parts.join(' · ') : 'Nothing to apply');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG & DROP: move records between Sales Database ⇄ Campaigns
+// ═══════════════════════════════════════════════════════════════
+function dragRecordStart(e, type, id) {
+  e.dataTransfer.setData('text/plain', JSON.stringify({ type, id }));
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOverNav(e, acceptType) {
+  try {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drop-hot');
+  } catch (err) {}
+}
+function dragLeaveNav(e) { e.currentTarget.classList.remove('drop-hot'); }
+
+function readDragPayload(e) {
+  try { return JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return null; }
+}
+
+// Sale row dropped on the Campaigns nav → move it into the pipeline
+async function dropOnCampaignsNav(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-hot');
+  const p = readDragPayload(e);
+  if (!p || p.type !== 'sale') return;
+  await moveSaleToCampaigns(p.id);
+}
+
+// Campaign row dropped on the Sales nav → open Mark as Sold (carries everything over)
+function dropOnSalesNav(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-hot');
+  const p = readDragPayload(e);
+  if (!p || p.type !== 'campaign') return;
+  openConvertToSale(p.id);
+}
+
+async function moveSaleToCampaigns(id) {
+  const s = (S.salesData || []).find(x => x.id === id);
+  if (!confirm(`Move "${s ? s.address : 'this sale'}" out of the Sales Database and into Campaigns as an active campaign?`)) return;
+  const res = await POST('/sales/' + id + '/to-campaign', {});
+  if (!res || res.error) { showToast('Move failed: ' + (res?.error || 'no response')); return; }
+  showToast(res.linkedExisting ? 'Removed from Sales — already tracked in Campaigns' : 'Moved to Campaigns active pipeline');
+  loadSales();
+  loadTracking();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEAL INTEL — proactive AI briefing
+// ═══════════════════════════════════════════════════════════════
+function mdToHtml(md) {
+  const escd = md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines = escd.split('\n');
+  let html = '', inList = false;
+  for (const line of lines) {
+    const t = line.trim();
+    if (/^[-*] /.test(t)) {
+      if (!inList) { html += '<ul style="margin:6px 0 12px 18px;padding:0">'; inList = true; }
+      html += `<li style="margin:4px 0;font-size:13px;line-height:1.55">${t.slice(2)}</li>`;
+      continue;
+    }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (t.startsWith('## ')) html += `<h3 style="margin:20px 0 8px;font-size:15px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:5px">${t.slice(3)}</h3>`;
+    else if (t.startsWith('# ')) html += `<h2 style="margin:20px 0 8px;font-size:17px">${t.slice(2)}</h2>`;
+    else if (t) html += `<p style="margin:6px 0;font-size:13px;line-height:1.6">${t}</p>`;
+  }
+  if (inList) html += '</ul>';
+  // bold **text**
+  return html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+async function generateInsights() {
+  const btn = document.getElementById('di-generate-btn');
+  const out = document.getElementById('di-result');
+  if (btn) { btn.disabled = true; btn.textContent = '⚡ Analysing your data… (20–40s)'; }
+  out.innerHTML = `<div class="empty-state" style="padding:50px 20px"><h3>Analysing…</h3><p>Reading every sale, campaign, buyer and pipeline entry</p></div>`;
+  const res = await POST('/ai-insights', {});
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Generate Briefing'; }
+  if (!res || res.error) {
+    out.innerHTML = `<div class="empty-state" style="padding:50px 20px"><h3>Generation failed</h3><p>${esc(res?.error || 'No response')}</p></div>`;
+    return;
+  }
+  renderInsights(res);
+  try { localStorage.setItem('di_briefing', JSON.stringify(res)); } catch (e) {}
+}
+
+function renderInsights(res) {
+  const out = document.getElementById('di-result');
+  const when = res.generated_at ? new Date(res.generated_at).toLocaleString('en-AU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('di-sub').textContent = 'AI briefing across sales, campaigns & pipeline' + (when ? ' · generated ' + when : '');
+  out.innerHTML = `<div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 26px">${mdToHtml(res.briefing || '')}</div>`;
+}
+
+function loadCachedInsights() {
+  try {
+    const raw = localStorage.getItem('di_briefing');
+    if (raw) renderInsights(JSON.parse(raw));
+  } catch (e) {}
 }
 
 // ═══════════════════════════════════════════════════════════════
