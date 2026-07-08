@@ -221,6 +221,27 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   res.json({ inserted, skipped, insertedIds });
 });
 
+// On-demand duplicate scan for the validation screen: same street number +
+// street name with compatible suburbs — regardless of price, so the user can
+// judge price-conflict pairs (possible re-sales) themselves.
+app.get('/api/sales/duplicates', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT * FROM sales').all();
+  const groups = new Map();
+  for (const r of rows) {
+    const k = trackDupKey(r);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const pairs = [];
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    for (let i = 0; i < g.length; i++)
+      for (let j = i + 1; j < g.length; j++)
+        if (suburbsCompatible(g[i], g[j])) pairs.push([g[i], g[j]]);
+  }
+  res.json({ total: pairs.length, pairs: pairs.slice(0, 30) });
+});
+
 // Move a sale record into Campaigns (it was added to the wrong place).
 // Creates a tracking record from the sale's fields, then removes the sale.
 app.post('/api/sales/:id/to-campaign', requireAuth, (req, res) => {
@@ -1279,9 +1300,9 @@ function trackNorm(s) {
 }
 function trackDupKey(r) {
   const a = trackNorm(r.address);
-  const m = a.match(/(?:\d+[a-z]?\s*\/\s*)?(\d+[a-z]?)/);
+  const m = a.match(/(?:\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*\/\s*)?(\d+[a-z]?)/);
   const num = m ? m[1] : a; // no street number -> fall back to full address
-  const street = a.replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '').split(' ')[0] || '';
+  const street = a.replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '').split(' ')[0] || '';
   return num + '|' + street;
 }
 function suburbsCompatible(a, b) {
@@ -1741,10 +1762,23 @@ function applySeed(seedPath) {
       'exchange_date','settlement_date','campaign_close_date','year','notes'];
     const ins = db.prepare(`INSERT OR IGNORE INTO sales (${saleCols.join(',')})
       VALUES (${saleCols.map(c => '@' + c).join(',')})`);
+    // For rows that already exist, fill any BLANK columns from the seed — this
+    // lets curated enrichments (agents, zoning, units, dates) reach production
+    // without ever overwriting live edits.
+    const fillCols = saleCols.filter(c => c !== 'id');
+    const fill = db.prepare(`UPDATE sales SET ${fillCols.map(c => `${c}=COALESCE(${c},@${c})`).join(',')} WHERE id=@id`);
     const norm = r => Object.fromEntries(saleCols.map(c => [c, r[c] ?? null]));
     let n = 0;
-    db.transaction(() => { for (const r of sales) { if (!deletedSaleIds.has(r.id)) n += ins.run(norm(r)).changes; } })();
-    console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected)`);
+    db.transaction(() => {
+      for (const r of sales) {
+        if (deletedSaleIds.has(r.id)) continue;
+        const nr = norm(r);
+        const ch = ins.run(nr).changes;
+        n += ch;
+        if (!ch) fill.run(nr);
+      }
+    })();
+    console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected, blanks back-filled)`);
   } catch (e) { console.error('[seed] Sales error:', e.message); }
 
   try {
@@ -2000,7 +2034,9 @@ function dedupeSales() {
   }
   return toDelete.length;
 }
-try { dedupeSales(); } catch (e) { console.error('[dedupe] Sales dedupe error:', e.message); }
+// Note: dedupeSales() no longer runs automatically — duplicate detection is
+// user-driven via the Find Duplicates button (GET /api/sales/duplicates) so
+// every removal is validated by hand. Bulk uploads still skip duplicates on entry.
 
 // ── Backfill units + parking for apartment blocks from notes (idempotent) ─────
 (function backfillUnitsParking() {

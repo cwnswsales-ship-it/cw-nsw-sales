@@ -524,6 +524,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div><h1>Sales Database</h1><div class="sub" id="sales-count">Finalised investment sales</div></div>
         <div class="header-actions">
           <button class="btn btn-secondary btn-sm hidden" id="sales-undo-btn" onclick="undoLastSalesAdd()" title="Remove the sales added in the last entry">↩ Undo Last Add</button>
+          <button class="btn btn-secondary btn-sm" id="find-dups-btn" onclick="findSalesDuplicates()" title="Scan for possible duplicate sales and validate which record to keep">⚠ Find Duplicates</button>
           <button class="btn btn-secondary btn-sm" onclick="exportSales()">↓ Export Excel</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('rpdata-file').click()">↑ Import RPData</button>
           <input type="file" id="rpdata-file" accept=".xlsx,.xls" class="hidden" onchange="handleRPDataFile(event)">
@@ -1049,9 +1050,9 @@ const S = {
 
 };
 
-const ASSET_CLASSES = ['Apartment Blocks','Car Park','Childcare','Co-Living','Commercial','Commercial Office',
-  'Development Site','Fast Food/QSR','Industrial','Medical/Healthcare','Pub/Hotel','Retail','Service Station',
-  'Shop Top','Strata Office','Strata Retail'];
+const ASSET_CLASSES = ['Apartment Blocks','Boarding House','Car Park','Childcare','Co-Living','Commercial',
+  'Commercial Office','Development Site','Fast Food/QSR','Industrial','Medical/Healthcare','Pub/Hotel','Retail',
+  'Service Station','Shop Top','Strata Office','Strata Retail'];
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
 const REGIONS = ['CBD/City','City Fringe','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
@@ -1989,12 +1990,12 @@ function arNorm(s) {
 // Primary street number: "33/305 Botany Rd" -> "305", "118-120 Olsen Ave" -> "118"
 function arStreetNum(addr) {
   const a = arNorm(addr);
-  const m = a.match(/(?:\d+[a-z]?\s*\/\s*)?(\d+[a-z]?)/);
+  const m = a.match(/(?:\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*\/\s*)?(\d+[a-z]?)/);
   return m ? m[1] : '';
 }
 // First word of the street name (after the number): "190 Woniora Road" -> "woniora"
 function arStreetName(addr) {
-  const a = arNorm(addr).replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '');
+  const a = arNorm(addr).replace(/^(?:lot\s+\d+\s*,?\s*)?(?:\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*\/\s*)?\d+[a-z]?(?:\s*-\s*\d+[a-z]?)?\s*/, '');
   return (a.split(' ')[0] || '');
 }
 
@@ -2123,6 +2124,105 @@ async function applyAuctionResults() {
   if (skipN) parts.push(`${skipN} skipped`);
   if (failN) parts.push(`${failN} failed`);
   showToast(parts.length ? 'Auction results applied: ' + parts.join(' · ') : 'Nothing to apply');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIND DUPLICATES — on-demand scan + keep/remove validation screen
+// ═══════════════════════════════════════════════════════════════
+let dupPairs = null;
+
+async function findSalesDuplicates() {
+  const btn = document.getElementById('find-dups-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning…'; }
+  const data = await GET('/sales/duplicates');
+  if (btn) { btn.disabled = false; btn.textContent = '⚠ Find Duplicates'; }
+  if (!data || data.error) { showToast('Scan failed'); return; }
+  if (!data.pairs.length) { showToast('✓ No possible duplicates found'); return; }
+  dupPairs = data.pairs;
+  openDupValidationModal(data);
+}
+
+const DUP_FIELDS = [
+  ['address','Address'], ['suburb','Suburb'], ['asset_class','Asset Class'],
+  ['price','Sale Price'], ['exchange_date','Sale Date'], ['yield_percent','Yield %'],
+  ['net_rent','Net Rent'], ['land_area','Land m²'], ['floor_area','Floor m²'],
+  ['units','Units'], ['agent1','Agent'], ['firm1','Firm'], ['purchaser','Purchaser'], ['notes','Notes'],
+];
+function dupFmt(f, v) {
+  if (v === null || v === undefined || v === '') return '<span style="color:var(--muted)">—</span>';
+  if (f === 'price' || f === 'net_rent') return '$' + Number(v).toLocaleString();
+  if (f === 'notes') return esc(String(v).slice(0, 70)) + (String(v).length > 70 ? '…' : '');
+  return esc(String(v));
+}
+
+function openDupValidationModal(data) {
+  const html = dupPairs.map(([a, b], i) => {
+    const rows = DUP_FIELDS.map(([f, label]) => {
+      const va = a[f], vb = b[f];
+      const differ = String(va ?? '') !== String(vb ?? '') && va != null && vb != null && va !== '' && vb !== '';
+      const hl = differ ? 'background:rgba(232,115,42,.12)' : '';
+      return `<tr>
+        <td style="padding:3px 8px;color:var(--muted);font-size:11px;white-space:nowrap">${label}</td>
+        <td style="padding:3px 8px;font-size:12px;${hl}">${dupFmt(f, va)}</td>
+        <td style="padding:3px 8px;font-size:12px;${hl}">${dupFmt(f, vb)}</td>
+      </tr>`;
+    }).join('');
+    return `
+    <div style="border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden">
+      <div style="background:var(--bg);padding:8px 12px;font-weight:700;font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <span>Possible duplicate ${i + 1} of ${dupPairs.length}: ${esc(a.address)}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 8px"></td>
+          <td style="padding:6px 8px"><label style="display:flex;gap:6px;align-items:center;font-weight:700;font-size:12px;cursor:pointer"><input type="radio" name="dup-${i}" value="a" checked> Keep A</label></td>
+          <td style="padding:6px 8px"><label style="display:flex;gap:6px;align-items:center;font-weight:700;font-size:12px;cursor:pointer"><input type="radio" name="dup-${i}" value="b"> Keep B</label></td>
+        </tr>
+        ${rows}
+        <tr><td colspan="3" style="padding:6px 8px;border-top:1px solid var(--border)">
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);cursor:pointer">
+            <input type="radio" name="dup-${i}" value="skip"> Not a duplicate — keep both (e.g. the same property genuinely re-sold)
+          </label>
+        </td></tr>
+      </table>
+    </div>`;
+  }).join('');
+
+  openModal(`Duplicate Check — ${dupPairs.length} possible pair${dupPairs.length !== 1 ? 's' : ''}${data.total > dupPairs.length ? ' (first ' + dupPairs.length + ' of ' + data.total + ')' : ''}`, `
+    <div style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted);margin-bottom:12px">
+      Differing fields are highlighted. Pick which record to keep for each pair — any details missing
+      from the keeper are copied across from the removed record, so no data is lost.
+    </div>
+    ${html}`, applyDupResolutions, 'Apply');
+}
+
+async function applyDupResolutions() {
+  if (!dupPairs) return;
+  const btn = document.getElementById('modal-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
+  let removed = 0, kept = 0, skipped = 0;
+  for (let i = 0; i < dupPairs.length; i++) {
+    const choice = document.querySelector(`input[name="dup-${i}"]:checked`)?.value;
+    if (!choice || choice === 'skip') { skipped++; continue; }
+    const [a, b] = dupPairs[i];
+    const keep = choice === 'a' ? a : b;
+    const drop = choice === 'a' ? b : a;
+    // merge: fill the keeper's blanks from the removed record
+    const merged = { ...keep };
+    for (const k of Object.keys(drop)) {
+      if ((merged[k] === null || merged[k] === undefined || merged[k] === '') && drop[k] !== null && drop[k] !== '') merged[k] = drop[k];
+    }
+    const pu = await PUT('/sales/' + keep.id, merged);
+    if (pu && !pu.error) {
+      const de = await DEL('/sales/' + drop.id);
+      if (de && !de.error) { removed++; kept++; continue; }
+    }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
+  closeModal();
+  dupPairs = null;
+  showToast(`${removed} duplicate${removed !== 1 ? 's' : ''} removed${skipped ? ` · ${skipped} kept as separate sales` : ''}`);
+  loadSales();
 }
 
 // ═══════════════════════════════════════════════════════════════
