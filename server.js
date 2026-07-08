@@ -912,7 +912,7 @@ app.post('/api/ai-insights', requireAuth, async (req, res) => {
   if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
   try {
     const byAssetYear = db.prepare(`
-      SELECT asset_class, year, COUNT(*) n, SUM(price) vol, ROUND(AVG(yield_percent),2) avg_yield
+      SELECT asset_class, year, COUNT(*) n, SUM(price) vol, ROUND(AVG(CASE WHEN yield_percent > 0 AND yield_percent < 20 THEN yield_percent END),2) avg_yield
       FROM sales WHERE asset_class IS NOT NULL AND year >= 2023
       GROUP BY asset_class, year ORDER BY year DESC, vol DESC`).all();
     const byQuarter = db.prepare(`
@@ -930,7 +930,7 @@ app.post('/api/ai-insights', requireAuth, async (req, res) => {
       SELECT firm1 firm, COUNT(*) n, SUM(price) vol FROM sales
       WHERE firm1 IS NOT NULL AND year >= 2024 GROUP BY firm1 ORDER BY vol DESC LIMIT 12`).all();
     const bySuburb = db.prepare(`
-      SELECT suburb, COUNT(*) n, SUM(price) vol, ROUND(AVG(yield_percent),2) avg_yield
+      SELECT suburb, COUNT(*) n, SUM(price) vol, ROUND(AVG(CASE WHEN yield_percent > 0 AND yield_percent < 20 THEN yield_percent END),2) avg_yield
       FROM sales WHERE suburb IS NOT NULL AND year >= 2024
       GROUP BY suburb HAVING n >= 3 ORDER BY n DESC LIMIT 20`).all();
     const recentSales = db.prepare(`
@@ -1335,6 +1335,7 @@ function normHeight(v) {
 }
 // Uniform firm names: consistent brand spellings, no " - "/", " separators
 const FIRM_CANON = [
+  [/^(1st|first)\s*city\b.*/i, '1st City'],
   [/^colliers international.*/i, 'Colliers'], [/^colliers$/i, 'Colliers'],
   [/^cbre\b.*(off.?market)?.*/i, 'CBRE'],
   [/^jll\b.*/i, 'JLL'],
@@ -1374,6 +1375,12 @@ function normaliseParties(body) {
   if (body.firm2) body.firm2 = normFirm(body.firm2);
   if (body.zoning) body.zoning = normZoning(body.zoning);
   if (body.height_limit) body.height_limit = normHeight(body.height_limit);
+  // Yield: numeric, or 'VP' (vacant possession)
+  if (typeof body.yield_percent === 'string') {
+    const s = body.yield_percent.trim();
+    if (/^v\.?p\.?$/i.test(s)) body.yield_percent = 'VP';
+    else body.yield_percent = parseFloat(s) || null;
+  }
   return body;
 }
 
