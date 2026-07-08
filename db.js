@@ -23,6 +23,7 @@ db.exec(`
     price REAL,
     price_guide REAL,
     net_rent REAL,
+    gross_rent REAL,
     yield_percent REAL,
     wale REAL,
     land_area REAL,
@@ -155,6 +156,9 @@ try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN region TEXT'); } catch(
 // "Exchanged - Pending Settlement" stage carry over when marked Sold (safe on existing DBs)
 try { db.exec('ALTER TABLE tracking ADD COLUMN purchaser TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE tracking ADD COLUMN exchange_date TEXT'); } catch(e) {}
+
+// Gross rent for apartment blocks (gross yield analysis alongside net)
+try { db.exec('ALTER TABLE sales ADD COLUMN gross_rent REAL'); } catch(e) {}
 
 // Units + parking for apartment block analysis (price per unit, parking spots)
 try { db.exec('ALTER TABLE sales ADD COLUMN units INTEGER'); } catch(e) {}

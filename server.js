@@ -165,12 +165,12 @@ app.post('/api/sales', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area, units, parking,
+      price, price_guide, net_rent, gross_rent, yield_percent, wale, land_area, floor_area, units, parking,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Sold', body.price, body.price_guide, body.net_rent,
+    body.status || 'Sold', body.price, body.price_guide, body.net_rent, body.gross_rent || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.units || null, body.parking || null,
     body.zoning, body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
@@ -191,10 +191,10 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   );
   const ins = db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, yield_percent, wale, land_area, floor_area, units, parking,
+      price, price_guide, net_rent, gross_rent, yield_percent, wale, land_area, floor_area, units, parking,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -210,7 +210,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       insertedIds.push(newId);
       ins.run(newId, r.address, r.suburb || null, r.region || null, r.asset_class || null,
         r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
-        r.net_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
+        r.net_rent || null, r.gross_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
         r.units || null, r.parking || null,
         r.zoning || null, r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
         r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
@@ -281,14 +281,14 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
   db.prepare(`
     UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price=?, price_guide=?, net_rent=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
+      price=?, price_guide=?, net_rent=?, gross_rent=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
       units=?, parking=?,
       zoning=?, fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
-    body.price, body.price_guide, body.net_rent, body.yield_percent, body.wale,
+    body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.yield_percent, body.wale,
     body.land_area, body.floor_area, body.units || null, body.parking || null,
     body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
@@ -503,34 +503,44 @@ const XL = {
 };
 
 const XL_COLS = [
-  { header: 'Address',          key: 'address',         width: 36, type: 'text'    },
-  { header: 'Suburb',           key: 'suburb',          width: 15, type: 'text'    },
-  { header: 'Region',           key: 'region',          width: 18, type: 'text'    },
-  { header: 'Asset Class',      key: 'asset_class',     width: 20, type: 'text'    },
-  { header: 'Process',          key: 'process',         width: 14, type: 'text'    },
-  { header: 'Status',           key: 'status',          width: 10, type: 'text'    },
-  { header: 'Sale Price',       key: 'price',           width: 15, type: 'currency'},
-  { header: 'Price Guide',      key: 'price_guide',     width: 15, type: 'currency'},
-  { header: 'Net Rent p.a.',    key: 'net_rent',        width: 14, type: 'currency'},
-  { header: 'Yield %',          key: 'yield_percent',   width: 9,  type: 'pct'     },
-  { header: 'WALE (yrs)',       key: 'wale',            width: 10, type: 'num1'    },
-  { header: 'Land m²',         key: 'land_area',       width: 10, type: 'area'    },
-  { header: 'Floor m²',        key: 'floor_area',      width: 10, type: 'area'    },
-  { header: 'Zoning',           key: 'zoning',          width: 12, type: 'text'    },
-  { header: 'FSR',              key: 'fsr',             width: 7,  type: 'text'    },
-  { header: 'Agent 1',          key: 'agent1',          width: 24, type: 'text'    },
-  { header: 'Firm 1',           key: 'firm1',           width: 24, type: 'text'    },
-  { header: 'Agent 2',          key: 'agent2',          width: 24, type: 'text'    },
-  { header: 'Firm 2',           key: 'firm2',           width: 24, type: 'text'    },
-  { header: 'Vendor',           key: 'vendor',          width: 28, type: 'text'    },
-  { header: 'Purchaser',        key: 'purchaser',       width: 28, type: 'text'    },
-  { header: 'Exchange Date',    key: 'exchange_date',   width: 15, type: 'date'    },
-  { header: 'Settlement Date',  key: 'settlement_date', width: 16, type: 'date'    },
-  { header: 'Year',             key: 'year',            width: 7,  type: 'int'     },
-  { header: 'Notes',            key: 'notes',           width: 52, type: 'text'    },
+  { header: 'Address',                  key: 'address',       width: 36, type: 'text'    },
+  { header: 'Suburb',                   key: 'suburb',        width: 15, type: 'text'    },
+  { header: 'Region',                   key: 'region',        width: 18, type: 'text'    },
+  { header: 'Asset Class',              key: 'asset_class',   width: 20, type: 'text'    },
+  { header: 'Sale Date',                key: 'exchange_date', width: 13, type: 'date'    },
+  { header: 'Sale Price',               key: 'price',         width: 15, type: 'currency'},
+  { header: 'Net Rent p.a.',            key: 'net_rent',      width: 14, type: 'currency'},
+  { header: 'Gross Rent p.a.',          key: 'gross_rent',    width: 14, type: 'currency'},
+  { header: 'Net Yield %',              key: 'yield_percent', width: 10, type: 'pct'     },
+  { header: 'Gross Yield %',            key: 'gross_yield',   width: 11, type: 'pct'     },
+  { header: 'WALE (yrs)',               key: 'wale',          width: 10, type: 'num1'    },
+  { header: 'Land m²',                 key: 'land_area',     width: 10, type: 'area'    },
+  { header: 'Floor m²',                key: 'floor_area',    width: 10, type: 'area'    },
+  { header: 'Rate $/m² (Site)',        key: 'rate_land',     width: 14, type: 'currency'},
+  { header: 'Rate $/m² (Perm. GFA)',   key: 'rate_pgfa',     width: 16, type: 'currency'},
+  { header: 'Zoning',                   key: 'zoning',        width: 24, type: 'text'    },
+  { header: 'FSR',                      key: 'fsr',           width: 8,  type: 'text'    },
+  { header: 'Firm 1',                   key: 'firm1',         width: 24, type: 'text'    },
+  { header: 'Firm 2',                   key: 'firm2',         width: 24, type: 'text'    },
+  { header: 'Purchaser',                key: 'purchaser',     width: 28, type: 'text'    },
+  { header: 'Year',                     key: 'year',          width: 7,  type: 'int'     },
+  { header: 'Notes',                    key: 'notes',         width: 52, type: 'text'    },
 ];
 
+// Derived export columns: site rate, permissible-GFA rate ($ / (land × FSR)), gross yield
+function withExportComputed(rows) {
+  return rows.map(r => {
+    const out = { ...r };
+    if (r.price > 0 && r.land_area > 0) out.rate_land = Math.round(r.price / r.land_area);
+    const fsrNum = r.fsr ? parseFloat(String(r.fsr).match(/(\d+(?:\.\d+)?)/)?.[1]) : null;
+    if (r.price > 0 && r.land_area > 0 && fsrNum > 0) out.rate_pgfa = Math.round(r.price / (r.land_area * fsrNum));
+    if (r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
+    return out;
+  });
+}
+
 function buildSalesWorkbook(rows, subtitle) {
+  rows = withExportComputed(rows);
   const { Workbook } = require('exceljs');
   const wb = new Workbook();
   wb.creator = 'Cushman & Wakefield';
@@ -580,9 +590,19 @@ function buildSalesWorkbook(rows, subtitle) {
   r3.height = 5;
   r3.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ORANGE } };
 
-  // ── Row 4: Column headers ────────────────────────────────────────────────
+  // ── Row 4: Disclaimer ────────────────────────────────────────────────────
+  ws.addRow(['These sales have been verified to the best of the agents’ ability — you are encouraged to verify the data yourself.']);
+  ws.mergeCells(`A4:${lastCol}4`);
+  const rd = ws.getRow(4);
+  rd.height = 20;
+  const cd = rd.getCell(1);
+  cd.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF3EC' } };
+  cd.font = { name: 'Calibri', color: { argb: 'FF8A5A2B' }, size: 9.5, italic: true };
+  cd.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
+
+  // ── Row 5: Column headers ────────────────────────────────────────────────
   ws.addRow(XL_COLS.map(c => c.header));
-  const r4 = ws.getRow(4);
+  const r4 = ws.getRow(5);
   r4.height = 26;
   r4.eachCell((cell, colNum) => {
     const col = XL_COLS[colNum - 1];
@@ -606,6 +626,7 @@ function buildSalesWorkbook(rows, subtitle) {
     const values = XL_COLS.map(c => {
       const v = r[c.key];
       if (v === null || v === undefined || v === '') return null;
+      if (c.key === 'yield_percent' && String(v).toUpperCase() === 'VP') return 'VP';
       if (c.type === 'currency' || c.type === 'pct' || c.type === 'num1' || c.type === 'area' || c.type === 'int') {
         const n = Number(v);
         return isNaN(n) ? null : n;
@@ -653,6 +674,7 @@ function buildSalesWorkbook(rows, subtitle) {
       if (c.key === 'price')         return sum('price');
       if (c.key === 'net_rent')      return avg('net_rent');
       if (c.key === 'yield_percent') return avg('yield_percent');
+      if (c.key === 'gross_yield')   return avg('gross_yield');
       if (c.key === 'wale')         return avg('wale');
       return null;
     });
@@ -673,8 +695,8 @@ function buildSalesWorkbook(rows, subtitle) {
   }
 
   // Freeze header rows, add auto-filter
-  ws.views = [{ state: 'frozen', ySplit: 4, xSplit: 0 }];
-  ws.autoFilter = { from: 'A4', to: `${lastCol}4` };
+  ws.views = [{ state: 'frozen', ySplit: 5, xSplit: 0 }];
+  ws.autoFilter = { from: 'A5', to: `${lastCol}5` };
 
   return wb;
 }
@@ -827,6 +849,7 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
       "land_area": null or number (site/land area in sqm),
       "floor_area": null or number (building/GLA in sqm),
       "net_rent": null or integer (passing/net rent $ pa),
+      "gross_rent": null or integer (gross rent/income $ pa if stated),
       "yield_percent": null or number (net initial or passing yield, e.g. 3.07),
       "wale": null or number,
       "units": null or integer (number of units/flats for apartment blocks — sum the unit mix if needed, e.g. '4 x 2-bed + 3 x 1-bed' -> 7),
@@ -1381,6 +1404,10 @@ function normaliseParties(body) {
     if (/^v\.?p\.?$/i.test(s)) body.yield_percent = 'VP';
     else body.yield_percent = parseFloat(s) || null;
   }
+  // Auto-calculate net yield when derivable and not supplied
+  if (body.yield_percent == null && body.price > 0 && body.net_rent > 0) {
+    body.yield_percent = Math.round(body.net_rent / body.price * 10000) / 100;
+  }
   return body;
 }
 
@@ -1849,7 +1876,7 @@ function applySeed(seedPath) {
       db.prepare("SELECT id FROM deletions WHERE table_name='sales'").all().map(r => r.id)
     );
     const saleCols = ['id','address','suburb','region','asset_class','process','status','price',
-      'price_guide','net_rent','yield_percent','wale','land_area','floor_area','units','parking',
+      'price_guide','net_rent','gross_rent','yield_percent','wale','land_area','floor_area','units','parking',
       'zoning','fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
       'exchange_date','settlement_date','campaign_close_date','year','notes'];
     const ins = db.prepare(`INSERT OR IGNORE INTO sales (${saleCols.join(',')})

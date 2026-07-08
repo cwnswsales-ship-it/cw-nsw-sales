@@ -1541,7 +1541,11 @@ function renderSales(data) {
       <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${aptMeta}</td>
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
       <td>${assetBadge(s.asset_class)}</td>
-      <td class="td-mono ${isNumYield(s.yield_percent)?'td-yield-good':''}">${fmtYieldCell(s.yield_percent)}</td>
+      <td class="td-mono ${isNumYield(s.yield_percent)?'td-yield-good':''}">${
+        (isApt && s.price > 0 && s.gross_rent > 0)
+          ? `<span class="td-yield-good" style="font-weight:700">${(s.gross_rent/s.price*100).toFixed(2)}% G</span><small style="display:block;color:var(--muted);font-size:10px">${isNumYield(s.yield_percent) ? s.yield_percent.toFixed(2)+'% N' : fmtYieldCell(s.yield_percent)}</small>`
+          : fmtYieldCell(s.yield_percent)
+      }</td>
       <td class="td-mono">${s.net_rent ? '$'+fmt(s.net_rent) : '–'}</td>
       <td class="td-mono">${s.land_area ? fmt(s.land_area)+'m²' : '–'}</td>
       <td class="td-mono">${(s.price && s.land_area) ? '$'+fmt(Math.round(s.price/s.land_area)) : '–'}</td>
@@ -1630,7 +1634,8 @@ function saleForm(s={}) {
     <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
-    <div class="form-group"><label>Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
+    <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"><small id="sf-gross-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Net Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${s.land_area||''}"></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
@@ -2484,7 +2489,7 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','net_rent','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','net_rent','gross_rent','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }
@@ -2550,7 +2555,10 @@ function calcTrackingYield() {
 function calcSaleYield() {
   const price = parseFloat(document.getElementById('sf-price')?.value);
   const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
+  const gross = parseFloat(document.getElementById('sf-gross-rent')?.value);
   const yieldEl = document.getElementById('sf-yield');
+  const hint = document.getElementById('sf-gross-hint');
+  if (hint) hint.textContent = (price > 0 && gross > 0) ? `Gross yield: ${((gross / price) * 100).toFixed(2)}%` : '';
   if (!yieldEl) return;
   if (/^v\.?p\.?$/i.test(yieldEl.value.trim())) return; // VP typed — never overwrite
   if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
