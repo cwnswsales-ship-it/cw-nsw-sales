@@ -160,6 +160,7 @@ app.get('/api/sales', requireAuth, (req, res) => {
 
 app.post('/api/sales', requireAuth, (req, res) => {
   const body = req.body;
+  normaliseParties(body);
   const id = uuidv4();
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
   db.prepare(`
@@ -200,6 +201,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   db.transaction(() => {
     for (const r of incoming) {
       if (!r.address) { skipped++; continue; }
+      normaliseParties(r);
       if (isDup(r)) { skipped++; continue; }
       const year = r.year || (r.exchange_date ? new Date(r.exchange_date).getFullYear() : new Date().getFullYear());
       let yieldPct = r.yield_percent;
@@ -275,6 +277,7 @@ app.post('/api/sales/:id/to-campaign', requireAuth, (req, res) => {
 
 app.put('/api/sales/:id', requireAuth, (req, res) => {
   const body = req.body;
+  normaliseParties(body);
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
   db.prepare(`
     UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
@@ -335,6 +338,7 @@ app.get('/api/tracking', requireAuth, (req, res) => {
 
 app.post('/api/tracking', requireAuth, (req, res) => {
   const body = req.body;
+  normaliseParties(body);
   // Block duplicates: same street number + name with a compatible suburb
   const existing = db.prepare("SELECT * FROM tracking WHERE status != 'Converted to Sale'").all()
     .find(t => trackDupKey(t) === trackDupKey(body) && suburbsCompatible(t, body));
@@ -362,6 +366,7 @@ app.post('/api/tracking', requireAuth, (req, res) => {
 
 app.put('/api/tracking/:id', requireAuth, (req, res) => {
   const body = req.body;
+  normaliseParties(body);
   const year = body.year || undefined;
   db.prepare(`
     UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
@@ -1292,6 +1297,86 @@ app.delete('/api/portfolio', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Data uniformity: firms, zoning, heights ───────────────────────────────────
+// NSW Standard Instrument zones (plus common SEPP/legacy codes still in use)
+const NSW_ZONES = {
+  RU1:'Primary Production', RU2:'Rural Landscape', RU3:'Forestry', RU4:'Primary Production Small Lots',
+  RU5:'Village', RU6:'Transition',
+  R1:'General Residential', R2:'Low Density Residential', R3:'Medium Density Residential',
+  R4:'High Density Residential', R5:'Large Lot Residential',
+  E1:'Local Centre', E2:'Commercial Centre', E3:'Productivity Support', E4:'General Industrial', E5:'Heavy Industrial',
+  MU1:'Mixed Use', W1:'Natural Waterways', W2:'Recreational Waterways', W3:'Working Waterways', W4:'Working Waterfront',
+  SP1:'Special Activities', SP2:'Infrastructure', SP3:'Tourist', SP4:'Enterprise', SP5:'Metropolitan Centre',
+  RE1:'Public Recreation', RE2:'Private Recreation',
+  C1:'National Parks and Nature Reserves', C2:'Environmental Conservation', C3:'Environmental Management', C4:'Environmental Living',
+  // Legacy (pre-Dec 2022) business/industrial zones — kept for historical sales
+  B1:'Neighbourhood Centre', B2:'Local Centre', B3:'Commercial Core', B4:'Mixed Use',
+  B5:'Business Development', B6:'Enterprise Corridor', B7:'Business Park', B8:'Metropolitan Centre',
+  IN1:'General Industrial', IN2:'Light Industrial',
+  ENZ:'Environment and Recreation', UD:'Urban Development', AGB:'Agribusiness',
+};
+// "MU1 Mixed Use" / "MU1" / "e1 - local centre" -> "MU1 - Mixed Use". Multi-zone values pass through.
+function normZoning(v) {
+  if (!v) return v;
+  const s = String(v).trim();
+  if (/[\/&,+]/.test(s)) return s; // multi-zone e.g. "R4/R2" — leave as entered
+  const m = s.match(/^([A-Za-z]{1,3}\d?)\b/);
+  if (!m) return s;
+  const code = m[1].toUpperCase();
+  return NSW_ZONES[code] ? `${code} - ${NSW_ZONES[code]}` : s;
+}
+// "11.5", "11.5m", "11.5 metres", "11.5 M" -> "11.5 m"
+function normHeight(v) {
+  if (!v) return v;
+  const m = String(v).match(/(\d+(?:\.\d+)?)/);
+  if (!m) return String(v).trim();
+  const n = parseFloat(m[1]);
+  return (Number.isInteger(n) ? String(n) : String(n)) + ' m';
+}
+// Uniform firm names: consistent brand spellings, no " - "/", " separators
+const FIRM_CANON = [
+  [/^colliers international.*/i, 'Colliers'], [/^colliers$/i, 'Colliers'],
+  [/^cbre\b.*(off.?market)?.*/i, 'CBRE'],
+  [/^jll\b.*/i, 'JLL'],
+  [/^rwc\b[\s-]*(.*)/i, (m) => ('Ray White Commercial ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^ray white commercial[\s,-]*(.*)/i, (m) => ('Ray White Commercial ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^ray white[\s,-]*(.*)/i, (m) => ('Ray White ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^bresic\s?whitney[\s,-]*(.*)/i, (m) => ('BresicWhitney ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^knight frank[\s,-]*(.*)/i, (m) => ('Knight Frank ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^savills[\s,-]*(.*)/i, (m) => ('Savills ' + m[1].replace(/^[-,\s]+/, '')).trim()],
+  [/^cushman\s*&?\s*wakefield.*/i, 'Cushman & Wakefield'],
+  [/^i\.?b\.? property$/i, 'IB Property'],
+];
+function normFirm(v) {
+  if (!v) return v;
+  let s = String(v).replace(/\s*-\s*/g, ' ').replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  for (const [re, out] of FIRM_CANON) {
+    const m = String(v).match(re);
+    if (m) { s = typeof out === 'function' ? out(m) : out; break; }
+  }
+  return s.replace(/\s+/g, ' ').trim();
+}
+// Does this look like a firm rather than a person? (used to repair agent fields)
+const FIRM_WORDS = /\b(real estate|realty|property|properties|commercial|group|partners|international|agency|capital|cbre|jll|rwc|colliers|savills|knight frank|ray white|mcgrath|raine|horne|century 21|sotheby|stonebridge|burgess|rawson|htl|ppdre|mercer|metro|oxford|stanton|hillier|strathfield|tgc|richardson|wrench|laing|simmons|bradfield|diamondz|trg\b|sweetnams|harris tripp|1st city|the agency|no agent|off.?market|adam charles|cushman|highland|ng farah|john hill|olsen romano|taylor nicholas|estate agents|costi cohen)\b|bresic/i;
+function looksLikeFirm(v) { return !!v && FIRM_WORDS.test(String(v)); }
+// Applied to every incoming sale/campaign write so new entries stay uniform
+function normaliseParties(body) {
+  if (!body || typeof body !== 'object') return body;
+  if (looksLikeFirm(body.agent1)) {
+    if (!body.firm1) { body.firm1 = body.agent1; body.agent1 = null; }
+    else if (normFirm(body.agent1) === normFirm(body.firm1)) body.agent1 = null;
+  }
+  if (looksLikeFirm(body.agent2)) {
+    if (!body.firm2) { body.firm2 = body.agent2; body.agent2 = null; }
+    else if (normFirm(body.agent2) === normFirm(body.firm2)) body.agent2 = null;
+  }
+  if (body.firm1) body.firm1 = normFirm(body.firm1);
+  if (body.firm2) body.firm2 = normFirm(body.firm2);
+  if (body.zoning) body.zoning = normZoning(body.zoning);
+  if (body.height_limit) body.height_limit = normHeight(body.height_limit);
+  return body;
+}
+
 // ── Tracking duplicate detection ──────────────────────────────────────────────
 // Same street number + street name, and suburbs that don't conflict = duplicate.
 function trackNorm(s) {
@@ -2037,6 +2122,52 @@ function dedupeSales() {
 // Note: dedupeSales() no longer runs automatically — duplicate detection is
 // user-driven via the Find Duplicates button (GET /api/sales/duplicates) so
 // every removal is validated by hand. Bulk uploads still skip duplicates on entry.
+
+// ── Agent/firm repair + zoning/height uniformity (idempotent) ─────────────────
+// Agent fields must hold PEOPLE; agencies belong in the firm fields. Historical
+// entries put firm names in agent1/agent2 — move them across, then normalise.
+(function normaliseAgencyData() {
+  try {
+    let moved = 0, firms = 0, zones = 0, heights = 0;
+    for (const table of ['sales', 'tracking']) {
+      const rows = db.prepare(`SELECT id, agent1, agent2, firm1, firm2, zoning, height_limit FROM ${table}`).all();
+      const upd = db.prepare(`UPDATE ${table} SET agent1=?, agent2=?, firm1=?, firm2=?, zoning=?, height_limit=? WHERE id=?`);
+      db.transaction(() => {
+        for (const r of rows) {
+          let { agent1, agent2, firm1, firm2, zoning, height_limit } = r;
+          // Split joint-agency values like "Colliers / Ray White" across firm1/firm2
+          if (firm1 && /\s\/\s/.test(firm1) && !firm2) {
+            const [f1, f2] = firm1.split(/\s\/\s/); firm1 = f1; firm2 = f2;
+          }
+          // Firm names sitting in agent slots -> move to the firm slots
+          if (looksLikeFirm(agent1)) {
+            if (!firm1) { firm1 = agent1; agent1 = null; }
+            else if (normFirm(agent1) === normFirm(firm1) || normFirm(agent1) === normFirm(firm2 || '')) { agent1 = null; }
+            else if (!firm2) { firm2 = agent1; agent1 = null; }
+            else { agent1 = null; } // third firm with no slot — agent fields are for people
+            moved++;
+          }
+          if (looksLikeFirm(agent2)) {
+            if (!firm2 && normFirm(agent2) !== normFirm(firm1 || '')) { firm2 = agent2; agent2 = null; }
+            else { agent2 = null; }
+            moved++;
+          }
+          const nf1 = normFirm(firm1), nf2 = normFirm(firm2);
+          const nz = normZoning(zoning), nh = normHeight(height_limit);
+          if (nf1 !== firm1 || nf2 !== firm2) firms++;
+          if (nz !== zoning) zones++;
+          if (nh !== height_limit) heights++;
+          if (agent1 !== r.agent1 || agent2 !== r.agent2 || nf1 !== r.firm1 || nf2 !== r.firm2 || nz !== r.zoning || nh !== r.height_limit) {
+            upd.run(agent1, agent2, nf1, nf2, nz, nh, r.id);
+          }
+        }
+      })();
+    }
+    if (moved || firms || zones || heights) {
+      console.log(`[fixup] Agency data: ${moved} firm names moved out of agent fields, ${firms} firms normalised, ${zones} zonings standardised, ${heights} heights standardised`);
+    }
+  } catch (e) { console.error('[fixup] Agency data error:', e.message); }
+})();
 
 // ── Backfill units + parking for apartment blocks from notes (idempotent) ─────
 (function backfillUnitsParking() {

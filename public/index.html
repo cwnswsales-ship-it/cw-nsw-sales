@@ -1015,6 +1015,11 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 </div><!-- /app -->
 
 <!-- ── Modal ─────────────────────────────────────────────────────────── -->
+<!-- Shared autocomplete lists: uniform firms/agents/zonings across the database -->
+<datalist id="dl-firms"></datalist>
+<datalist id="dl-agents"></datalist>
+<datalist id="dl-zoning"></datalist>
+
 <div id="modal-overlay">
   <div id="modal-box">
     <div class="modal-header">
@@ -1481,6 +1486,7 @@ async function loadSales() {
   const data = await GET('/sales?' + params);
   if (!data) return;
   S.salesData = data;
+  refreshDatalists();
   renderSalesFiltered();
 }
 
@@ -1631,10 +1637,10 @@ function saleForm(s={}) {
     <div class="form-group"><label>No. of Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Apartment blocks" title="Price per unit is calculated automatically"></div>
     <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
     <div class="form-section">Parties</div>
-    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}"></div>
-    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(s.firm1)}"></div>
-    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(s.agent2)}"></div>
-    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(s.firm2)}"></div>
+    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
+    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(s.firm1)}" list="dl-firms" placeholder="Agency, e.g. CBRE"></div>
+    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(s.agent2)}" list="dl-agents" placeholder="Individual"></div>
+    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(s.firm2)}" list="dl-firms" placeholder="Agency"></div>
     <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(s.vendor)}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(s.purchaser)}"></div>
     <div class="form-section">Dates</div>
@@ -1643,9 +1649,9 @@ function saleForm(s={}) {
     <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${s.campaign_close_date||''}"></div>
     <div class="form-group"><label>Year</label><input name="year" type="number" value="${s.year||new Date().getFullYear()}" min="2015" max="2030"></div>
     <div class="form-section">Property Details</div>
-    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(s.zoning)}"></div>
+    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(s.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
     <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(s.fsr)}"></div>
-    <div class="form-group"><label>Height Limit</label><input name="height_limit" value="${esc(s.height_limit)}"></div>
+    <div class="form-group"><label>Height Limit</label><input name="height_limit" value="${esc(s.height_limit)}" placeholder="e.g. 11.5 m"></div>
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(s.notes)}</textarea></div>
     <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(s.source_url)}"></div>
   </form>`;
@@ -1670,6 +1676,7 @@ async function loadTracking() {
   const data = await GET('/tracking?' + params);
   if (!data) return;
   S.trackingData = data;
+  refreshDatalists();
   renderTrackingFiltered();
 }
 
@@ -1897,13 +1904,13 @@ function trackingForm(t={}) {
     <div class="form-section">Property</div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${t.floor_area||''}"></div>
-    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}"></div>
+    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
     <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(t.fsr)}"></div>
     <div class="form-section">Parties</div>
-    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}"></div>
-    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}"></div>
-    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(t.agent2)}"></div>
-    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(t.firm2)}"></div>
+    <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
+    <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}" list="dl-firms" placeholder="Agency, e.g. CBRE"></div>
+    <div class="form-group"><label>Agent 2</label><input name="agent2" value="${esc(t.agent2)}" list="dl-agents" placeholder="Individual"></div>
+    <div class="form-group"><label>Firm 2</label><input name="firm2" value="${esc(t.firm2)}" list="dl-firms" placeholder="Agency"></div>
     <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(t.vendor)}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}" placeholder="Add once exchanged"></div>
     <div class="form-section">Dates</div>
@@ -2127,6 +2134,44 @@ async function applyAuctionResults() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// AUTOCOMPLETE LISTS — uniform firms, agents & NSW zonings
+// ═══════════════════════════════════════════════════════════════
+const NSW_ZONES_LIST = [
+  'RU1 - Primary Production','RU2 - Rural Landscape','RU3 - Forestry','RU4 - Primary Production Small Lots',
+  'RU5 - Village','RU6 - Transition',
+  'R1 - General Residential','R2 - Low Density Residential','R3 - Medium Density Residential',
+  'R4 - High Density Residential','R5 - Large Lot Residential',
+  'E1 - Local Centre','E2 - Commercial Centre','E3 - Productivity Support','E4 - General Industrial','E5 - Heavy Industrial',
+  'MU1 - Mixed Use',
+  'W1 - Natural Waterways','W2 - Recreational Waterways','W3 - Working Waterways','W4 - Working Waterfront',
+  'SP1 - Special Activities','SP2 - Infrastructure','SP3 - Tourist','SP4 - Enterprise','SP5 - Metropolitan Centre',
+  'RE1 - Public Recreation','RE2 - Private Recreation',
+  'C1 - National Parks and Nature Reserves','C2 - Environmental Conservation','C3 - Environmental Management','C4 - Environmental Living',
+  'B1 - Neighbourhood Centre','B2 - Local Centre','B3 - Commercial Core','B4 - Mixed Use',
+  'B5 - Business Development','B6 - Enterprise Corridor','B7 - Business Park','B8 - Metropolitan Centre',
+  'IN1 - General Industrial','IN2 - Light Industrial',
+  'ENZ - Environment and Recreation','UD - Urban Development','AGB - Agribusiness',
+];
+
+function refreshDatalists() {
+  const zdl = document.getElementById('dl-zoning');
+  if (zdl && !zdl.children.length) zdl.innerHTML = NSW_ZONES_LIST.map(z => `<option value="${z}">`).join('');
+  const firms = new Set(), agents = new Set();
+  for (const rows of [S.salesData || [], S.trackingData || []]) {
+    for (const r of rows) {
+      if (r.firm1) firms.add(r.firm1);
+      if (r.firm2) firms.add(r.firm2);
+      if (r.agent1) agents.add(r.agent1);
+      if (r.agent2) agents.add(r.agent2);
+    }
+  }
+  const fdl = document.getElementById('dl-firms');
+  if (fdl) fdl.innerHTML = [...firms].sort().map(f => `<option value="${esc(f)}">`).join('');
+  const adl = document.getElementById('dl-agents');
+  if (adl) adl.innerHTML = [...agents].sort().map(a => `<option value="${esc(a)}">`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // FIND DUPLICATES — on-demand scan + keep/remove validation screen
 // ═══════════════════════════════════════════════════════════════
 let dupPairs = null;
@@ -2344,8 +2389,15 @@ function closeModal() {
 
 function submitModal() { if (S.modalSubmit) S.modalSubmit(); }
 
+// Close on backdrop click — but ONLY if the mouse press also started on the
+// backdrop. Dragging to select text inside the form and releasing outside it
+// must never close the modal (you'd lose everything you typed).
+let modalPressTarget = null;
+document.getElementById('modal-overlay').addEventListener('mousedown', e => { modalPressTarget = e.target; });
 document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-overlay')) closeModal();
+  const overlay = document.getElementById('modal-overlay');
+  if (e.target === overlay && modalPressTarget === overlay) closeModal();
+  modalPressTarget = null;
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -3782,13 +3834,22 @@ function timeSince(date) {
 // ═══════════════════════════════════════════════════════════════
 // PREMIUM INVESTMENTS TRACKER
 // ═══════════════════════════════════════════════════════════════
-const PORTFOLIO_AUCTIONS = [
-  { id: 'syd', city: 'Sydney', date: '2026-06-23', elId: 'pi-cd-syd', labelId: 'pi-cd-syd-label', cardId: 'pi-cd-sydney' },
-];
+function nextPortfolioAuctionDate() {
+  const today = new Date().toISOString().slice(0, 10);
+  // Prefer real auction dates from the loaded portfolio; fall back to the known schedule
+  const fromData = (S.portfolioData || [])
+    .map(l => l.auction_date).filter(d => d && d >= today).sort()[0];
+  const fromSchedule = CBRE_PORTFOLIO_AUCTIONS.map(a => a.date).filter(d => d >= today).sort()[0];
+  return fromData || fromSchedule || null;
+}
 
 function updatePortfolioCountdowns() {
   const now = new Date();
-  PORTFOLIO_AUCTIONS.forEach(a => {
+  const nextDate = nextPortfolioAuctionDate();
+  const auctions = nextDate
+    ? [{ city: 'Sydney', date: nextDate, elId: 'pi-cd-syd', labelId: 'pi-cd-syd-label', cardId: 'pi-cd-sydney' }]
+    : [];
+  auctions.forEach(a => {
     const auctionDate = new Date(a.date + 'T10:30:00+10:00');
     const days = Math.ceil((auctionDate - now) / (1000 * 60 * 60 * 24));
     const el = document.getElementById(a.elId);
@@ -3864,8 +3925,10 @@ function renderPortfolioTable(data) {
   const assetF = document.getElementById('pi-asset-filter')?.value || '';
   const statusF = document.getElementById('pi-status-filter')?.value || '';
 
-  // Tracked items have moved to Campaigns — always hide them from portfolio view
-  let filtered = data.filter(l => l.status !== 'Tracking');
+  // Tracked items have moved to Campaigns — always hide them from portfolio view.
+  // Past-auction listings are hidden too, so the tab focuses on the NEXT portfolio.
+  const today = new Date().toISOString().slice(0, 10);
+  let filtered = data.filter(l => l.status !== 'Tracking' && !(l.auction_date && l.auction_date < today));
   const activeCount = filtered.length;
 
   if (search) filtered = filtered.filter(l =>
