@@ -865,7 +865,11 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
   ]
 }
 
-Blocks of residential units/flats are "Apartment Blocks". Shops with residences above are "Shop Top". Return ONLY the JSON object.`;
+Blocks of residential units/flats are "Apartment Blocks". Shops with residences above are "Shop Top".
+
+For DEVELOPMENT SITES specifically: land_area = the total site area; floor_area = the adopted/approved/potential Gross Floor Area (GFA); units = the approved or potential yield (units/dwellings); fsr = the planning FSR control (e.g. "5:1"); include the development status (Raw / DA Approved / Concept Plan), the stated \$/sqm site rate, \$/sqm GFA rate and \$/unit rate in notes so GFA analysis is verifiable.
+
+Return ONLY the JSON object.`;
 
 app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
   if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
@@ -878,11 +882,15 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
   const isImage = supportedImages.includes(mimeType.toLowerCase());
   const isXlsx  = lowerName.endsWith('.xlsx') || mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   const isCsv   = lowerName.endsWith('.csv');
+  const isDocx  = lowerName.endsWith('.docx') || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   if (lowerName.endsWith('.xls') && !isXlsx) {
     return res.status(400).json({ error: 'Old .xls format not supported — please re-save as .xlsx and upload again.' });
   }
-  if (!isPDF && !isImage && !isXlsx && !isCsv) {
-    return res.status(400).json({ error: `Unsupported file type: ${mimeType || filename}. Use PDF, image, .xlsx or .csv.` });
+  if (lowerName.endsWith('.doc') && !isDocx) {
+    return res.status(400).json({ error: 'Old .doc format not supported — please re-save as .docx and upload again.' });
+  }
+  if (!isPDF && !isImage && !isXlsx && !isCsv && !isDocx) {
+    return res.status(400).json({ error: `Unsupported file type: ${mimeType || filename}. Use PDF, Word (.docx), Excel (.xlsx), CSV or image.` });
   }
 
   try {
@@ -905,6 +913,22 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
         });
       });
       contentBlock = { type: 'text', text: 'Spreadsheet contents:\n' + lines.join('\n').slice(0, 100000) };
+    } else if (isDocx) {
+      // Word document: unzip and strip the XML down to readable text (tables kept as " | " cells)
+      const JSZip = require('jszip');
+      const zip = await JSZip.loadAsync(Buffer.from(data, 'base64'));
+      const docFile = zip.file('word/document.xml');
+      if (!docFile) throw new Error('Not a valid .docx file');
+      let xml = await docFile.async('string');
+      const text = xml
+        .replace(/<w:tab[^>]*\/>/g, '\t')
+        .replace(/<\/w:tc>/g, ' | ')
+        .replace(/<\/w:tr>/g, '\n')
+        .replace(/<\/w:p>/g, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#8217;|&#x2019;/g, "'")
+        .replace(/\n{3,}/g, '\n\n');
+      contentBlock = { type: 'text', text: 'Word document contents:\n' + text.slice(0, 100000) };
     } else if (isCsv) {
       contentBlock = { type: 'text', text: 'CSV contents:\n' + Buffer.from(data, 'base64').toString('utf8').slice(0, 100000) };
     } else if (isPDF) {

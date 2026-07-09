@@ -47,6 +47,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.9)}
 .nav-item.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--accent)}
 .nav-item.drop-hot{background:rgba(232,115,42,.25);color:#fff;border-left-color:var(--accent);outline:2px dashed var(--accent);outline-offset:-2px}
+.col-resizer{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;user-select:none;z-index:2}
+.col-resizer:hover,.col-resizer.dragging{background:rgba(232,115,42,.45)}
 tr[draggable="true"]{cursor:grab}
 tr[draggable="true"]:active{cursor:grabbing}
 .nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
@@ -536,7 +538,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <!-- IM Upload Zone (Sales) -->
       <div class="im-upload-zone" id="sale-im-drop-zone"
            ondragover="saleImDragOver(event)" ondragleave="saleImDragLeave(event)" ondrop="saleImDrop(event)">
-        <input type="file" id="sale-im-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.csv" class="hidden" onchange="saleImFileSelected(event)">
+        <input type="file" id="sale-im-file-input" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,.xlsx,.csv" class="hidden" onchange="saleImFileSelected(event)">
         <div class="im-upload-inner" id="sale-im-upload-inner" onclick="document.getElementById('sale-im-file-input').click()">
           <div class="im-upload-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -545,7 +547,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           </div>
           <div class="im-upload-text">
             <div class="im-upload-title">Drop an IM, comps spreadsheet or photo to add sales</div>
-            <div class="im-upload-sub">PDF, Excel (.xlsx), CSV or image · single IMs prefill the form · comps tables bulk-add every sale</div>
+            <div class="im-upload-sub">PDF, Word, Excel, CSV or image · single IMs prefill the form · comps tables & sales schedules bulk-add every sale</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="im-upload-btn" onclick="event.stopPropagation();window.open('https://cushwake1.sharepoint.com/:f:/r/sites/InvestmentSalesNSW/Shared%20Documents/Investment%20Sales%20-%20NSW/3.%20Information%20Memorandums?csf=1&web=1&e=TsdfGZ','_blank')">📁 Library</button>
@@ -1122,6 +1124,7 @@ async function initApp() {
   loadDashboard();
   initYearMS('sf');
   initYearMS('tf');
+  ['sales-table','tracking-table','agent-table','portfolio-table'].forEach(makeColumnsResizable);
 }
 
 window.addEventListener('load', async () => {
@@ -1420,8 +1423,10 @@ function calcGFARates(s) {
   const fsrNum = parseFSR(s.fsr);
   const allowableGFA = (fsrNum && s.land_area) ? s.land_area * fsrNum : null;
   const gfaRate = (allowableGFA && s.price) ? s.price / allowableGFA : null;
+  // For dev sites floor_area holds the adopted/approved GFA — rate shows whenever it exists
+  const isDev = s.asset_class === 'Development Site';
   const hasDA = s.notes && /da.approv/i.test(s.notes);
-  const daGfaRate = (hasDA && s.floor_area && s.price) ? s.price / s.floor_area : null;
+  const daGfaRate = ((isDev || hasDA) && s.floor_area && s.price) ? s.price / s.floor_area : null;
   return { gfaRate, daGfaRate, allowableGFA };
 }
 
@@ -2137,6 +2142,40 @@ async function applyAuctionResults() {
   if (skipN) parts.push(`${skipN} skipped`);
   if (failN) parts.push(`${failN} failed`);
   showToast(parts.length ? 'Auction results applied: ' + parts.join(' · ') : 'Nothing to apply');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESIZABLE TABLE COLUMNS — drag the right edge of any header
+// ═══════════════════════════════════════════════════════════════
+function makeColumnsResizable(tableId) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelectorAll('thead th').forEach(th => {
+    if (th.querySelector('.col-resizer')) return;
+    th.style.position = 'relative';
+    const grip = document.createElement('div');
+    grip.className = 'col-resizer';
+    th.appendChild(grip);
+    grip.addEventListener('click', e => e.stopPropagation()); // don't trigger column sort
+    grip.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const startX = e.pageX, startW = th.offsetWidth;
+      grip.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      const move = ev => {
+        const w = Math.max(40, startW + ev.pageX - startX);
+        th.style.width = w + 'px'; th.style.minWidth = w + 'px'; th.style.maxWidth = w + 'px';
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        grip.classList.remove('dragging');
+        document.body.style.cursor = '';
+      };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3621,10 +3660,11 @@ function setSaleIMState(state, msg) {
 async function processSaleIMFile(file) {
   const name = (file.name || '').toLowerCase();
   const allowed = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp','image/gif',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','text/csv'];
-  const okByExt = /\.(pdf|png|jpe?g|webp|gif|xlsx|csv)$/.test(name);
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/csv'];
+  const okByExt = /\.(pdf|docx|png|jpe?g|webp|gif|xlsx|csv)$/.test(name);
   if (!allowed.includes(file.type) && !okByExt) {
-    setSaleIMState('error', `Unsupported: ${file.name}. Use PDF, image, .xlsx or .csv.`);
+    setSaleIMState('error', `Unsupported: ${file.name}. Use PDF, Word (.docx), Excel (.xlsx), CSV or image.`);
     return;
   }
   if (name.endsWith('.xls') && !name.endsWith('.xlsx')) {
