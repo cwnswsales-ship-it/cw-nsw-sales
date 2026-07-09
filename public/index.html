@@ -1410,12 +1410,13 @@ async function loadTrackingYears() {}
 // ═══════════════════════════════════════════════════════════════
 function parseFSR(fsr) {
   if (!fsr) return null;
-  const m = String(fsr).match(/^(\d+(?:\.\d+)?)\s*:/);
+  // Accepts "2.5:1", "2.50 : 1" and plain "2.5"
+  const m = String(fsr).match(/(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]) : null;
 }
 
+// GFA rate = sale price ÷ (land area × FSR) — calculated for ANY sale with an FSR
 function calcGFARates(s) {
-  if (s.asset_class !== 'Development Site') return { gfaRate: null, daGfaRate: null, allowableGFA: null };
   const fsrNum = parseFSR(s.fsr);
   const allowableGFA = (fsrNum && s.land_area) ? s.land_area * fsrNum : null;
   const gfaRate = (allowableGFA && s.price) ? s.price / allowableGFA : null;
