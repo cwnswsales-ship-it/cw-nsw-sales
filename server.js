@@ -165,14 +165,16 @@ app.post('/api/sales', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, gross_rent, yield_percent, wale, land_area, floor_area, units, parking,
-      zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
+      price, price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, units, parking,
+      zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Sold', body.price, body.price_guide, body.net_rent, body.gross_rent || null,
+    body.status || 'Sold', body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.units || null, body.parking || null,
-    body.zoning, body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
+    body.zoning, body.zoning2 || null, body.zoning_other || null, body.dev_stage || null,
+    body.constraint1 || null, body.constraint2 || null,
+    body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
     body.campaign_close_date, year, body.notes, body.source_url);
   backupDb().catch(() => {});
@@ -191,10 +193,10 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   );
   const ins = db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, gross_rent, yield_percent, wale, land_area, floor_area, units, parking,
-      zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
+      price, price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, units, parking,
+      zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -210,9 +212,11 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       insertedIds.push(newId);
       ins.run(newId, r.address, r.suburb || null, r.region || null, r.asset_class || null,
         r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
-        r.net_rent || null, r.gross_rent || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
+        r.net_rent || null, r.gross_rent || null, r.gross_yield || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
         r.units || null, r.parking || null,
-        r.zoning || null, r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
+        r.zoning || null, r.zoning2 || null, r.zoning_other || null, r.dev_stage || null,
+        r.constraint1 || null, r.constraint2 || null,
+        r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
         r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
         r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
         year, r.notes || null, r.source_url || null);
@@ -281,16 +285,19 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
   db.prepare(`
     UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price=?, price_guide=?, net_rent=?, gross_rent=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
+      price=?, price_guide=?, net_rent=?, gross_rent=?, gross_yield=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
       units=?, parking=?,
-      zoning=?, fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
+      zoning=?, zoning2=?, zoning_other=?, dev_stage=?, constraint1=?, constraint2=?,
+      fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
-    body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.yield_percent, body.wale,
+    body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.yield_percent, body.wale,
     body.land_area, body.floor_area, body.units || null, body.parking || null,
-    body.zoning, body.fsr, body.height_limit,
+    body.zoning, body.zoning2 || null, body.zoning_other || null, body.dev_stage || null,
+    body.constraint1 || null, body.constraint2 || null,
+    body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
     body.notes, body.source_url, req.params.id);
@@ -515,11 +522,22 @@ const XL_COLS = [
   { header: 'Gross Yield %',            key: 'gross_yield',   width: 11, type: 'pct'     },
   { header: 'WALE (yrs)',               key: 'wale',          width: 10, type: 'num1'    },
   { header: 'Land m²',                 key: 'land_area',     width: 10, type: 'area'    },
-  { header: 'Floor m²',                key: 'floor_area',    width: 10, type: 'area'    },
+  { header: 'Land (Ha)',                key: 'land_ha',       width: 9,  type: 'num2'    },
+  { header: 'Land (Ac)',                key: 'land_ac',       width: 9,  type: 'num2'    },
   { header: 'Rate $/m² (Site)',        key: 'rate_land',     width: 14, type: 'currency'},
+  { header: 'Rate $/Ha',                key: 'rate_ha',       width: 13, type: 'currency'},
+  { header: 'Rate $/Ac',                key: 'rate_ac',       width: 13, type: 'currency'},
+  { header: 'GFA m²',                  key: 'floor_area',    width: 10, type: 'area'    },
   { header: 'Rate $/m² (Perm. GFA)',   key: 'rate_pgfa',     width: 16, type: 'currency'},
-  { header: 'Zoning',                   key: 'zoning',        width: 24, type: 'text'    },
+  { header: 'Lots/Units',               key: 'units',         width: 9,  type: 'int'     },
+  { header: 'Rate $/Unit',              key: 'unit_rate',     width: 13, type: 'currency'},
+  { header: 'Primary Zoning',           key: 'zoning',        width: 24, type: 'text'    },
+  { header: 'Secondary Zoning',         key: 'zoning2',       width: 20, type: 'text'    },
+  { header: 'Zoning Other',             key: 'zoning_other',  width: 16, type: 'text'    },
   { header: 'FSR',                      key: 'fsr',           width: 8,  type: 'text'    },
+  { header: 'Height',                   key: 'height_limit',  width: 9,  type: 'text'    },
+  { header: 'Dev Stage',                key: 'dev_stage',     width: 15, type: 'text'    },
+  { header: 'Constraints',              key: 'constraints',   width: 22, type: 'text'    },
   { header: 'Firm 1',                   key: 'firm1',         width: 24, type: 'text'    },
   { header: 'Firm 2',                   key: 'firm2',         width: 24, type: 'text'    },
   { header: 'Purchaser',                key: 'purchaser',     width: 28, type: 'text'    },
@@ -527,14 +545,32 @@ const XL_COLS = [
   { header: 'Notes',                    key: 'notes',         width: 52, type: 'text'    },
 ];
 
+// Excel column letter for 1-based index (handles beyond Z: 27 -> AA)
+function colLetter(n) {
+  let s = '';
+  while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+  return s;
+}
+
 // Derived export columns: site rate, permissible-GFA rate ($ / (land × FSR)), gross yield
 function withExportComputed(rows) {
   return rows.map(r => {
     const out = { ...r };
-    if (r.price > 0 && r.land_area > 0) out.rate_land = Math.round(r.price / r.land_area);
+    if (r.price > 0 && r.land_area > 0) {
+      out.rate_land = Math.round(r.price / r.land_area);
+      out.land_ha = Math.round(r.land_area / 10000 * 100) / 100;
+      out.land_ac = Math.round(r.land_area / 4046.86 * 100) / 100;
+      out.rate_ha = Math.round(r.price / (r.land_area / 10000));
+      out.rate_ac = Math.round(r.price / (r.land_area / 4046.86));
+    } else if (r.land_area > 0) {
+      out.land_ha = Math.round(r.land_area / 10000 * 100) / 100;
+      out.land_ac = Math.round(r.land_area / 4046.86 * 100) / 100;
+    }
     const fsrNum = r.fsr ? parseFloat(String(r.fsr).match(/(\d+(?:\.\d+)?)/)?.[1]) : null;
     if (r.price > 0 && r.land_area > 0 && fsrNum > 0) out.rate_pgfa = Math.round(r.price / (r.land_area * fsrNum));
-    if (r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
+    if (r.price > 0 && r.units > 0) out.unit_rate = Math.round(r.price / r.units);
+    if (out.gross_yield == null && r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
+    out.constraints = [r.constraint1, r.constraint2].filter(Boolean).join(' · ') || null;
     return out;
   });
 }
@@ -556,7 +592,7 @@ function buildSalesWorkbook(rows, subtitle) {
   });
 
   const nCols = XL_COLS.length;
-  const lastCol = String.fromCharCode(64 + nCols); // e.g. 'Y'
+  const lastCol = colLetter(nCols);
 
   ws.columns = XL_COLS.map(c => ({ key: c.key, width: c.width }));
 
@@ -620,7 +656,7 @@ function buildSalesWorkbook(rows, subtitle) {
   });
 
   // ── Data rows ────────────────────────────────────────────────────────────
-  const numFmt = { currency: '"$"#,##0', pct: '0.00"%"', num1: '0.0', area: '#,##0', int: '0' };
+  const numFmt = { currency: '"$"#,##0', pct: '0.00"%"', num1: '0.0', num2: '0.00', area: '#,##0', int: '0' };
 
   rows.forEach((r, idx) => {
     const values = XL_COLS.map(c => {
@@ -852,7 +888,12 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
       "gross_rent": null or integer (gross rent/income $ pa if stated),
       "yield_percent": null or number (net initial or passing yield, e.g. 3.07),
       "wale": null or number,
-      "units": null or integer (number of units/flats for apartment blocks — sum the unit mix if needed, e.g. '4 x 2-bed + 3 x 1-bed' -> 7),
+      "units": null or integer (number of units/flats/lots — sum the unit mix if needed, e.g. '4 x 2-bed + 3 x 1-bed' -> 7),
+      "dev_stage": null or one of exactly: Raw | DA Lodged | DA Approved | HDA Lodged | HDA Approved | SSD Lodged | SSD Approved | Civils Completed | Stage 1 Masterplan | Stage 2 Masterplan | Stage 3 Masterplan | Stage 4 Masterplan,
+      "constraint1": null or one of exactly: Flood | Bushfire | Biodiversity/Offsets | Contamination | Heritage | Acid Sulfate Soils | Slope/Cut-Fill | Noise Buffers | Mine Subsidence | Riparian/Waterways | Utilities Easements | Other,
+      "constraint2": null or a second constraint from the same list,
+      "zoning2": null or "secondary zoning code if the site has split zoning, e.g. RE1",
+      "height_limit": null or "height of building limit, e.g. 18 m",
       "parking": null or integer (car spaces / lock-up garages / LUGs),
       "asset_class": "best fit from exactly: Apartment Blocks | Car Park | Childcare | Co-Living | Commercial | Commercial Office | Development Site | Fast Food/QSR | Industrial | Medical/Healthcare | Pub/Hotel | Retail | Service Station | Shop Top | Strata Office | Strata Retail",
       "zoning": null or "zoning code",
@@ -1428,9 +1469,14 @@ function normaliseParties(body) {
     if (/^v\.?p\.?$/i.test(s)) body.yield_percent = 'VP';
     else body.yield_percent = parseFloat(s) || null;
   }
+  if (body.zoning2) body.zoning2 = normZoning(body.zoning2);
   // Auto-calculate net yield when derivable and not supplied
   if (body.yield_percent == null && body.price > 0 && body.net_rent > 0) {
     body.yield_percent = Math.round(body.net_rent / body.price * 10000) / 100;
+  }
+  // Auto-calculate gross yield when derivable and not supplied
+  if (body.gross_yield == null && body.price > 0 && body.gross_rent > 0) {
+    body.gross_yield = Math.round(body.gross_rent / body.price * 10000) / 100;
   }
   return body;
 }
@@ -1900,8 +1946,8 @@ function applySeed(seedPath) {
       db.prepare("SELECT id FROM deletions WHERE table_name='sales'").all().map(r => r.id)
     );
     const saleCols = ['id','address','suburb','region','asset_class','process','status','price',
-      'price_guide','net_rent','gross_rent','yield_percent','wale','land_area','floor_area','units','parking',
-      'zoning','fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
+      'price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','units','parking',
+      'zoning','zoning2','zoning_other','dev_stage','constraint1','constraint2','fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
       'exchange_date','settlement_date','campaign_close_date','year','notes'];
     const ins = db.prepare(`INSERT OR IGNORE INTO sales (${saleCols.join(',')})
       VALUES (${saleCols.map(c => '@' + c).join(',')})`);
@@ -2225,6 +2271,26 @@ function dedupeSales() {
       console.log(`[fixup] Agency data: ${moved} firm names moved out of agent fields, ${firms} firms normalised, ${zones} zonings standardised, ${heights} heights standardised`);
     }
   } catch (e) { console.error('[fixup] Agency data error:', e.message); }
+})();
+
+// ── Backfill gross yield + development stage (idempotent) ─────────────────────
+(function backfillDevFields() {
+  try {
+    const gy = db.prepare("UPDATE sales SET gross_yield = ROUND(gross_rent / price * 100, 2) WHERE gross_yield IS NULL AND price > 0 AND gross_rent > 0").run();
+    // Development stage inferred from notes for existing dev sites
+    const stages = [
+      ["SSD Approved", "%ssd%approv%"], ["SSD Lodged", "%ssd%lodg%"],
+      ["DA Approved", "%da approv%"], ["DA Approved", "%da-approv%"], ["DA Approved", "%da2016%"],
+      ["DA Lodged", "%da lodged%"], ["Raw", "%raw site%"], ["Raw", "%raw land%"],
+    ];
+    let n = 0;
+    for (const [stage, pat] of stages) {
+      n += db.prepare("UPDATE sales SET dev_stage=? WHERE dev_stage IS NULL AND asset_class='Development Site' AND LOWER(COALESCE(notes,'')) LIKE ?").run(stage, pat).changes;
+    }
+    // Plain 'Raw' notes marker
+    n += db.prepare("UPDATE sales SET dev_stage='Raw' WHERE dev_stage IS NULL AND asset_class='Development Site' AND TRIM(COALESCE(notes,''))='Raw'").run().changes;
+    if (gy.changes || n) console.log(`[fixup] Dev fields: ${gy.changes} gross yields calculated, ${n} development stages inferred`);
+  } catch (e) { console.error('[fixup] Dev fields error:', e.message); }
 })();
 
 // ── Backfill units + parking for apartment blocks from notes (idempotent) ─────

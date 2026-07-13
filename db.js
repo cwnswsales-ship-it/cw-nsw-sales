@@ -159,6 +159,14 @@ try { db.exec('ALTER TABLE tracking ADD COLUMN exchange_date TEXT'); } catch(e) 
 
 // Gross rent for apartment blocks (gross yield analysis alongside net)
 try { db.exec('ALTER TABLE sales ADD COLUMN gross_rent REAL'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN gross_yield REAL'); } catch(e) {}
+
+// Development-site capture spec (Ari, Jul 2026): stage, constraints, extra zonings
+try { db.exec('ALTER TABLE sales ADD COLUMN dev_stage TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN constraint1 TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
 // Units + parking for apartment block analysis (price per unit, parking spots)
 try { db.exec('ALTER TABLE sales ADD COLUMN units INTEGER'); } catch(e) {}

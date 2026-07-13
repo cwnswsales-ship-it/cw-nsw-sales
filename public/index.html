@@ -1061,6 +1061,10 @@ const ASSET_CLASSES = ['Apartment Blocks','Boarding House','Car Park','Childcare
   'Commercial Office','Development Site','Fast Food/QSR','Industrial','Medical/Healthcare','Pub/Hotel','Retail',
   'Service Station','Shop Top','Strata Office','Strata Retail'];
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
+const DEV_STAGES = ['Raw','DA Lodged','DA Approved','HDA Lodged','HDA Approved','SSD Lodged','SSD Approved',
+  'Civils Completed','Stage 1 Masterplan','Stage 2 Masterplan','Stage 3 Masterplan','Stage 4 Masterplan'];
+const CONSTRAINTS = ['Flood','Bushfire','Biodiversity/Offsets','Contamination','Heritage','Acid Sulfate Soils',
+  'Slope/Cut-Fill','Noise Buffers','Mine Subsidence','Riparian/Waterways','Utilities Easements','Other'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
 const REGIONS = ['CBD/City','City Fringe','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
   'Western Sydney','Hills District','Southern Sydney','South West Sydney','Regional NSW'];
@@ -1548,8 +1552,8 @@ function renderSales(data) {
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
       <td>${assetBadge(s.asset_class)}</td>
       <td class="td-mono ${isNumYield(s.yield_percent)?'td-yield-good':''}">${
-        (isApt && s.price > 0 && s.gross_rent > 0)
-          ? `<span class="td-yield-good" style="font-weight:700">${(s.gross_rent/s.price*100).toFixed(2)}% G</span><small style="display:block;color:var(--muted);font-size:10px">${isNumYield(s.yield_percent) ? s.yield_percent.toFixed(2)+'% N' : fmtYieldCell(s.yield_percent)}</small>`
+        (isApt && (s.gross_yield > 0 || (s.price > 0 && s.gross_rent > 0)))
+          ? `<span class="td-yield-good" style="font-weight:700">${(s.gross_yield || s.gross_rent/s.price*100).toFixed(2)}% G</span><small style="display:block;color:var(--muted);font-size:10px">${isNumYield(s.yield_percent) ? s.yield_percent.toFixed(2)+'% N' : fmtYieldCell(s.yield_percent)}</small>`
           : fmtYieldCell(s.yield_percent)
       }</td>
       <td class="td-mono">${s.net_rent ? '$'+fmt(s.net_rent) : '–'}</td>
@@ -1640,12 +1644,13 @@ function saleForm(s={}) {
     <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
-    <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"><small id="sf-gross-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"></div>
     <div class="form-group"><label>Net Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
+    <div class="form-group"><label>Gross Yield %</label><input name="gross_yield" id="sf-gross-yield" type="number" step="0.01" value="${s.gross_yield||''}" placeholder="Auto-calculated" title="Calculated automatically from price and gross rent"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
-    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${s.land_area||''}"></div>
-    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
-    <div class="form-group"><label>No. of Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Apartment blocks" title="Price per unit is calculated automatically"></div>
+    <div class="form-group"><label>Land Area (m²)</label><input name="land_area" id="sf-land" type="number" step="1" value="${s.land_area||''}" oninput="calcSaleYield()"><small id="sf-land-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Floor Area / GFA (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
+    <div class="form-group"><label>No. of Lots / Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Units or lots" title="Price per unit/lot is calculated automatically"></div>
     <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
@@ -1660,9 +1665,15 @@ function saleForm(s={}) {
     <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${s.campaign_close_date||''}"></div>
     <div class="form-group"><label>Year</label><input name="year" type="number" value="${s.year||new Date().getFullYear()}" min="2015" max="2030"></div>
     <div class="form-section">Property Details</div>
-    <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(s.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
-    <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(s.fsr)}"></div>
+    <div class="form-group"><label>Primary Zoning</label><input name="zoning" value="${esc(s.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
+    <div class="form-group"><label>Secondary Zoning</label><input name="zoning2" value="${esc(s.zoning2)}" list="dl-zoning" placeholder="If split zoning, e.g. RE1"></div>
+    <div class="form-group"><label>Zoning Other</label><input name="zoning_other" value="${esc(s.zoning_other)}" placeholder="Other zoning detail"></div>
+    <div class="form-group"><label>FSR</label><input name="fsr" id="sf-fsr" value="${esc(s.fsr)}" oninput="calcSaleYield()"><small id="sf-gfa-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Height Limit</label><input name="height_limit" value="${esc(s.height_limit)}" placeholder="e.g. 11.5 m"></div>
+    <div class="form-section">Development</div>
+    <div class="form-group"><label>Development Stage</label>${sel('dev_stage', DEV_STAGES, s.dev_stage)}</div>
+    <div class="form-group"><label>Constraints</label>${sel('constraint1', CONSTRAINTS, s.constraint1)}</div>
+    <div class="form-group"><label>Constraints 2</label>${sel('constraint2', CONSTRAINTS, s.constraint2)}</div>
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(s.notes)}</textarea></div>
     <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(s.source_url)}"></div>
   </form>`;
@@ -2529,7 +2540,7 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','net_rent','gross_rent','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }
@@ -2596,11 +2607,30 @@ function calcSaleYield() {
   const price = parseFloat(document.getElementById('sf-price')?.value);
   const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('sf-gross-rent')?.value);
+  const land  = parseFloat(document.getElementById('sf-land')?.value);
+  const fsr   = parseFSR(document.getElementById('sf-fsr')?.value);
+  // Gross yield — calculated from gross rent
+  const gyEl = document.getElementById('sf-gross-yield');
+  if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
+  // Land conversions + rates
+  const landHint = document.getElementById('sf-land-hint');
+  if (landHint) {
+    landHint.textContent = land > 0
+      ? `= ${(land/10000).toFixed(2)} Ha · ${(land/4046.86).toFixed(2)} Ac` +
+        (price > 0 ? ` · $${fmt(Math.round(price/land))}/m² · $${fmt(Math.round(price/(land/10000)))}/Ha` : '')
+      : '';
+  }
+  // Permissible GFA + rate
+  const gfaHint = document.getElementById('sf-gfa-hint');
+  if (gfaHint) {
+    gfaHint.textContent = (land > 0 && fsr > 0)
+      ? `Perm. GFA ${fmt(Math.round(land*fsr))}m²` + (price > 0 ? ` · $${fmt(Math.round(price/(land*fsr)))}/m² GFA` : '')
+      : '';
+  }
+  // Net yield — calculated from net rent (VP never overwritten)
   const yieldEl = document.getElementById('sf-yield');
-  const hint = document.getElementById('sf-gross-hint');
-  if (hint) hint.textContent = (price > 0 && gross > 0) ? `Gross yield: ${((gross / price) * 100).toFixed(2)}%` : '';
   if (!yieldEl) return;
-  if (/^v\.?p\.?$/i.test(yieldEl.value.trim())) return; // VP typed — never overwrite
+  if (/^v\.?p\.?$/i.test(yieldEl.value.trim())) return;
   if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
 }
 
