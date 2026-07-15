@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0d2137">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="C&W Sales">
+<meta name="mobile-web-app-capable" content="yes">
 <title>NSW Sales Intelligence | Cushman & Wakefield</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -404,6 +409,47 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .fw-600{font-weight:600}
 .mt-8{margin-top:8px}
 .loading{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+
+/* ═══════════ MOBILE / iPHONE ═══════════ */
+#mobile-nav-btn{display:none;position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;z-index:220;
+  width:42px;height:42px;border-radius:10px;border:none;background:var(--navy);color:#fff;font-size:19px;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;align-items:center;justify-content:center}
+#mobile-nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190}
+#mobile-nav-backdrop.show{display:block}
+@media(max-width:840px){
+  #mobile-nav-btn{display:flex}
+  #sidebar{transform:translateX(-105%);transition:transform .22s ease;width:270px;
+    box-shadow:8px 0 30px rgba(0,0,0,.35);padding-top:env(safe-area-inset-top)}
+  #sidebar.mobile-open{transform:none;z-index:200}
+  #main-content{margin-left:0;padding-bottom:env(safe-area-inset-bottom)}
+  .page-header{padding:12px 14px 12px 64px;flex-wrap:wrap;gap:8px}
+  .page-header h1{font-size:17px}
+  .header-actions{flex-wrap:wrap;gap:6px;width:100%}
+  .header-actions .btn{flex:1 1 auto;min-height:38px}
+  .sales-stats-bar,.campaign-stats-bar,.portfolio-stats-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-left:62px}
+  .ss-item{min-width:110px;padding:10px 12px}
+  .filters-bar{padding:10px 12px;gap:6px}
+  .filter-input,.filter-select{min-height:38px}
+  .campaign-tabs{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ctab{white-space:nowrap;padding:12px 12px;font-size:12px}
+  .process-chips{padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:900px}
+  .btn{min-height:36px}
+  .dash-content{padding:12px}
+  .pi-countdown-wrap{padding:12px 14px}
+  .im-upload-zone,.portfolio-upload-zone{margin:10px 12px}
+  /* Full-screen entry forms on phones */
+  #modal-overlay{padding:0;align-items:stretch}
+  #modal-box{max-width:none;max-height:none;height:100%;border-radius:0;
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  .form-grid{grid-template-columns:1fr !important}
+  .form-group.full{grid-column:1}
+  /* Prevent iOS zoom-on-focus: inputs must be 16px+ */
+  input,select,textarea{font-size:16px !important}
+  /* Bigger touch targets in the sidebar */
+  .nav-item{padding:14px 18px;font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -422,7 +468,9 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 
 <!-- ── App ──────────────────────────────────────────────────────────── -->
 <div id="app" class="hidden">
-  <nav id="sidebar">
+  <button id="mobile-nav-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
+<div id="mobile-nav-backdrop" onclick="toggleMobileNav(false)"></div>
+<nav id="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-logo">C<span>&</span>W</div>
       <div class="sidebar-tagline">NSW Sales Intelligence</div>
@@ -1148,7 +1196,16 @@ window.addEventListener('load', async () => {
 // ═══════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════
+function toggleMobileNav(force) {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('mobile-nav-backdrop');
+  const open = force !== undefined ? force : !sb.classList.contains('mobile-open');
+  sb.classList.toggle('mobile-open', open);
+  bd.classList.toggle('show', open);
+}
+
 function showSection(name) {
+  toggleMobileNav(false);
   document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('section-' + name).classList.remove('hidden');
