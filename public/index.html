@@ -1427,10 +1427,11 @@ function calcGFARates(s) {
   const fsrNum = parseFSR(s.fsr);
   const allowableGFA = (fsrNum && s.land_area) ? s.land_area * fsrNum : null;
   const gfaRate = (allowableGFA && s.price) ? s.price / allowableGFA : null;
-  // For dev sites floor_area holds the adopted/approved GFA — rate shows whenever it exists
+  // Adopted/approved GFA rate — uses the dedicated gfa field (legacy rows kept it in floor_area)
   const isDev = s.asset_class === 'Development Site';
   const hasDA = s.notes && /da.approv/i.test(s.notes);
-  const daGfaRate = ((isDev || hasDA) && s.floor_area && s.price) ? s.price / s.floor_area : null;
+  const adoptedGFA = s.gfa || ((isDev || hasDA) ? s.floor_area : null);
+  const daGfaRate = ((isDev || hasDA || s.gfa) && adoptedGFA && s.price) ? s.price / adoptedGFA : null;
   return { gfaRate, daGfaRate, allowableGFA };
 }
 
@@ -1646,10 +1647,11 @@ function saleForm(s={}) {
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"></div>
     <div class="form-group"><label>Net Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
-    <div class="form-group"><label>Gross Yield %</label><input name="gross_yield" id="sf-gross-yield" type="number" step="0.01" value="${s.gross_yield||''}" placeholder="Auto-calculated" title="Calculated automatically from price and gross rent"></div>
+    <div class="form-group"><label>Gross Yield %</label><input name="gross_yield" id="sf-gross-yield" type="number" step="0.01" value="${s.gross_yield||''}" oninput="calcFromGrossYield('sf')" placeholder="Auto ↔ Gross Rent" title="Calculated from price and gross rent — or type the yield and the gross rent calculates back"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" id="sf-land" type="number" step="1" value="${s.land_area||''}" oninput="calcSaleYield()"><small id="sf-land-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
-    <div class="form-group"><label>Floor Area / GFA (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}"></div>
+    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}" title="Lettable building area"></div>
+    <div class="form-group"><label>GFA (m²)</label><input name="gfa" id="sf-gfa" type="number" step="1" value="${s.gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × FSR" title="Gross floor area — auto-calculates from land × FSR, or type the adopted/approved GFA"></div>
     <div class="form-group"><label>No. of Lots / Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Units or lots" title="Price per unit/lot is calculated automatically"></div>
     <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
     <div class="form-section">Parties</div>
@@ -1922,6 +1924,8 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" id="tf-price-guide" type="number" step="1000" value="${t.price_guide||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="tf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" id="tf-est-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated from price &amp; rent" title="Calculated automatically when price guide and net rent are both entered"></div>
+    <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" id="tf-gross-rent" type="number" step="100" value="${t.gross_rent||''}" oninput="calcTrackingYield()"></div>
+    <div class="form-group"><label>Gross Yield %</label><input name="gross_yield" id="tf-gross-yield" type="number" step="0.01" value="${t.gross_yield||''}" oninput="calcFromGrossYield('tf')" placeholder="Auto ↔ Gross Income" title="Calculated from price guide and gross income — or type the yield and the income calculates back"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
     <div class="form-section">Property</div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
@@ -1954,6 +1958,7 @@ function convertForm(t={}) {
     <div class="form-group"><label>Settlement Date *</label><input name="settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="cf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcConvertYield()"></div>
     <div class="form-group"><label>Yield %</label><input name="yield_percent" id="cf-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" type="number" step="100" value="${t.gross_rent||''}"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}"></div>
@@ -2540,7 +2545,7 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }
@@ -2595,9 +2600,23 @@ function statusSelectClass(s) {
   return 'status-active';
 }
 
+// Typing the GROSS YIELD back-calculates the gross income (sale form: price; campaign form: price guide)
+function calcFromGrossYield(prefix) {
+  const basis = prefix === 'sf'
+    ? parseFloat(document.getElementById('sf-price')?.value)
+    : parseFloat(document.getElementById('tf-price-guide')?.value);
+  const gy = parseFloat(document.getElementById(prefix + '-gross-yield')?.value);
+  const grEl = document.getElementById(prefix + '-gross-rent');
+  if (grEl && basis > 0 && gy > 0) grEl.value = Math.round(basis * gy / 100);
+}
+
 function calcTrackingYield() {
   const price = parseFloat(document.getElementById('tf-price-guide')?.value);
   const rent  = parseFloat(document.getElementById('tf-net-rent')?.value);
+  const gross = parseFloat(document.getElementById('tf-gross-rent')?.value);
+  // Gross yield calculates from gross income
+  const gyEl = document.getElementById('tf-gross-yield');
+  if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
   const yieldEl = document.getElementById('tf-est-yield');
   if (!yieldEl) return;
   if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
@@ -2612,6 +2631,12 @@ function calcSaleYield() {
   // Gross yield — calculated from gross rent
   const gyEl = document.getElementById('sf-gross-yield');
   if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
+  // GFA auto-fills from land × FSR unless typed manually (adopted GFA)
+  const gfaEl = document.getElementById('sf-gfa');
+  if (gfaEl && (gfaEl.value === '' || gfaEl.dataset.auto === '1')) {
+    if (land > 0 && fsr > 0) { gfaEl.value = Math.round(land * fsr); gfaEl.dataset.auto = '1'; }
+    else if (gfaEl.dataset.auto === '1') { gfaEl.value = ''; }
+  }
   // Land conversions + rates
   const landHint = document.getElementById('sf-land-hint');
   if (landHint) {

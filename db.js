@@ -161,6 +161,13 @@ try { db.exec('ALTER TABLE tracking ADD COLUMN exchange_date TEXT'); } catch(e) 
 try { db.exec('ALTER TABLE sales ADD COLUMN gross_rent REAL'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN gross_yield REAL'); } catch(e) {}
 
+// GFA separate from lettable floor area (auto-calculates from land x FSR)
+try { db.exec('ALTER TABLE sales ADD COLUMN gfa REAL'); } catch(e) {}
+
+// Gross income + gross yield on campaigns (mirrors sales)
+try { db.exec('ALTER TABLE tracking ADD COLUMN gross_rent REAL'); } catch(e) {}
+try { db.exec('ALTER TABLE tracking ADD COLUMN gross_yield REAL'); } catch(e) {}
+
 // Development-site capture spec (Ari, Jul 2026): stage, constraints, extra zonings
 try { db.exec('ALTER TABLE sales ADD COLUMN dev_stage TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN constraint1 TEXT'); } catch(e) {}
