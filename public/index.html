@@ -683,6 +683,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div class="ss-item"><div class="ss-val" id="cst-expired">–</div><div class="ss-label">Expired</div></div>
         <div class="ss-item"><div class="ss-val" id="cst-closing">–</div><div class="ss-label">Closing This Week</div></div>
         <div class="ss-item"><div class="ss-val" id="cst-withdrawn">–</div><div class="ss-label">Withdrawn</div></div>
+        <div class="ss-item" title="Campaigns 90+ days past close with no outcome — the exclusive agency period has likely expired"><div class="ss-val orange" id="cst-outagency">–</div><div class="ss-label">Out of Agency (est.)</div></div>
       </div>
       <!-- IM Upload Zone -->
       <div class="im-upload-zone" id="im-drop-zone"
@@ -780,7 +781,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
             <th onclick="sortTable('tracking','agent1')">Agent / Firm</th>
             <th onclick="sortTable('tracking','vendor')">Vendor</th>
             <th onclick="sortTable('tracking','campaign_close_date')">Close Date</th>
-            <th>Days</th>
+            <th title="Days to close — or days since close with an agency estimate (standard 90-day exclusive agency assumed)">Days / Agency</th>
             <th onclick="sortTable('tracking','expected_settlement_date')">Settlement</th>
             <th>Notes</th>
             <th></th>
@@ -1114,6 +1115,8 @@ const DEV_STAGES = ['Raw','DA Lodged','DA Approved','HDA Lodged','HDA Approved',
 const CONSTRAINTS = ['Flood','Bushfire','Biodiversity/Offsets','Contamination','Heritage','Acid Sulfate Soils',
   'Slope/Cut-Fill','Noise Buffers','Mine Subsidence','Riparian/Waterways','Utilities Easements','Other'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Withdrawn'];
+// Standard exclusive agency period (days from campaign close) used for the agency countdown
+const AGENCY_PERIOD_DAYS = 90;
 const REGIONS = ['CBD/City','City Fringe','Eastern Suburbs','Inner West','North Shore','Northern Beaches',
   'Western Sydney','Hills District','Southern Sydney','South West Sydney','Regional NSW'];
 
@@ -1787,7 +1790,7 @@ function renderTrackingFiltered() {
     const dir = (S.expiredSort || 'newest') === 'oldest' ? 1 : -1;
     data = all.filter(isExpiredCampaign)
       .sort((a, b) => dir * String(a.campaign_close_date||'').localeCompare(String(b.campaign_close_date||'')));
-    label = `${data.length} expired listing${data.length!==1?'s':''} — past close date, outcome not yet recorded`;
+    label = `${data.length} expired listing${data.length!==1?'s':''} — past close date, outcome not yet recorded · ${data.filter(t => { const d = daysUntilClose(t.campaign_close_date); return d !== null && -d >= AGENCY_PERIOD_DAYS; }).length} potentially out of agency (90d+)`;
   } else {
     data = all.filter(t => isLive(t) || t.status === 'Withdrawn');
     if (S.campaignProcess) data = data.filter(t => t.process === S.campaignProcess);
@@ -1845,9 +1848,18 @@ function renderTracking(data) {
       : '';
     let daysCell = '–';
     if (days !== null) {
-      const cls = days < 0 ? 'close-overdue' : days <= 3 ? 'close-urgent' : days <= 7 ? 'close-soon' : '';
-      const label = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 0 ? `${Math.abs(days)}d ago` : `${days}d`;
-      daysCell = cls ? `<span class="${cls}">${label}</span>` : label;
+      if (days < 0 && t.status !== 'Withdrawn' && t.status !== 'Exchanged - Awaiting Settlement') {
+        // Agency countdown: days since the EOI/auction close, vs a standard 90-day exclusive agency
+        const since = Math.abs(days);
+        const agencyLeft = AGENCY_PERIOD_DAYS - since;
+        daysCell = agencyLeft > 0
+          ? `<span class="close-overdue">${since}d since close</span><small style="display:block;font-size:10px;color:var(--muted)">~${agencyLeft}d agency left</small>`
+          : `<span style="color:var(--accent);font-weight:700">${since}d since close</span><small style="display:block;font-size:10px;color:var(--accent);font-weight:700">OUT OF AGENCY ~${since - AGENCY_PERIOD_DAYS}d</small>`;
+      } else {
+        const cls = days < 0 ? 'close-overdue' : days <= 3 ? 'close-urgent' : days <= 7 ? 'close-soon' : '';
+        const label = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 0 ? `${Math.abs(days)}d ago` : `${days}d`;
+        daysCell = cls ? `<span class="${cls}">${label}</span>` : label;
+      }
     }
     const statusOpts = TRACK_STATUSES.map(s =>
       `<option value="${s}"${s===t.status?' selected':''}>${s}</option>`).join('');
@@ -1886,9 +1898,13 @@ function renderTracking(data) {
 function renderCampaignStats() {
   // Always compute from the full pipeline, not the current tab's slice
   const data = S.trackingData || [];
-  let active = 0, offer = 0, exchanged = 0, withdrawn = 0, expired = 0, closingThisWeek = 0;
+  let active = 0, offer = 0, exchanged = 0, withdrawn = 0, expired = 0, closingThisWeek = 0, outOfAgency = 0;
   data.forEach(t => {
-    if (isExpiredCampaign(t)) { expired++; }
+    if (isExpiredCampaign(t)) {
+      expired++;
+      const d = daysUntilClose(t.campaign_close_date);
+      if (d !== null && -d >= AGENCY_PERIOD_DAYS) outOfAgency++;
+    }
     else if (t.status === 'Active Campaign') active++;
     else if (t.status === 'Under Offer') offer++;
     if (t.status === 'Exchanged - Awaiting Settlement') exchanged++;
@@ -1904,6 +1920,7 @@ function renderCampaignStats() {
     el('cst-expired').textContent = expired;
     el('cst-closing').textContent = closingThisWeek;
     el('cst-withdrawn').textContent = withdrawn;
+    if (el('cst-outagency')) el('cst-outagency').textContent = outOfAgency;
   }
 }
 
