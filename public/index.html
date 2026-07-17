@@ -625,7 +625,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <input class="filter-input" id="sf-search" placeholder="Search address, suburb, agent..." oninput="debounce(loadSales,400)()">
         <select class="filter-select" id="sf-asset" onchange="loadSales()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
@@ -753,7 +753,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <input class="filter-input" id="tf-search" placeholder="Search address, agent, vendor..." oninput="debounce(loadTracking,400)()">
         <select class="filter-select" id="tf-asset" onchange="loadTracking()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
@@ -804,7 +804,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </select>
         <select class="filter-select" id="an-asset" onchange="renderAnalytics()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
           <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
           <option>Medical/Healthcare</option><option>Development Site</option>
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
@@ -860,7 +860,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           </select>
           <select class="filter-select" id="aa-asset" onchange="renderAgentAnalytics()">
             <option value="">All Asset Classes</option>
-            <option>Childcare</option><option>Commercial Office</option><option>Industrial</option>
+            <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
             <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
             <option>Medical/Healthcare</option><option>Development Site</option>
             <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
@@ -1019,7 +1019,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <select class="filter-select" id="pi-asset-filter" onchange="renderPortfolioTable(S.portfolioData)">
           <option value="">All Asset Classes</option>
           <option>Supermarket</option><option>Convenience Retail</option><option>Service Station</option>
-          <option>Fast Food/QSR</option><option>Healthcare</option><option>Childcare</option>
+          <option>Fast Food/QSR</option><option>Healthcare</option><option>Childcare</option><option>Cinema</option>
           <option>Fitness</option><option>Pub/Hotel</option><option>Office</option>
           <option>Industrial</option><option>Retail</option><option>Commercial</option><option>Other</option>
         </select>
@@ -1106,7 +1106,7 @@ const S = {
 
 };
 
-const ASSET_CLASSES = ['Apartment Blocks','Boarding House','Car Park','Childcare','Co-Living','Commercial',
+const ASSET_CLASSES = ['Apartment Blocks','Boarding House','Car Park','Childcare','Cinema','Co-Living','Commercial',
   'Commercial Office','Development Site','Fast Food/QSR','Industrial','Medical/Healthcare','Pub/Hotel','Retail',
   'Service Station','Shop Top','Strata Office','Strata Retail'];
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];

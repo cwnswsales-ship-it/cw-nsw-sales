@@ -900,7 +900,7 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
       "zoning2": null or "secondary zoning code if the site has split zoning, e.g. RE1",
       "height_limit": null or "height of building limit, e.g. 18 m",
       "parking": null or integer (car spaces / lock-up garages / LUGs),
-      "asset_class": "best fit from exactly: Apartment Blocks | Car Park | Childcare | Co-Living | Commercial | Commercial Office | Development Site | Fast Food/QSR | Industrial | Medical/Healthcare | Pub/Hotel | Retail | Service Station | Shop Top | Strata Office | Strata Retail",
+      "asset_class": "best fit from exactly: Apartment Blocks | Boarding House | Car Park | Childcare | Cinema | Co-Living | Commercial | Commercial Office | Development Site | Fast Food/QSR | Industrial | Medical/Healthcare | Pub/Hotel | Retail | Service Station | Shop Top | Strata Office | Strata Retail",
       "zoning": null or "zoning code",
       "vendor": null or "vendor name",
       "purchaser": null or "purchaser name",
