@@ -1597,12 +1597,15 @@ function renderSales(data) {
     const checked = S.selectedSales.has(s.id) ? 'checked' : '';
     const rowCls = S.selectedSales.has(s.id) ? 'row-selected' : '';
     const isApt = s.asset_class === 'Apartment Blocks';
-    const perUnit = (isApt && s.price && s.units) ? Math.round(s.price / s.units) : null;
-    const aptMeta = isApt && (s.units || s.parking)
+    const KEYED = { 'Boarding House': 'key', 'Pub/Hotel': 'key', 'Co-Living': 'key', 'Cinema': 'screen', 'Apartment Blocks': 'unit', 'Development Site': 'unit' };
+    const kw = KEYED[s.asset_class];
+    const perUnit = (kw && s.price && s.units) ? Math.round(s.price / s.units) : null;
+    const unitNoun = kw === 'key' ? 'rooms' : kw + 's';
+    const aptMeta = kw && (s.units || (isApt && s.parking != null))
       ? `<small style="display:block;color:var(--accent);font-size:10.5px;font-weight:600">${[
-          s.units ? s.units + ' units' : '',
-          perUnit ? '$' + fmt(perUnit) + '/unit' : '',
-          s.parking != null ? (s.parking ? s.parking + ' cars' : 'no parking') : '',
+          s.units ? s.units + ' ' + unitNoun : '',
+          perUnit ? '$' + fmt(perUnit) + '/' + kw : '',
+          isApt && s.parking != null ? (s.parking ? s.parking + ' cars' : 'no parking') : '',
         ].filter(Boolean).join(' · ')}</small>`
       : '';
     return `
@@ -1712,7 +1715,7 @@ function saleForm(s={}) {
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" id="sf-land" type="number" step="1" value="${s.land_area||''}" oninput="calcSaleYield()"><small id="sf-land-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}" title="Lettable building area"></div>
     <div class="form-group"><label>GFA (m²)</label><input name="gfa" id="sf-gfa" type="number" step="1" value="${s.gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × FSR" title="Gross floor area — auto-calculates from land × FSR, or type the adopted/approved GFA"></div>
-    <div class="form-group"><label>No. of Lots / Units</label><input name="units" type="number" step="1" min="0" value="${s.units||''}" placeholder="Units or lots" title="Price per unit/lot is calculated automatically"></div>
+    <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" id="sf-units" type="number" step="1" min="0" value="${s.units||''}" oninput="calcSaleYield()" placeholder="Units, lots, rooms or keys" title="Boarding houses & hotels: enter the number of rooms — price per key calculates automatically"><small id="sf-key-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
@@ -2705,6 +2708,14 @@ function calcSaleYield() {
   // Gross yield — calculated from gross rent
   const gyEl = document.getElementById('sf-gross-yield');
   if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
+  // Price per key/unit — live as rooms are entered
+  const unitsVal = parseFloat(document.getElementById('sf-units')?.value);
+  const keyHint = document.getElementById('sf-key-hint');
+  if (keyHint) {
+    const cls = document.querySelector('#sale-form [name="asset_class"]')?.value || '';
+    const kw = (cls === 'Boarding House' || cls === 'Pub/Hotel') ? 'key' : cls === 'Cinema' ? 'screen' : 'unit';
+    keyHint.textContent = (price > 0 && unitsVal > 0) ? `Price per ${kw}: $${fmt(Math.round(price / unitsVal))}` : '';
+  }
   // GFA auto-fills from land × FSR unless typed manually (adopted GFA)
   const gfaEl = document.getElementById('sf-gfa');
   if (gfaEl && (gfaEl.value === '' || gfaEl.dataset.auto === '1')) {

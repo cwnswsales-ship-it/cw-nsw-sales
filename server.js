@@ -533,7 +533,7 @@ const XL_COLS = [
   { header: 'Floor m²',                key: 'floor_area',    width: 10, type: 'area'    },
   { header: 'GFA m²',                  key: 'gfa',           width: 10, type: 'area'    },
   { header: 'Rate $/m² (Perm. GFA)',   key: 'rate_pgfa',     width: 16, type: 'currency'},
-  { header: 'Lots/Units',               key: 'units',         width: 9,  type: 'int'     },
+  { header: 'Units/Keys',               key: 'units',         width: 9,  type: 'int'     },
   { header: 'Rate $/Unit',              key: 'unit_rate',     width: 13, type: 'currency'},
   { header: 'Primary Zoning',           key: 'zoning',        width: 24, type: 'text'    },
   { header: 'Secondary Zoning',         key: 'zoning2',       width: 20, type: 'text'    },
@@ -2310,6 +2310,18 @@ try {
 // ── Backfill units + parking for apartment blocks from notes (idempotent) ─────
 (function backfillUnitsParking() {
   try {
+    // Rooms/keys for boarding houses, pubs & co-living from notes ("37 rooms", "84 bed")
+    const keyRows = db.prepare(
+      "SELECT id, notes FROM sales WHERE asset_class IN ('Boarding House','Pub/Hotel','Co-Living') AND units IS NULL AND notes IS NOT NULL"
+    ).all();
+    const updKeys = db.prepare('UPDATE sales SET units=? WHERE id=?');
+    let k = 0;
+    for (const { id, notes } of keyRows) {
+      const m = notes.match(/(\d+)\s*(?:x\s*)?(?:rooms?|keys?)\b/i) || notes.match(/(\d+)\s*(?:x\s*)?beds?\b/i);
+      if (m) { updKeys.run(parseInt(m[1]), id); k++; }
+    }
+    if (k) console.log(`[fixup] Rooms/keys backfilled for ${k} boarding house / hotel sales`);
+
     const rows = db.prepare(
       "SELECT id, notes FROM sales WHERE asset_class='Apartment Blocks' AND (units IS NULL OR parking IS NULL) AND notes IS NOT NULL"
     ).all();
