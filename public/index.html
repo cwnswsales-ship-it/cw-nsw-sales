@@ -2007,6 +2007,7 @@ function trackingForm(t={}) {
     <div class="form-section">Property</div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
     <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${t.floor_area||''}"></div>
+    <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" id="tf-units" type="number" step="1" min="0" value="${t.units||''}" oninput="calcTrackingYield()" placeholder="Units, rooms or keys" title="Boarding houses & hotels: enter rooms — price per key calculates off the price guide"><small id="tf-key-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
     <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(t.fsr)}"></div>
     <div class="form-section">Parties</div>
@@ -2036,6 +2037,7 @@ function convertForm(t={}) {
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="cf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcConvertYield()"></div>
     <div class="form-group"><label>Yield %</label><input name="yield_percent" id="cf-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated"></div>
     <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" type="number" step="100" value="${t.gross_rent||''}"></div>
+    <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" type="number" step="1" min="0" value="${t.units||''}"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}"></div>
@@ -2622,7 +2624,7 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }
@@ -2694,6 +2696,14 @@ function calcTrackingYield() {
   // Gross yield calculates from gross income
   const gyEl = document.getElementById('tf-gross-yield');
   if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
+  // Price per key/unit off the price guide
+  const unitsVal = parseFloat(document.getElementById('tf-units')?.value);
+  const keyHint = document.getElementById('tf-key-hint');
+  if (keyHint) {
+    const cls = document.querySelector('#tracking-form [name="asset_class"]')?.value || '';
+    const kw = (cls === 'Boarding House' || cls === 'Pub/Hotel') ? 'key' : cls === 'Cinema' ? 'screen' : 'unit';
+    keyHint.textContent = (price > 0 && unitsVal > 0) ? `Price per ${kw} (on guide): $${fmt(Math.round(price / unitsVal))}` : '';
+  }
   const yieldEl = document.getElementById('tf-est-yield');
   if (!yieldEl) return;
   if (price > 0 && rent > 0) yieldEl.value = ((rent / price) * 100).toFixed(2);
