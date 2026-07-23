@@ -2037,6 +2037,8 @@ applySeeds();
     const upd = db.prepare("UPDATE sales SET asset_class=? WHERE id=?");
     let n = 0;
     db.transaction(() => { for (const {id, cls} of fixes) n += upd.run(cls, id).changes; })();
+    // 229 Bronte Rd Waverley — 2 shops + 2 x 3-bed resi above (per Jul 2026 comps email)
+    db.prepare("UPDATE sales SET asset_class='Shop Top' WHERE id='6487ea7a-f3e3-4a6e-95d3-d86b58f13f77' AND asset_class='Retail'").run();
     // 47-51 Riley Street Woolloomooloo – DA for commercial development
     const r2 = db.prepare("UPDATE sales SET asset_class='Development Site' WHERE address LIKE '47-51 Riley Street%' AND asset_class='Commercial'").run();
     // Recalculate yield_percent where price + net_rent exist but yield is missing
