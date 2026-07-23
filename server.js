@@ -130,6 +130,18 @@ app.get('/api/stats', requireAuth, (req, res) => {
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 
+// Suburb catalogue for the filter dropdowns — suburb, dominant region, record count
+app.get('/api/suburbs', requireAuth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT suburb, MAX(region) AS region, COUNT(*) AS n FROM (
+      SELECT suburb, region FROM sales WHERE suburb IS NOT NULL AND suburb != ''
+      UNION ALL
+      SELECT suburb, region FROM tracking WHERE suburb IS NOT NULL AND suburb != '' AND status != 'Converted to Sale'
+    ) GROUP BY suburb ORDER BY suburb COLLATE NOCASE
+  `).all();
+  res.json(rows);
+});
+
 app.get('/api/sales', requireAuth, (req, res) => {
   const { search, asset_class, process, status, years, region, suburb } = req.query;
   let sql = 'SELECT * FROM sales WHERE 1=1';
@@ -145,6 +157,10 @@ app.get('/api/sales', requireAuth, (req, res) => {
   if (status)      { sql += ' AND status = ?'; params.push(status); }
   if (region)      { sql += ' AND region = ?'; params.push(region); }
   if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+  if (req.query.suburbs) {
+    const list = String(req.query.suburbs).split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+    if (list.length) { sql += ` AND LOWER(suburb) IN (${list.map(() => '?').join(',')})`; params.push(...list); }
+  }
 
   if (years) {
     const yearList = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
@@ -330,6 +346,10 @@ app.get('/api/tracking', requireAuth, (req, res) => {
   if (status)      { sql += ' AND status = ?'; params.push(status); }
   if (region)      { sql += ' AND region = ?'; params.push(region); }
   if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+  if (req.query.suburbs) {
+    const list = String(req.query.suburbs).split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+    if (list.length) { sql += ` AND LOWER(suburb) IN (${list.map(() => '?').join(',')})`; params.push(...list); }
+  }
 
   if (years) {
     const yearList = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
@@ -755,6 +775,10 @@ app.get('/api/sales/export', requireAuth, async (req, res) => {
   if (proc)        { sql += ' AND process = ?';     params.push(proc); }
   if (region)      { sql += ' AND region = ?';      params.push(region); }
   if (suburb)      { sql += ' AND LOWER(suburb) LIKE ?'; params.push(`%${suburb.toLowerCase()}%`); }
+  if (req.query.suburbs) {
+    const list = String(req.query.suburbs).split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+    if (list.length) { sql += ` AND LOWER(suburb) IN (${list.map(() => '?').join(',')})`; params.push(...list); }
+  }
   if (years) {
     const yl = (Array.isArray(years) ? years : years.split(',')).map(Number).filter(Boolean);
     if (yl.length) { sql += ` AND year IN (${yl.map(() => '?').join(',')})`; params.push(...yl); }

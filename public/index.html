@@ -636,13 +636,16 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <option>EOI</option><option>Auction</option><option>Private Treaty</option>
           <option>Off-Market</option><option>Tender</option><option>Sale by Negotiation</option>
         </select>
-        <select class="filter-select" id="sf-region" onchange="loadSales()">
+        <select class="filter-select" id="sf-region" onchange="onRegionChange('sf')">
           <option value="">All Regions</option>
           <option>CBD/City</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
           <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
           <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
         </select>
-        <input class="filter-input" id="sf-suburb" placeholder="Filter by suburb" oninput="debounce(loadSales,400)()" style="min-width:120px">
+        <div class="ms-wrap" id="sf-suburbs-wrap" style="position:relative">
+          <button class="ms-btn" id="sf-suburbs-btn" onclick="toggleSuburbDD('sf')">All Suburbs</button>
+          <div class="ms-dropdown" id="sf-suburbs-dd" style="max-height:320px;overflow-y:auto;min-width:220px"></div>
+        </div>
         <div class="ms-wrap" id="sf-years-wrap">
           <button class="ms-btn" id="sf-years-btn" onclick="toggleMS('sf')">All Years</button>
           <div class="ms-dropdown" id="sf-years-dd"></div>
@@ -759,13 +762,16 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
           <option>Apartment Blocks</option><option>Commercial</option>
         </select>
-        <select class="filter-select" id="tf-region" onchange="loadTracking()">
+        <select class="filter-select" id="tf-region" onchange="onRegionChange('tf')">
           <option value="">All Regions</option>
           <option>CBD/City</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
           <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
           <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
         </select>
-        <input class="filter-input" id="tf-suburb" placeholder="Filter by suburb" oninput="debounce(loadTracking,400)()" style="min-width:120px">
+        <div class="ms-wrap" id="tf-suburbs-wrap" style="position:relative">
+          <button class="ms-btn" id="tf-suburbs-btn" onclick="toggleSuburbDD('tf')">All Suburbs</button>
+          <div class="ms-dropdown" id="tf-suburbs-dd" style="max-height:320px;overflow-y:auto;min-width:220px"></div>
+        </div>
         <button class="btn btn-secondary btn-sm" onclick="clearFilters('tf')">Clear</button>
       </div>
       <div class="table-wrap">
@@ -1095,6 +1101,7 @@ const S = {
   salesSort: { col: 'created_at', dir: 'desc' },
   trackingSort: { col: 'created_at', dir: 'desc' },
   sfYears: new Set(), tfYears: new Set(),
+  sfSuburbs: new Set(), tfSuburbs: new Set(), suburbCat: [],
   sfYearOpts: [], tfYearOpts: [],
   modalSubmit: null,
   sfTab: 'all',
@@ -1180,6 +1187,7 @@ async function initApp() {
   initYearMS('sf');
   initYearMS('tf');
   ['sales-table','tracking-table','agent-table','portfolio-table'].forEach(makeColumnsResizable);
+  loadSuburbCatalogue();
 }
 
 window.addEventListener('load', async () => {
@@ -1424,7 +1432,93 @@ document.addEventListener('click', e => {
   if (piWrap && !piWrap.contains(e.target)) {
     document.getElementById('pi-suburbs-dd').classList.remove('open');
   }
+  ['sf','tf'].forEach(prefix => {
+    const w = document.getElementById(prefix + '-suburbs-wrap');
+    if (w && !w.contains(e.target)) {
+      document.getElementById(prefix + '-suburbs-dd')?.classList.remove('open');
+    }
+  });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// SALES & CAMPAIGNS SUBURB MULTI-SELECT (region-aware, searchable)
+// ═══════════════════════════════════════════════════════════════
+async function loadSuburbCatalogue() {
+  const data = await GET('/suburbs');
+  if (data) { S.suburbCat = data; renderSuburbDD('sf'); renderSuburbDD('tf'); }
+}
+
+function suburbOptionsFor(prefix) {
+  const region = (document.getElementById(prefix + '-region') || {}).value || '';
+  let list = S.suburbCat;
+  if (region) list = list.filter(x => x.region === region);
+  return list;
+}
+
+function renderSuburbDD(prefix) {
+  const dd = document.getElementById(prefix + '-suburbs-dd');
+  if (!dd) return;
+  const sel = prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs;
+  const q = (document.getElementById(prefix + '-suburb-search')?.value || '').toLowerCase();
+  const opts = suburbOptionsFor(prefix).filter(x => !q || x.suburb.toLowerCase().includes(q));
+  dd.innerHTML = `
+    <div style="padding:6px 10px 4px"><input id="${prefix}-suburb-search" class="filter-input" placeholder="Type to search…"
+      style="width:100%;min-height:30px;font-size:12px" value="${esc(q)}" oninput="renderSuburbDD('${prefix}')" onclick="event.stopPropagation()"></div>
+    <div class="ms-clear" onclick="clearSuburbSel('${prefix}')">Clear selection</div>` +
+    (opts.length ? opts.map(x => `<label class="ms-option"><input type="checkbox" value="${esc(x.suburb)}" ${sel.has(x.suburb) ? 'checked' : ''}
+      onchange="toggleSuburbSel('${prefix}','${x.suburb.replace(/'/g, "\\'")}')"> ${esc(x.suburb)} <span style="color:var(--muted);font-size:10px;margin-left:auto">${x.n}</span></label>`).join('')
+    : '<div style="padding:8px 12px;font-size:11px;color:var(--muted)">No suburbs match</div>');
+  // restore focus to the search box after re-render
+  const sb = document.getElementById(prefix + '-suburb-search');
+  if (q && sb) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+}
+
+function toggleSuburbDD(prefix) {
+  const dd = document.getElementById(prefix + '-suburbs-dd');
+  const willOpen = !dd.classList.contains('open');
+  dd.classList.toggle('open');
+  if (willOpen) {
+    if (!S.suburbCat.length) loadSuburbCatalogue(); else renderSuburbDD(prefix);
+    setTimeout(() => document.getElementById(prefix + '-suburb-search')?.focus(), 50);
+  }
+}
+
+function toggleSuburbSel(prefix, suburb) {
+  const sel = prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs;
+  if (sel.has(suburb)) sel.delete(suburb); else sel.add(suburb);
+  updateSuburbBtn(prefix);
+  prefix === 'sf' ? loadSales() : loadTracking();
+}
+
+function clearSuburbSel(prefix) {
+  (prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs).clear();
+  updateSuburbBtn(prefix);
+  renderSuburbDD(prefix);
+  prefix === 'sf' ? loadSales() : loadTracking();
+}
+
+function updateSuburbBtn(prefix) {
+  const sel = prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs;
+  const btn = document.getElementById(prefix + '-suburbs-btn');
+  if (!btn) return;
+  btn.textContent = sel.size === 0 ? 'All Suburbs' : sel.size === 1 ? [...sel][0] : `${sel.size} suburbs`;
+  btn.style.borderColor = sel.size ? 'var(--accent)' : '';
+}
+
+// Region change: keep only selections that belong to the chosen region, refresh options
+function onRegionChange(prefix) {
+  const sel = prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs;
+  const region = (document.getElementById(prefix + '-region') || {}).value || '';
+  if (region) {
+    const allowed = new Set(S.suburbCat.filter(x => x.region === region).map(x => x.suburb));
+    [...sel].forEach(s => { if (!allowed.has(s)) sel.delete(s); });
+  }
+  const sb = document.getElementById(prefix + '-suburb-search');
+  if (sb) sb.value = ''; // fresh search for the new region's list
+  updateSuburbBtn(prefix);
+  renderSuburbDD(prefix);
+  prefix === 'sf' ? loadSales() : loadTracking();
+}
 
 // ═══════════════════════════════════════════════════════════════
 // PORTFOLIO SUBURB MULTI-SELECT
@@ -1566,20 +1660,20 @@ function buildParams(prefix) {
   const get = id => (document.getElementById(id)||{}).value||'';
   if (prefix === 'sf') {
     const s = get('sf-search'), ac = get('sf-asset'), pr = get('sf-process'),
-          re = get('sf-region'), su = get('sf-suburb');
+          re = get('sf-region');
     if (s)  p.set('search', s);
     if (ac) p.set('asset_class', ac);
     if (pr) p.set('process', pr);
     if (re) p.set('region', re);
-    if (su) p.set('suburb', su);
+    if (S.sfSuburbs.size) p.set('suburbs', [...S.sfSuburbs].join(','));
     S.sfYears.forEach(y => p.append('years', y));
   } else {
     const s = get('tf-search'), ac = get('tf-asset'),
-          re = get('tf-region'), su = get('tf-suburb');
+          re = get('tf-region');
     if (s)  p.set('search', s);
     if (ac) p.set('asset_class', ac);
     if (re) p.set('region', re);
-    if (su) p.set('suburb', su);
+    if (S.tfSuburbs.size) p.set('suburbs', [...S.tfSuburbs].join(','));
     S.tfYears.forEach(y => p.append('years', y));
   }
   return p.toString();
@@ -2575,9 +2669,12 @@ function sortTable(table, col) {
 // ═══════════════════════════════════════════════════════════════
 function clearFilters(prefix) {
   const ids = prefix === 'sf'
-    ? ['sf-search','sf-asset','sf-process','sf-region','sf-suburb']
-    : ['tf-search','tf-asset','tf-region','tf-suburb'];
+    ? ['sf-search','sf-asset','sf-process','sf-region']
+    : ['tf-search','tf-asset','tf-region'];
   ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  (prefix === 'sf' ? S.sfSuburbs : S.tfSuburbs).clear();
+  updateSuburbBtn(prefix);
+  renderSuburbDD(prefix);
   clearYears(prefix);
   if (prefix === 'sf') loadSales(); else loadTracking();
 }
