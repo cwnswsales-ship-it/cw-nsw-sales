@@ -2061,6 +2061,15 @@ applySeeds();
     const upd = db.prepare("UPDATE sales SET asset_class=? WHERE id=?");
     let n = 0;
     db.transaction(() => { for (const {id, cls} of fixes) n += upd.run(cls, id).changes; })();
+    // City Fringe office comps (valuer email, Jul 2026): classify Commercial per request;
+    // 1-19 Hargrave St price corrected to the valuer's \$35.5m (was \$39m)
+    for (const cid of ['95a81071-10a3-4570-ab25-d2ae5d9c2574','c9032037-fdfe-4335-88d7-05a7e4190079',
+                       '5d495e5e-50ad-4606-8a94-ee38a9aaa880','0fbe5f7c-63bc-40a4-87c4-8a101e7589c3']) {
+      db.prepare("UPDATE sales SET asset_class='Commercial' WHERE id=? AND asset_class != 'Commercial'").run(cid);
+    }
+    db.prepare("UPDATE sales SET price=35500000 WHERE id='0fbe5f7c-63bc-40a4-87c4-8a101e7589c3' AND price=39000000").run();
+    db.prepare("UPDATE sales SET floor_area=2119.5 WHERE id='95a81071-10a3-4570-ab25-d2ae5d9c2574' AND floor_area=2221").run();
+
     // 229 Bronte Rd Waverley — 2 shops + 2 x 3-bed resi above (per Jul 2026 comps email)
     db.prepare("UPDATE sales SET asset_class='Shop Top' WHERE id='6487ea7a-f3e3-4a6e-95d3-d86b58f13f77' AND asset_class='Retail'").run();
     // 47-51 Riley Street Woolloomooloo – DA for commercial development
