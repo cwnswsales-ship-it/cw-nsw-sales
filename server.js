@@ -570,6 +570,15 @@ const XL_COLS = [
   { header: 'Notes',                    key: 'notes',         width: 52, type: 'text'    },
 ];
 
+// Sale dates export as Day-Mon-Year (e.g. 15-Aug-2026)
+const XL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtExportDate(v) {
+  if (!v) return null;
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(v);
+  return `${parseInt(m[3], 10)}-${XL_MONTHS[parseInt(m[2], 10) - 1]}-${m[1]}`;
+}
+
 // Excel column letter for 1-based index (handles beyond Z: 27 -> AA)
 function colLetter(n) {
   let s = '';
@@ -688,6 +697,7 @@ function buildSalesWorkbook(rows, subtitle) {
       const v = r[c.key];
       if (v === null || v === undefined || v === '') return null;
       if (c.key === 'yield_percent' && String(v).toUpperCase() === 'VP') return 'VP';
+      if (c.type === 'date') return fmtExportDate(v);
       if (c.type === 'currency' || c.type === 'pct' || c.type === 'num1' || c.type === 'area' || c.type === 'int') {
         const n = Number(v);
         return isNaN(n) ? null : n;
