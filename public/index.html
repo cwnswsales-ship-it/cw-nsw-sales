@@ -1971,7 +1971,9 @@ function renderTracking(data) {
           ${statusOpts}
         </select>
       </td>
-      <td class="td-mono">${t.price_guide ? '$'+fmt(t.price_guide) : '–'}</td>
+      <td class="td-mono">${t.price_guide ? '$'+fmt(t.price_guide) : '–'}${
+        t.sale_price ? `<small style="display:block;color:var(--success);font-weight:700;font-size:10.5px">Sold $${fmt(t.sale_price)}</small>`
+        : (t.status === 'Exchanged - Awaiting Settlement' ? `<small style="display:block;color:var(--muted);font-size:10px">price undisclosed</small>` : '')}</td>
       <td class="td-mono">${t.net_rent ? '$'+fmt(t.net_rent) : '–'}</td>
       <td class="td-mono">${t.estimated_yield ? t.estimated_yield.toFixed(2)+'%' : '–'}</td>
       <td>${[t.agent1,t.firm1].filter(Boolean).join('<br><small style="color:var(--muted);font-size:11px">') + (t.firm1?'</small>':'')}</td>
@@ -1981,7 +1983,9 @@ function renderTracking(data) {
       <td>${fmtDate(t.expected_settlement_date)}</td>
       <td class="td-truncate" title="${(t.notes||'').replace(/"/g,'&quot;')}">${t.notes||'–'}</td>
       <td class="td-actions">
-        <button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Mark as Sold">Sold</button>
+        ${t.status === 'Exchanged - Awaiting Settlement'
+          ? `<button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Settled — move into the Sales Database">Settled</button>`
+          : `<button class="btn btn-success btn-sm" onclick="openMarkExchanged('${t.id}')" title="Sold — record the exchange (price optional)">Sold</button>`}
         <button class="btn btn-secondary btn-sm" onclick="quickStatusChange('${t.id}','Withdrawn')" title="Withdraw campaign">Withdraw</button>
         ${t.source_url ? `<a href="${t.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditTracking('${t.id}')" title="Edit">✏️</button>
@@ -2072,12 +2076,47 @@ async function deleteTracking(id) {
   loadTracking();
 }
 
+// Step 1 of the sale journey: record the EXCHANGE. Price optional — the deal
+// moves to 'Exchanged — Pending Settlement' and stays in Campaigns.
+function exchangeForm(t = {}) {
+  const today = new Date().toISOString().slice(0, 10);
+  return `<form id="exchange-form" class="form-grid" onsubmit="return false">
+    <div class="form-group full" style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted)">
+      Recording the exchange on <strong style="color:var(--text)">${esc(t.address)}</strong>.
+      It moves to <strong style="color:var(--text)">Exchanged — Pending Settlement</strong> and reaches the
+      Sales Database once it settles. <strong style="color:var(--text)">Price is optional</strong> — leave it blank if it hasn't been disclosed.
+    </div>
+    <div class="form-group"><label>Exchange Date *</label><input name="exchange_date" type="date" value="${t.exchange_date || today}"></div>
+    <div class="form-group"><label>Sale Price ($)</label><input name="sale_price" type="number" step="1000" value="${t.sale_price || ''}" placeholder="${t.price_guide ? 'Guide was $' + Number(t.price_guide).toLocaleString() : 'Leave blank if unknown'}"></div>
+    <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}" placeholder="If known"></div>
+    <div class="form-group"><label>Exp. Settlement Date</label><input name="expected_settlement_date" type="date" value="${t.expected_settlement_date || ''}"></div>
+    <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(t.notes)}</textarea></div>
+  </form>`;
+}
+
+function openMarkExchanged(id) {
+  const t = S.trackingData.find(x => x.id === id);
+  if (!t) return;
+  openModal('Mark as Exchanged — ' + t.address, exchangeForm(t), async () => {
+    const body = getFormData('exchange-form');
+    if (!body.exchange_date) return alert('Exchange date is required');
+    const data = await POST('/tracking/' + id + '/exchange', body);
+    if (data && !data.error) {
+      closeModal();
+      showToast('Exchanged — now pending settlement');
+      S.campaignTab = 'exchanged';
+      loadTracking();
+      setTimeout(() => setCampaignTab('exchanged'), 100);
+    }
+  }, 'Record Exchange');
+}
+
 function openConvertToSale(id) {
   const t = S.trackingData.find(x => x.id === id);
   if (!t) return;
-  openModal('Mark as Sold — ' + t.address, convertForm(t), async () => {
+  openModal('Mark as Settled — ' + t.address, convertForm(t), async () => {
     const body = getFormData('convert-form');
-    if (!body.price) return alert('Sale price is required');
+    if (!body.price && !confirm('No sale price recorded. Add this to the Sales Database without a price?')) return;
     const data = await POST('/tracking/' + id + '/sell', body);
     if (data && !data.error) { closeModal(); loadTracking(); }
   }, 'Confirm Sale');
@@ -2093,6 +2132,7 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, t.status||'Active Campaign')}</div>
     <div class="form-section">Financials</div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" id="tf-price-guide" type="number" step="1000" value="${t.price_guide||''}" oninput="calcTrackingYield()"></div>
+    <div class="form-group"><label>Sale Price ($) — if exchanged</label><input name="sale_price" type="number" step="1000" value="${t.sale_price||''}" placeholder="Leave blank if undisclosed"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="tf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" id="tf-est-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated from price &amp; rent" title="Calculated automatically when price guide and net rent are both entered"></div>
     <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" id="tf-gross-rent" type="number" step="100" value="${t.gross_rent||''}" oninput="calcTrackingYield()"></div>
@@ -2123,10 +2163,10 @@ function trackingForm(t={}) {
 function convertForm(t={}) {
   return `<form id="convert-form" class="form-grid" onsubmit="return false">
     <div class="form-group full" style="background:var(--bg);padding:10px 12px;border-radius:6px;font-size:12.5px;color:var(--muted)">
-      Converting <strong style="color:var(--text)">${t.address}</strong> to a finalised sale.
-      Details below carry over from the campaign — <strong style="color:var(--text)">just confirm the sale price &amp; settlement date.</strong>
+      Settling <strong style="color:var(--text)">${t.address}</strong> — this moves it into the Sales Database.
+      Details carry over from the campaign; <strong style="color:var(--text)">confirm the settlement date</strong> (price optional if still undisclosed).
     </div>
-    <div class="form-group"><label>Sale Price ($) *</label><input name="price" id="cf-price" type="number" step="1000" required placeholder="${t.price_guide ? 'Guide was $'+Number(t.price_guide).toLocaleString() : 'Enter final sale price'}" oninput="calcConvertYield()"></div>
+    <div class="form-group"><label>Sale Price ($)</label><input name="price" id="cf-price" type="number" step="1000" value="${t.sale_price || ''}" placeholder="${t.price_guide ? 'Guide was $'+Number(t.price_guide).toLocaleString() : 'Leave blank if undisclosed'}" oninput="calcConvertYield()"></div>
     <div class="form-group"><label>Settlement Date *</label><input name="settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="cf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcConvertYield()"></div>
     <div class="form-group"><label>Yield %</label><input name="yield_percent" id="cf-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated"></div>
@@ -2721,7 +2761,7 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','sale_price','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }

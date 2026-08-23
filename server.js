@@ -376,12 +376,12 @@ app.post('/api/tracking', requireAuth, (req, res) => {
   const year = body.year || new Date().getFullYear();
   db.prepare(`
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
-      price_guide, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
+      price_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
       vendor, purchaser, agent1, agent2, firm1, firm2,
       campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Active Campaign', body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
+    body.status || 'Active Campaign', body.price_guide, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
@@ -397,14 +397,14 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
   const year = body.year || undefined;
   db.prepare(`
     UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price_guide=?, net_rent=?, gross_rent=?, gross_yield=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
+      price_guide=?, sale_price=?, net_rent=?, gross_rent=?, gross_yield=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
       units=?, zoning=?, fsr=?, height_limit=?,
       vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Active Campaign', body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
+    body.status || 'Active Campaign', body.price_guide, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
@@ -433,6 +433,25 @@ app.delete('/api/tracking/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// Mark a campaign as EXCHANGED — records the exchange date and (optionally) the
+// agreed price, and moves it to 'Exchanged - Awaiting Settlement'. The record
+// stays in Campaigns; it only reaches the Sales Database once it settles.
+app.post('/api/tracking/:id/exchange', requireAuth, (req, res) => {
+  const t = db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Not found' });
+  const b = req.body || {};
+  const exchangeDate = b.exchange_date || new Date().toISOString().slice(0, 10);
+  db.prepare(`UPDATE tracking SET status='Exchanged - Awaiting Settlement', exchange_date=?,
+      sale_price=COALESCE(?, sale_price), purchaser=COALESCE(?, purchaser),
+      expected_settlement_date=COALESCE(?, expected_settlement_date),
+      notes=COALESCE(?, notes), year=?, updated_at=datetime('now') WHERE id=?`)
+    .run(exchangeDate, b.sale_price || null, b.purchaser || null,
+      b.expected_settlement_date || null, b.notes || null,
+      new Date(exchangeDate).getFullYear(), req.params.id);
+  backupDb().catch(() => {});
+  res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
+});
+
 // Convert tracking → sale (settlement complete)
 // Every field falls back to the tracked record so the user only needs to supply
 // the final sale price and settlement date — everything captured during the
@@ -446,7 +465,7 @@ app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
   // pick(bodyVal, trackedVal): use what's typed in the sell form, else the tracked value
   const pick = (b, t) => (b !== undefined && b !== null && b !== '') ? b : (t ?? null);
 
-  const price        = pick(body.price, null);
+  const price        = pick(body.price, tracked.sale_price);
   const net_rent     = pick(body.net_rent, tracked.net_rent);
   const gross_rent   = pick(body.gross_rent, tracked.gross_rent);
   let gross_yield    = pick(body.gross_yield, null);
@@ -2018,7 +2037,7 @@ function applySeed(seedPath) {
       db.prepare("SELECT id FROM deletions WHERE table_name='tracking'").all().map(r => r.id)
     );
     const trackCols = ['id','address','suburb','region','asset_class','process','status',
-      'price_guide','net_rent','gross_rent','gross_yield','estimated_yield','wale','land_area','floor_area','units','zoning',
+      'price_guide','sale_price','net_rent','gross_rent','gross_yield','estimated_yield','wale','land_area','floor_area','units','zoning',
       'fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
       'campaign_close_date','exchange_date','expected_settlement_date','year','notes','source_url'];
     const ins = db.prepare(`INSERT OR IGNORE INTO tracking (${trackCols.join(',')})
