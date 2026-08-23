@@ -181,12 +181,12 @@ app.post('/api/sales', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : new Date().getFullYear());
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
+      price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Sold', body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null,
+    body.status || 'Sold', body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
     body.zoning, body.zoning2 || null, body.zoning_other || null, body.dev_stage || null,
     body.constraint1 || null, body.constraint2 || null,
@@ -209,7 +209,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
   );
   const ins = db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
+      price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -228,7 +228,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       insertedIds.push(newId);
       ins.run(newId, r.address, r.suburb || null, r.region || null, r.asset_class || null,
         r.process || null, r.status || 'Sold', r.price || null, r.price_guide || null,
-        r.net_rent || null, r.gross_rent || null, r.gross_yield || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
+        r.adjusted_guide || null, r.net_rent || null, r.gross_rent || null, r.gross_yield || null, yieldPct, r.wale || null, r.land_area || null, r.floor_area || null,
         r.gfa || null, r.units || null, r.parking || null,
         r.zoning || null, r.zoning2 || null, r.zoning_other || null, r.dev_stage || null,
         r.constraint1 || null, r.constraint2 || null,
@@ -301,7 +301,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
   const year = body.year || (body.exchange_date ? new Date(body.exchange_date).getFullYear() : undefined);
   db.prepare(`
     UPDATE sales SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price=?, price_guide=?, net_rent=?, gross_rent=?, gross_yield=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
+      price=?, price_guide=?, adjusted_guide=?, net_rent=?, gross_rent=?, gross_yield=?, yield_percent=?, wale=?, land_area=?, floor_area=?,
       gfa=?, units=?, parking=?,
       zoning=?, zoning2=?, zoning_other=?, dev_stage=?, constraint1=?, constraint2=?,
       fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
@@ -309,7 +309,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
-    body.price, body.price_guide, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.yield_percent, body.wale,
+    body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.yield_percent, body.wale,
     body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
     body.zoning, body.zoning2 || null, body.zoning_other || null, body.dev_stage || null,
     body.constraint1 || null, body.constraint2 || null,
@@ -376,12 +376,12 @@ app.post('/api/tracking', requireAuth, (req, res) => {
   const year = body.year || new Date().getFullYear();
   db.prepare(`
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
-      price_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
+      price_guide, adjusted_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
       vendor, purchaser, agent1, agent2, firm1, firm2,
       campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Active Campaign', body.price_guide, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
+    body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
@@ -397,14 +397,14 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
   const year = body.year || undefined;
   db.prepare(`
     UPDATE tracking SET address=?, suburb=?, region=?, asset_class=?, process=?, status=?,
-      price_guide=?, sale_price=?, net_rent=?, gross_rent=?, gross_yield=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
+      price_guide=?, adjusted_guide=?, sale_price=?, net_rent=?, gross_rent=?, gross_yield=?, estimated_yield=?, wale=?, land_area=?, floor_area=?,
       units=?, zoning=?, fsr=?, height_limit=?,
       vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
-    body.status || 'Active Campaign', body.price_guide, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
+    body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
@@ -442,10 +442,10 @@ app.post('/api/tracking/:id/exchange', requireAuth, (req, res) => {
   const b = req.body || {};
   const exchangeDate = b.exchange_date || new Date().toISOString().slice(0, 10);
   db.prepare(`UPDATE tracking SET status='Exchanged - Awaiting Settlement', exchange_date=?,
-      sale_price=COALESCE(?, sale_price), purchaser=COALESCE(?, purchaser),
+      sale_price=COALESCE(?, sale_price), adjusted_guide=COALESCE(?, adjusted_guide), purchaser=COALESCE(?, purchaser),
       expected_settlement_date=COALESCE(?, expected_settlement_date),
       notes=COALESCE(?, notes), year=?, updated_at=datetime('now') WHERE id=?`)
-    .run(exchangeDate, b.sale_price || null, b.purchaser || null,
+    .run(exchangeDate, b.sale_price || null, b.adjusted_guide || null, b.purchaser || null,
       b.expected_settlement_date || null, b.notes || null,
       new Date(exchangeDate).getFullYear(), req.params.id);
   backupDb().catch(() => {});
@@ -485,12 +485,12 @@ app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
 
   db.prepare(`
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
-      price, price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, units,
+      price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, units,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(saleId, tracked.address, tracked.suburb, tracked.region, tracked.asset_class,
-    tracked.process, 'Sold', price, tracked.price_guide, net_rent, gross_rent, gross_yield, yield_percent, wale,
+    tracked.process, 'Sold', price, tracked.price_guide, tracked.adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale,
     land_area, floor_area, units, tracked.zoning, tracked.fsr, tracked.height_limit,
     tracked.vendor, purchaser, tracked.agent1, tracked.agent2, tracked.firm1, tracked.firm2,
     exchange_date, pick(body.settlement_date, tracked.expected_settlement_date),
@@ -559,6 +559,9 @@ const XL_COLS = [
   { header: 'Asset Class',              key: 'asset_class',   width: 20, type: 'text'    },
   { header: 'Sale Date',                key: 'exchange_date', width: 13, type: 'date'    },
   { header: 'Sale Price',               key: 'price',         width: 15, type: 'currency'},
+  { header: 'Price Guide',              key: 'price_guide',   width: 14, type: 'currency'},
+  { header: 'Adjusted Guide',           key: 'adjusted_guide',width: 14, type: 'currency'},
+  { header: 'Variance vs Guide %',      key: 'quote_var',     width: 15, type: 'pct'     },
   { header: 'Net Rent p.a.',            key: 'net_rent',      width: 14, type: 'currency'},
   { header: 'Gross Rent p.a.',          key: 'gross_rent',    width: 14, type: 'currency'},
   { header: 'Net Yield %',              key: 'yield_percent', width: 10, type: 'pct'     },
@@ -622,6 +625,8 @@ function withExportComputed(rows) {
     const fsrNum = r.fsr ? parseFloat(String(r.fsr).match(/(\d+(?:\.\d+)?)/)?.[1]) : null;
     if (r.price > 0 && r.land_area > 0 && fsrNum > 0) out.rate_pgfa = Math.round(r.price / (r.land_area * fsrNum));
     if (r.price > 0 && r.units > 0) out.unit_rate = Math.round(r.price / r.units);
+    const guide = r.adjusted_guide || r.price_guide;
+    if (guide > 0 && r.price > 0) out.quote_var = Math.round((r.price - guide) / guide * 10000) / 100;
     if (out.gross_yield == null && r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
     out.constraints = [r.constraint1, r.constraint2].filter(Boolean).join(' · ') || null;
     return out;
@@ -2008,7 +2013,7 @@ function applySeed(seedPath) {
       db.prepare("SELECT id FROM deletions WHERE table_name='sales'").all().map(r => r.id)
     );
     const saleCols = ['id','address','suburb','region','asset_class','process','status','price',
-      'price_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking',
+      'price_guide','adjusted_guide','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking',
       'zoning','zoning2','zoning_other','dev_stage','constraint1','constraint2','fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
       'exchange_date','settlement_date','campaign_close_date','year','notes'];
     const ins = db.prepare(`INSERT OR IGNORE INTO sales (${saleCols.join(',')})
@@ -2037,7 +2042,7 @@ function applySeed(seedPath) {
       db.prepare("SELECT id FROM deletions WHERE table_name='tracking'").all().map(r => r.id)
     );
     const trackCols = ['id','address','suburb','region','asset_class','process','status',
-      'price_guide','sale_price','net_rent','gross_rent','gross_yield','estimated_yield','wale','land_area','floor_area','units','zoning',
+      'price_guide','adjusted_guide','sale_price','net_rent','gross_rent','gross_yield','estimated_yield','wale','land_area','floor_area','units','zoning',
       'fsr','height_limit','vendor','purchaser','agent1','agent2','firm1','firm2',
       'campaign_close_date','exchange_date','expected_settlement_date','year','notes','source_url'];
     const ins = db.prepare(`INSERT OR IGNORE INTO tracking (${trackCols.join(',')})

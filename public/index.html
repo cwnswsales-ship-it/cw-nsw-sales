@@ -902,6 +902,22 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
               <tbody id="agent-tbody"></tbody>
             </table></div>
           </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Quote Accuracy by Agency
+              <span class="dash-panel-sub">sold price vs quoted guide · positive = sold above quote, negative = over-quoted</span></div>
+            <div class="table-wrap"><table id="quote-table">
+              <thead><tr>
+                <th style="width:36px">#</th>
+                <th>Agency</th>
+                <th>Sales w/ Guide</th>
+                <th>Avg Variance</th>
+                <th>Median</th>
+                <th>Range</th>
+                <th>Repriced</th>
+              </tr></thead>
+              <tbody id="quote-tbody"></tbody>
+            </table></div>
+          </div>
         </div>
       </div>
     </section>
@@ -1186,7 +1202,7 @@ async function initApp() {
   loadDashboard();
   initYearMS('sf');
   initYearMS('tf');
-  ['sales-table','tracking-table','agent-table','portfolio-table'].forEach(makeColumnsResizable);
+  ['sales-table','tracking-table','agent-table','quote-table','portfolio-table'].forEach(makeColumnsResizable);
   loadSuburbCatalogue();
 }
 
@@ -1706,7 +1722,8 @@ function renderSales(data) {
     <tr class="${rowCls}" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
       <td class="td-addr">${s.address}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
-      <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${aptMeta}</td>
+      <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${
+        varianceChip(quoteVariance(s.adjusted_guide || s.price_guide, s.price), 'vs guide')}${aptMeta}</td>
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
       <td>${assetBadge(s.asset_class)}</td>
       <td class="td-mono ${isNumYield(s.yield_percent)?'td-yield-good':''}">${
@@ -1800,7 +1817,8 @@ function saleForm(s={}) {
     <div class="form-group"><label>Process</label>${sel('process', PROCESSES, s.process)}</div>
     <div class="form-section">Financials</div>
     <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
-    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}"></div>
+    <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}" title="What the property was quoted at"></div>
+    <div class="form-group"><label>Adjusted Guide ($)</label><input name="adjusted_guide" type="number" step="1000" value="${s.adjusted_guide||''}" placeholder="If repriced during campaign"></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"></div>
     <div class="form-group"><label>Net Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
@@ -1972,7 +1990,8 @@ function renderTracking(data) {
         </select>
       </td>
       <td class="td-mono">${t.price_guide ? '$'+fmt(t.price_guide) : '–'}${
-        t.sale_price ? `<small style="display:block;color:var(--success);font-weight:700;font-size:10.5px">Sold $${fmt(t.sale_price)}</small>`
+        t.adjusted_guide ? `<small style="display:block;color:var(--accent);font-size:10.5px">adj $${fmt(t.adjusted_guide)}</small>` + varianceChip(quoteVariance(t.price_guide, t.adjusted_guide), 'reprice') : ''}${
+        t.sale_price ? `<small style="display:block;color:var(--success);font-weight:700;font-size:10.5px">Sold $${fmt(t.sale_price)}</small>` + varianceChip(quoteVariance(t.adjusted_guide || t.price_guide, t.sale_price), 'vs guide')
         : (t.status === 'Exchanged - Awaiting Settlement' ? `<small style="display:block;color:var(--muted);font-size:10px">price undisclosed</small>` : '')}</td>
       <td class="td-mono">${t.net_rent ? '$'+fmt(t.net_rent) : '–'}</td>
       <td class="td-mono">${t.estimated_yield ? t.estimated_yield.toFixed(2)+'%' : '–'}</td>
@@ -2088,6 +2107,7 @@ function exchangeForm(t = {}) {
     </div>
     <div class="form-group"><label>Exchange Date *</label><input name="exchange_date" type="date" value="${t.exchange_date || today}"></div>
     <div class="form-group"><label>Sale Price ($)</label><input name="sale_price" type="number" step="1000" value="${t.sale_price || ''}" placeholder="${t.price_guide ? 'Guide was $' + Number(t.price_guide).toLocaleString() : 'Leave blank if unknown'}"></div>
+    <div class="form-group"><label>Adjusted Guide ($)</label><input name="adjusted_guide" type="number" step="1000" value="${t.adjusted_guide || ''}" placeholder="If the guide was revised"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}" placeholder="If known"></div>
     <div class="form-group"><label>Exp. Settlement Date</label><input name="expected_settlement_date" type="date" value="${t.expected_settlement_date || ''}"></div>
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(t.notes)}</textarea></div>
@@ -2132,7 +2152,8 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Status</label>${sel('status', TRACK_STATUSES, t.status||'Active Campaign')}</div>
     <div class="form-section">Financials</div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" id="tf-price-guide" type="number" step="1000" value="${t.price_guide||''}" oninput="calcTrackingYield()"></div>
-    <div class="form-group"><label>Sale Price ($) — if exchanged</label><input name="sale_price" type="number" step="1000" value="${t.sale_price||''}" placeholder="Leave blank if undisclosed"></div>
+    <div class="form-group"><label>Adjusted Guide ($)</label><input name="adjusted_guide" id="tf-adj-guide" type="number" step="1000" value="${t.adjusted_guide||''}" oninput="calcTrackingYield()" placeholder="If the campaign was repriced" title="Revised guide after a failed or repriced campaign"><small id="tf-adj-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Sale Price ($) — if exchanged</label><input name="sale_price" id="tf-sale-price" type="number" step="1000" value="${t.sale_price||''}" oninput="calcTrackingYield()" placeholder="Leave blank if undisclosed"><small id="tf-var-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="tf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" id="tf-est-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated from price &amp; rent" title="Calculated automatically when price guide and net rent are both entered"></div>
     <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" id="tf-gross-rent" type="number" step="100" value="${t.gross_rent||''}" oninput="calcTrackingYield()"></div>
@@ -2761,13 +2782,25 @@ function getFormData(formId) {
   const form = document.getElementById(formId);
   const data = {};
   new FormData(form).forEach((v,k) => { data[k] = v || null; });
-  ['price','price_guide','sale_price','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking','estimated_yield','year'].forEach(f => {
+  ['price','price_guide','adjusted_guide','sale_price','net_rent','gross_rent','gross_yield','yield_percent','wale','land_area','floor_area','gfa','units','parking','estimated_yield','year'].forEach(f => {
     if (!data[f]) return;
     // "VP" (vacant possession) is a valid yield entry — keep it as text
     if (f === 'yield_percent' && /^v\.?p\.?$/i.test(String(data[f]).trim())) { data[f] = 'VP'; return; }
     data[f] = parseFloat(data[f]) || null;
   });
   return data;
+}
+
+// Quote variance: how far the result landed from the quoted guide.
+// Positive = sold ABOVE quote (under-quoted); negative = sold BELOW (over-quoted).
+function quoteVariance(guide, actual) {
+  if (!(guide > 0) || !(actual > 0)) return null;
+  return (actual - guide) / guide * 100;
+}
+function varianceChip(v, label) {
+  if (v === null) return '';
+  const col = Math.abs(v) < 2.5 ? 'var(--muted)' : v > 0 ? 'var(--success)' : 'var(--danger)';
+  return `<small style="display:block;color:${col};font-weight:700;font-size:10.5px">${v > 0 ? '+' : ''}${v.toFixed(1)}%${label ? ' ' + label : ''}</small>`;
 }
 
 // Yields can be a number or 'VP' (vacant possession)
@@ -2834,6 +2867,21 @@ function calcTrackingYield() {
   const gyEl = document.getElementById('tf-gross-yield');
   if (gyEl && price > 0 && gross > 0) gyEl.value = ((gross / price) * 100).toFixed(2);
   // Price per key/unit off the price guide
+  // Guide vs adjusted guide vs achieved price — the quote-accuracy picture
+  const adj = parseFloat(document.getElementById('tf-adj-guide')?.value);
+  const sp  = parseFloat(document.getElementById('tf-sale-price')?.value);
+  const adjHint = document.getElementById('tf-adj-hint');
+  if (adjHint) {
+    const v = quoteVariance(price, adj);
+    adjHint.textContent = v === null ? '' : `${v > 0 ? '+' : ''}${v.toFixed(1)}% vs original guide`;
+  }
+  const varHint = document.getElementById('tf-var-hint');
+  if (varHint) {
+    const base = adj > 0 ? adj : price;
+    const v = quoteVariance(base, sp);
+    varHint.textContent = v === null ? ''
+      : `${v > 0 ? '+' : ''}${v.toFixed(1)}% vs ${adj > 0 ? 'adjusted' : 'original'} guide — ${v > 0 ? 'sold above quote' : v < 0 ? 'sold below quote' : 'on quote'}`;
+  }
   const unitsVal = parseFloat(document.getElementById('tf-units')?.value);
   const keyHint = document.getElementById('tf-key-hint');
   if (keyHint) {
@@ -3806,6 +3854,7 @@ function renderAgentAnalytics() {
   document.getElementById('ak-collab').textContent    = jointSales;
 
   renderAgentTable(agents);
+  renderQuoteAccuracy(data);
   renderAgentCharts(agents);
 }
 
@@ -3826,6 +3875,53 @@ function renderAgencyTable(agencies) {
       <td>${a.topAsset ? assetBadge(a.topAsset) : '–'}</td>
       <td class="text-muted" style="font-size:12px">${esc(a.topAgent)}</td>
     </tr>`).join('') || '<tr><td colspan="7" class="empty-state">No data</td></tr>';
+}
+
+// Quote accuracy: for every sale with both a guide and an achieved price,
+// how far the result landed from what the agency quoted.
+function renderQuoteAccuracy(data) {
+  const tbody = document.getElementById('quote-tbody');
+  if (!tbody) return;
+  const map = {};
+  const add = (firm, s) => {
+    if (!firm) return;
+    const guide = s.adjusted_guide || s.price_guide;
+    const v = quoteVariance(guide, s.price);
+    if (v === null) return;
+    (map[firm] = map[firm] || { vars: [], repriced: 0 });
+    map[firm].vars.push(v);
+    if (s.adjusted_guide && s.price_guide && s.adjusted_guide !== s.price_guide) map[firm].repriced++;
+  };
+  data.forEach(s => { add(s.firm1, s); if (s.firm2 && s.firm2 !== s.firm1) add(s.firm2, s); });
+
+  const rows = Object.entries(map).map(([name, d]) => {
+    const sorted = [...d.vars].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return {
+      name, n: d.vars.length, repriced: d.repriced,
+      avg: d.vars.reduce((a, b) => a + b, 0) / d.vars.length,
+      median: sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2,
+      min: sorted[0], max: sorted[sorted.length - 1],
+    };
+  }).sort((a, b) => b.n - a.n || Math.abs(a.avg) - Math.abs(b.avg));
+
+  const pct = v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const col = v => Math.abs(v) < 2.5 ? 'var(--muted)' : v > 0 ? 'var(--success)' : 'var(--danger)';
+  tbody.innerHTML = rows.length ? rows.slice(0, 30).map((r, i) => `
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td><div class="agent-name">${esc(r.name)}</div></td>
+      <td><strong>${r.n}</strong></td>
+      <td><span style="color:${col(r.avg)};font-weight:800">${pct(r.avg)}</span>
+        <div style="font-size:10px;color:var(--muted)">${r.avg > 2.5 ? 'sells above quote' : r.avg < -2.5 ? 'over-quotes' : 'on the money'}</div></td>
+      <td><span style="color:${col(r.median)};font-weight:600">${pct(r.median)}</span></td>
+      <td class="text-muted" style="font-size:11.5px">${pct(r.min)} → ${pct(r.max)}</td>
+      <td>${r.repriced || '–'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="7" class="empty-state" style="padding:30px 20px">
+        <h3 style="font-size:14px">No quote data yet</h3>
+        <p>Variance appears once sales carry both a price guide and an achieved price. Record the guide on each campaign and it flows through on settlement.</p>
+      </td></tr>`;
 }
 
 function renderAgentTable(agents) {
