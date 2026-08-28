@@ -545,11 +545,12 @@ app.delete('/api/validate/:id', requireAuth, (req, res) => {
 // ── Excel Export ─────────────────────────────────────────────────────────────
 
 // C&W brand palette (ARGB)
+// Cushman & Wakefield brand palette — mirrors the tokens in public/index.html
 const XL = {
-  NAVY:   'FF0D2137', NAVY2:  'FF1A3A5C', NAVY3:  'FF091929',
-  ORANGE: 'FFE8732A', ORANGE2:'FFC45E1E',
-  WHITE:  'FFFFFFFF', LGREY:  'FFF8F9FB', MGREY:  'FFE2E8F0',
-  TEXT:   'FF0F172A', MUTED:  'FF64748B',
+  NAVY:   'FF221C4E', NAVY2:  'FF2C2A57', NAVY3:  'FF181341',   // navy 900 / 700 / 950
+  ORANGE: 'FFED1C24', ORANGE2:'FFC8141B',                        // brand 600 / 700
+  WHITE:  'FFFFFFFF', LGREY:  'FFF7F8F9', MGREY:  'FFDDE0E4',   // ink 50 / 200
+  TEXT:   'FF262C33', MUTED:  'FF6E777F',                        // ink 800 / 500
 };
 
 const XL_COLS = [
@@ -764,7 +765,7 @@ function buildAnalysisWorkbook(r, source) {
 
   ws.addRow([]); row++;
   addBanner('These figures have been verified to the best of the agents\u2019 ability — you are encouraged to verify the data yourself.', 22, 'FFFDF3EC',
-    { name: 'Calibri', color: { argb: 'FF8A5A2B' }, italic: true, size: 9.5 });
+    { name: 'Calibri', color: { argb: 'FFA11318' }, italic: true, size: 9.5 });
   const gen = new Date();
   ws.addRow([`Generated ${gen.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })} · source: ${source}`]); row++;
   ws.mergeCells(`A${row}:D${row}`);
@@ -850,8 +851,8 @@ function buildSalesWorkbook(rows, subtitle) {
   const rd = ws.getRow(4);
   rd.height = 20;
   const cd = rd.getCell(1);
-  cd.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF3EC' } };
-  cd.font = { name: 'Calibri', color: { argb: 'FF8A5A2B' }, size: 9.5, italic: true };
+  cd.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3F2' } };
+  cd.font = { name: 'Calibri', color: { argb: 'FFA11318' }, size: 9.5, italic: true };
   cd.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
 
   // ── Row 5: Column headers ────────────────────────────────────────────────
