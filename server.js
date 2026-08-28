@@ -559,9 +559,6 @@ const XL_COLS = [
   { header: 'Asset Class',              key: 'asset_class',   width: 20, type: 'text'    },
   { header: 'Sale Date',                key: 'exchange_date', width: 13, type: 'date'    },
   { header: 'Sale Price',               key: 'price',         width: 15, type: 'currency'},
-  { header: 'Price Guide',              key: 'price_guide',   width: 14, type: 'currency'},
-  { header: 'Adjusted Guide',           key: 'adjusted_guide',width: 14, type: 'currency'},
-  { header: 'Variance vs Guide %',      key: 'quote_var',     width: 15, type: 'pct'     },
   { header: 'Net Rent p.a.',            key: 'net_rent',      width: 14, type: 'currency'},
   { header: 'Gross Rent p.a.',          key: 'gross_rent',    width: 14, type: 'currency'},
   { header: 'Net Yield %',              key: 'yield_percent', width: 10, type: 'pct'     },
@@ -632,6 +629,169 @@ function withExportComputed(rows) {
     return out;
   });
 }
+
+// One-property Sale Analysis — a vertical, C&W-branded analysis sheet built
+// from either a sale record or a campaign (exchanged or otherwise).
+function buildAnalysisWorkbook(r, source) {
+  const { Workbook } = require('exceljs');
+  const wb = new Workbook();
+  wb.creator = 'Cushman & Wakefield';
+  const ws = wb.addWorksheet('Sale Analysis', {
+    pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    headerFooter: { oddFooter: '&L&"Calibri"Cushman & Wakefield · Confidential&R&D' },
+  });
+  ws.columns = [{ width: 30 }, { width: 34 }, { width: 26 }, { width: 30 }];
+
+  const money = v => (v === null || v === undefined || v === '') ? null : Number(v);
+  const guide = r.adjusted_guide || r.price_guide;
+  const price = r.price != null ? r.price : r.sale_price;
+  const variance = (guide > 0 && price > 0) ? Math.round((price - guide) / guide * 10000) / 100 : null;
+  const perUnit = (price > 0 && r.units > 0) ? Math.round(price / r.units) : null;
+  const fsrNum = r.fsr ? parseFloat(String(r.fsr).match(/(\d+(?:\.\d+)?)/)?.[1]) : null;
+  const permGfa = (r.land_area > 0 && fsrNum > 0) ? Math.round(r.land_area * fsrNum) : null;
+  const KEY = { 'Boarding House': 'key', 'Pub/Hotel': 'key', 'Co-Living': 'key', 'Cinema': 'screen' };
+  const unitWord = KEY[r.asset_class] || 'unit';
+
+  let row = 0;
+  const addBanner = (text, h, fill, font) => {
+    ws.addRow([text]); row++;
+    ws.mergeCells(`A${row}:D${row}`);
+    const rr = ws.getRow(row); rr.height = h;
+    const c = rr.getCell(1);
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
+    c.font = font;
+    c.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
+  };
+  const addSection = (title) => {
+    ws.addRow([title]); row++;
+    ws.mergeCells(`A${row}:D${row}`);
+    const rr = ws.getRow(row); rr.height = 20;
+    const c = rr.getCell(1);
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY2 } };
+    c.font = { name: 'Calibri', color: { argb: XL.WHITE }, bold: true, size: 10.5 };
+    c.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  };
+  // Two label/value pairs per line
+  const addPairs = (pairs) => {
+    for (let i = 0; i < pairs.length; i += 2) {
+      const [l1, v1, f1] = pairs[i] || [];
+      const [l2, v2, f2] = pairs[i + 1] || [];
+      ws.addRow([l1 || '', v1 === undefined ? '' : v1, l2 || '', v2 === undefined ? '' : v2]); row++;
+      const rr = ws.getRow(row); rr.height = 17;
+      [1, 3].forEach(ci => {
+        const c = rr.getCell(ci);
+        c.font = { name: 'Calibri', size: 10, color: { argb: XL.MUTED || 'FF64748B' }, bold: true };
+        c.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      });
+      [[2, f1], [4, f2]].forEach(([ci, fmt]) => {
+        const c = rr.getCell(ci);
+        c.font = { name: 'Calibri', size: 10.5, color: { argb: XL.TEXT } };
+        c.alignment = { vertical: 'middle', horizontal: 'left' };
+        if (fmt && typeof c.value === 'number') c.numFmt = fmt;
+        c.border = { bottom: { style: 'hair', color: { argb: XL.MGREY } } };
+      });
+    }
+  };
+
+  const CUR = '"$"#,##0', PCT = '0.00"%"', AREA = '#,##0"m²"';
+  addBanner('C&W  ·  SALE ANALYSIS', 40, XL.NAVY,
+    { name: 'Calibri', color: { argb: XL.WHITE }, bold: true, size: 17 });
+  addBanner(`${r.address || ''}${r.suburb ? ', ' + r.suburb : ''}`, 26, XL.NAVY2,
+    { name: 'Calibri', color: { argb: 'FFCBD5E1' }, bold: true, size: 12 });
+  ws.addRow([]); row++;
+  ws.mergeCells(`A${row}:D${row}`);
+  ws.getRow(row).height = 4;
+  ws.getRow(row).getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ORANGE } };
+
+  addSection('PROPERTY');
+  addPairs([
+    ['Address', r.address], ['Suburb', r.suburb],
+    ['Region', r.region], ['Asset Class', r.asset_class],
+    ['Status', r.status], ['Process', r.process],
+  ]);
+
+  addSection('SALE');
+  addPairs([
+    ['Sale Price', money(price), CUR], ['Sale Date', fmtExportDate(r.exchange_date)],
+    ['Price Guide', money(r.price_guide), CUR], ['Adjusted Guide', money(r.adjusted_guide), CUR],
+    ['Variance vs Guide', variance === null ? '' : variance, PCT],
+    ['Result', variance === null ? '' : (variance > 2.5 ? 'Sold above quote' : variance < -2.5 ? 'Sold below quote' : 'On quote')],
+    ['Settlement Date', fmtExportDate(r.settlement_date || r.expected_settlement_date)],
+    ['Campaign Close', fmtExportDate(r.campaign_close_date)],
+    ['Vendor', r.vendor], ['Purchaser', r.purchaser],
+  ]);
+
+  addSection('INCOME & YIELD');
+  addPairs([
+    ['Net Rent p.a.', money(r.net_rent), CUR], ['Net Yield', money(r.yield_percent ?? r.estimated_yield), PCT],
+    ['Gross Rent p.a.', money(r.gross_rent), CUR], ['Gross Yield', money(r.gross_yield), PCT],
+    ['WALE (years)', money(r.wale), '0.0'],
+    [`Rate per ${unitWord}`, perUnit, CUR],
+  ]);
+
+  addSection('AREAS & RATES');
+  addPairs([
+    ['Land Area', money(r.land_area), AREA], ['Rate $/m² (Site)', (price > 0 && r.land_area > 0) ? Math.round(price / r.land_area) : null, CUR],
+    ['Floor Area', money(r.floor_area), AREA], ['Rate $/m² (Floor)', (price > 0 && r.floor_area > 0) ? Math.round(price / r.floor_area) : null, CUR],
+    ['GFA', money(r.gfa), AREA], ['Rate $/m² (GFA)', (price > 0 && r.gfa > 0) ? Math.round(price / r.gfa) : null, CUR],
+    ['Permissible GFA (land × FSR)', permGfa, AREA], ['Rate $/m² (Perm. GFA)', (price > 0 && permGfa > 0) ? Math.round(price / permGfa) : null, CUR],
+    [`Units / Rooms / Keys`, money(r.units), '#,##0'], ['Parking', money(r.parking), '#,##0'],
+  ]);
+
+  addSection('PLANNING');
+  addPairs([
+    ['Primary Zoning', r.zoning], ['Secondary Zoning', r.zoning2],
+    ['FSR', r.fsr], ['Height Limit', r.height_limit],
+    ['Development Stage', r.dev_stage], ['Constraints', [r.constraint1, r.constraint2].filter(Boolean).join(' · ')],
+  ]);
+
+  addSection('AGENCY');
+  addPairs([
+    ['Agent 1', r.agent1], ['Firm 1', r.firm1],
+    ['Agent 2', r.agent2], ['Firm 2', r.firm2],
+  ]);
+
+  if (r.notes) {
+    addSection('NOTES');
+    ws.addRow([r.notes]); row++;
+    ws.mergeCells(`A${row}:D${row}`);
+    const rr = ws.getRow(row);
+    rr.height = Math.min(120, 16 + Math.ceil(String(r.notes).length / 95) * 14);
+    const c = rr.getCell(1);
+    c.font = { name: 'Calibri', size: 10, color: { argb: XL.TEXT } };
+    c.alignment = { vertical: 'top', horizontal: 'left', wrapText: true, indent: 1 };
+  }
+
+  ws.addRow([]); row++;
+  addBanner('These figures have been verified to the best of the agents\u2019 ability — you are encouraged to verify the data yourself.', 22, 'FFFDF3EC',
+    { name: 'Calibri', color: { argb: 'FF8A5A2B' }, italic: true, size: 9.5 });
+  const gen = new Date();
+  ws.addRow([`Generated ${gen.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })} · source: ${source}`]); row++;
+  ws.mergeCells(`A${row}:D${row}`);
+  ws.getRow(row).getCell(1).font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF94A3B8' } };
+  return wb;
+}
+
+async function sendAnalysis(res, r, source) {
+  const wb = buildAnalysisWorkbook(r, source);
+  const safe = String(r.address || 'property').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="Sale-Analysis-${safe}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+}
+
+app.get('/api/tracking/:id/analysis', requireAuth, async (req, res) => {
+  const r = db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  await sendAnalysis(res, r, 'Campaign record');
+});
+
+app.get('/api/sales/:id/analysis', requireAuth, async (req, res) => {
+  const r = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  await sendAnalysis(res, r, 'Sales database');
+});
 
 function buildSalesWorkbook(rows, subtitle) {
   rows = withExportComputed(rows);

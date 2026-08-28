@@ -1204,12 +1204,13 @@ async function checkAuth() {
 // INIT
 // ═══════════════════════════════════════════════════════════════
 async function initApp() {
-  showSection('dashboard');
-  loadDashboard();
-  initYearMS('sf');
-  initYearMS('tf');
-  ['sales-table','tracking-table','agent-table','quote-table','portfolio-table'].forEach(makeColumnsResizable);
-  loadSuburbCatalogue();
+  // Each step runs independently — a failure in one must not stop the others
+  const step = (name, fn) => { try { fn(); } catch (e) { console.error('[init] ' + name + ':', e.message); } };
+  step('section',  () => showSection('dashboard'));
+  step('dashboard',() => loadDashboard());
+  step('years',    () => { initYearMS('sf'); initYearMS('tf'); });
+  step('resizers', () => ['sales-table','tracking-table','agent-table','quote-table','portfolio-table'].forEach(makeColumnsResizable));
+  step('suburbs',  () => loadSuburbCatalogue());
 }
 
 window.addEventListener('load', async () => {
@@ -1406,6 +1407,7 @@ function initYearMS(prefix) {
 }
 
 function renderYearDD(prefix, years, ddEl) {
+  if (!ddEl) return;   // filter bar without a year selector
   const set = prefix === 'sf' ? S.sfYears : S.tfYears;
   ddEl.innerHTML = `<div class="ms-clear" onclick="clearYears('${prefix}')">Clear selection</div>` +
     years.map(y => `<label class="ms-option"><input type="checkbox" value="${y}" ${set.has(y)?'checked':''}
@@ -1414,6 +1416,7 @@ function renderYearDD(prefix, years, ddEl) {
 
 function toggleMS(prefix) {
   const dd = document.getElementById(prefix + '-years-dd');
+  if (!dd) return;
   dd.classList.toggle('open');
   GET('/options?table=' + (prefix==='sf'?'sales':'tracking')).then(data => {
     if (!data) return;
@@ -1433,21 +1436,21 @@ function clearYears(prefix) {
   if (prefix === 'sf') { S.sfYears.clear(); } else { S.tfYears.clear(); }
   updateYearBtn(prefix);
   const dd = document.getElementById(prefix + '-years-dd');
-  dd.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+  if (dd) dd.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
   if (prefix === 'sf') loadSales(); else loadTracking();
 }
 
 function updateYearBtn(prefix) {
   const set   = prefix === 'sf' ? S.sfYears : S.tfYears;
   const btnEl = document.getElementById(prefix + '-years-btn');
-  btnEl.textContent = set.size === 0 ? 'All Years' : [...set].sort().join(', ');
+  if (btnEl) btnEl.textContent = set.size === 0 ? 'All Years' : [...set].sort().join(', ');
 }
 
 document.addEventListener('click', e => {
   ['sf','tf'].forEach(prefix => {
     const wrap = document.getElementById(prefix + '-years-wrap');
     if (wrap && !wrap.contains(e.target)) {
-      document.getElementById(prefix + '-years-dd').classList.remove('open');
+      document.getElementById(prefix + '-years-dd')?.classList.remove('open');
     }
   });
   const piWrap = document.getElementById('pi-suburbs-wrap');
@@ -1747,6 +1750,7 @@ function renderSales(data) {
       <td class="td-truncate" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes||'–'}</td>
       <td class="td-actions">
         ${s.source_url ? `<a href="${s.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="downloadAnalysis('sales','${s.id}')" title="Download the sale analysis for this property">📊</button>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="moveSaleToCampaigns('${s.id}')" title="Move to Campaigns (or drag the row onto the Campaigns menu)">⇄</button>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditSale('${s.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSale('${s.id}')" title="Delete">🗑</button>
@@ -1860,6 +1864,19 @@ function saleForm(s={}) {
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(s.notes)}</textarea></div>
     <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(s.source_url)}"></div>
   </form>`;
+}
+
+// Single-property Sale Analysis workbook
+async function downloadAnalysis(kind, id) {
+  const resp = await fetch(`/api/${kind}/${id}/analysis`, { headers: { Authorization: 'Bearer ' + S.token } });
+  if (!resp.ok) { showToast('Analysis export failed'); return; }
+  const cd = resp.headers.get('Content-Disposition') || '';
+  const name = (cd.match(/filename="([^"]+)"/) || [])[1] || 'Sale-Analysis.xlsx';
+  const url = URL.createObjectURL(await resp.blob());
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Sale analysis downloaded');
 }
 
 async function exportSales() {
@@ -2023,7 +2040,8 @@ function renderTracking(data) {
       <td class="td-truncate" title="${(t.notes||'').replace(/"/g,'&quot;')}">${t.notes||'–'}</td>
       <td class="td-actions">
         ${t.status === 'Exchanged - Awaiting Settlement'
-          ? `<button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Settled — move into the Sales Database">Settled</button>`
+          ? `<button class="btn btn-success btn-sm" onclick="openConvertToSale('${t.id}')" title="Settled — move into the Sales Database">Settled</button>
+             <button class="btn btn-secondary btn-sm btn-icon" onclick="downloadAnalysis('tracking','${t.id}')" title="Download the sale analysis for this property">📊</button>`
           : `<button class="btn btn-success btn-sm" onclick="openMarkExchanged('${t.id}')" title="Sold — record the exchange (price optional)">Sold</button>`}
         <button class="btn btn-secondary btn-sm" onclick="quickStatusChange('${t.id}','Withdrawn')" title="Withdraw campaign">Withdraw</button>
         ${t.source_url ? `<a href="${t.source_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open listing">🔗</a>` : ''}
