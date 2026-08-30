@@ -2265,6 +2265,9 @@ applySeeds();
     db.prepare("UPDATE sales SET price=35500000 WHERE id='0fbe5f7c-63bc-40a4-87c4-8a101e7589c3' AND price=39000000").run();
     db.prepare("UPDATE sales SET floor_area=2119.5 WHERE id='95a81071-10a3-4570-ab25-d2ae5d9c2574' AND floor_area=2221").run();
 
+    // 47 The Corso Manly — sale date corrected to 3-Dec-25 per the NSW team comps table
+    db.prepare("UPDATE sales SET exchange_date='2025-12-03', year=2025 WHERE id=? AND exchange_date='2025-11-01'").run('30e61857-0337-4401-a7af-ffcead2e634c');
+
     // 229 Bronte Rd Waverley — 2 shops + 2 x 3-bed resi above (per Jul 2026 comps email)
     db.prepare("UPDATE sales SET asset_class='Shop Top' WHERE id='6487ea7a-f3e3-4a6e-95d3-d86b58f13f77' AND asset_class='Retail'").run();
     // 47-51 Riley Street Woolloomooloo – DA for commercial development
