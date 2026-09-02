@@ -1198,6 +1198,8 @@ const DEV_STAGES = ['Raw','DA Lodged','DA Approved','HDA Lodged','HDA Approved',
   'Civils Completed','Stage 1 Masterplan','Stage 2 Masterplan','Stage 3 Masterplan','Stage 4 Masterplan'];
 const CONSTRAINTS = ['Flood','Bushfire','Biodiversity/Offsets','Contamination','Heritage','Acid Sulfate Soils',
   'Slope/Cut-Fill','Noise Buffers','Mine Subsidence','Riparian/Waterways','Utilities Easements','Other'];
+// A sale in this register is settled unless it is only exchanged (under contract).
+const SALE_STATUSES = ['Sold','Exchanged - Awaiting Settlement','Under Final Negotiations'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Failed Campaign','Failed Auction','Withdrawn'];
 const FAILED_STATUSES = ['Failed Campaign','Failed Auction'];
 // Standard exclusive agency period (days from campaign close) used for the agency countdown
@@ -1716,9 +1718,15 @@ function renderSaleStats(data) {
   const yields = data.filter(r => isNumYield(r.yield_percent));
   const avgYield = yields.length ? yields.reduce((s,r) => s+r.yield_percent,0)/yields.length : null;
   const devSites = data.filter(r => r.asset_class==='Development Site').length;
+  // Exchanged-but-unsettled deals stay in Total Volume (an exchange is a binding
+  // sale and dates the evidence) but are called out so the settled figure is clear.
+  const exch = data.filter(isExchanged);
+  const unsettled = exch.reduce((s,r) => s + (r.price||0), 0);
+  const unsettledN = exch.length;
   document.getElementById('sales-stats-bar').innerHTML = `
     <div class="ss-item"><div class="ss-val">${data.length}</div><div class="ss-label">Records</div></div>
-    <div class="ss-item"><div class="ss-val orange">$${fmtVol(vol)}</div><div class="ss-label">Total Volume</div></div>
+    <div class="ss-item"><div class="ss-val orange">$${fmtVol(vol)}</div><div class="ss-label">Total Volume${
+      unsettled ? ` <span title="${unsettledN} sale${unsettledN!==1?'s':''} exchanged (under contract) but not yet settled — included above" style="color:var(--muted);font-weight:600">· $${fmtVol(unsettled)} unsettled</span>` : ''}</div></div>
     <div class="ss-item"><div class="ss-val orange">${avgYield ? avgYield.toFixed(2)+'%' : '–'}</div><div class="ss-label">Avg Yield</div></div>
     <div class="ss-item"><div class="ss-val">${devSites}</div><div class="ss-label">Dev Sites</div></div>
   `;
@@ -1760,6 +1768,12 @@ function buildParams(prefix) {
   return p.toString();
 }
 
+// A sale marked "under contract" has EXCHANGED but not settled — still a real
+// deal, but not settled evidence. Blank status means settled (the register default).
+function isExchanged(s) {
+  return String(s.status || '').toLowerCase().startsWith('exchanged');
+}
+
 function renderSales(data) {
   const tbody = document.getElementById('sales-tbody');
   if (!data.length) {
@@ -1786,7 +1800,7 @@ function renderSales(data) {
     return `
     <tr class="${rowCls}" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
-      <td class="td-addr">${s.address}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
+      <td class="td-addr">${s.address}${isExchanged(s) ? ' <span class="badge-pill b-exchanged" style="margin-left:4px" title="Exchanged (under contract) — not yet settled">Exchanged</span>' : ''}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
       <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${
         varianceChip(quoteVariance(s.adjusted_guide || s.price_guide, s.price), 'vs guide')}${aptMeta}</td>
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
@@ -1881,6 +1895,7 @@ function saleForm(s={}) {
     <div class="form-group"><label>Region</label>${sel('region', REGIONS, s.region)}</div>
     <div class="form-group"><label>Asset Class</label>${sel('asset_class', ASSET_CLASSES, s.asset_class)}</div>
     <div class="form-group"><label>Process</label>${sel('process', PROCESSES, s.process)}</div>
+    <div class="form-group"><label>Status</label>${sel('status', SALE_STATUSES, s.status || 'Sold')}<small style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px">Under contract = exchanged, not yet settled</small></div>
     <div class="form-section">Financials</div>
     <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}" title="What the property was quoted at"></div>

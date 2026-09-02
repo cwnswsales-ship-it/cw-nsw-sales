@@ -2610,6 +2610,61 @@ try {
 })();
 
 
+// ── Canonicalise "under contract" → "Exchanged - Awaiting Settlement" ─────────
+// Statuses drifted into 8 spellings for the same state. "Under contract" means
+// the deal has EXCHANGED but not yet settled, so these are not completed sales.
+// Idempotent: re-running is a no-op once the statuses are canonical.
+(function canonicaliseExchangedStatus() {
+  const EXCHANGED = 'Exchanged - Awaiting Settlement';
+  try {
+    // 1. Spelling variants of the same state, on both sales and campaigns.
+    let n = 0;
+    const variants = ['under contract', 'exchanged', 'awaiting settlement',
+                      'subject to settlement', 'exchanged - pending settlement'];
+    for (const table of ['sales', 'tracking']) {
+      const upd = db.prepare(`UPDATE ${table} SET status=? WHERE LOWER(TRIM(status))=? AND status<>?`);
+      for (const v of variants) n += upd.run(EXCHANGED, v, EXCHANGED).changes;
+    }
+
+    // 2. Records reported to us as "under contract" but filed as Sold. These
+    //    were verified individually against the source correspondence — they
+    //    have exchanged, none has a settlement date.
+    const exchangedIds = [
+      '0fed5abe-9773-4c16-add4-0edba19793b7', // 63 Mitchell Street, Bondi Beach
+      '4b03c0c0-9e79-4b41-8d69-390482f37766', // 122 O'Brien Street, Bondi Beach
+      '84fbaab0-6ab5-4aca-addb-737bc9230797', // Castle Newtown
+      '3c17a344-9523-49a9-a6a4-69c7505d7417', // Level 1, The Rocks
+      '55aad6a0-c09b-479f-a197-66680942df45', // 207-229 Young Street, Waterloo
+      '7bcc5ae6-a698-4957-a9c5-8a608994f3cc', // 15-17 Strachan Street, Kingsford
+      '7ecc4b54-3f72-4f34-b302-7264892536b1', // 72 Pozieres Avenue, Matraville
+      '6f366b7b-19e6-4da8-83e6-77758d24154e', // 161-165 Botany Road, Waterloo
+      '8c712b38-df6d-467c-b729-20bcd48cf2d2', // Lot 20 Commercial Rd, Rouse Hill
+      'db06ec1a-2b76-4c87-9cfd-3999221673be', // 4/63-67 The Corso, Manly
+      '9b2a53f7-8bdf-495b-b951-b755322cf737', // 140 Macpherson Street, Bronte
+    ];
+    // Apply the reclassification once only, so a later manual correction in the
+    // app is never undone by a redeploy. The marker rides in the DB, so it also
+    // survives a bucket restore.
+    db.exec('CREATE TABLE IF NOT EXISTS fixups_applied (name TEXT PRIMARY KEY, applied_at TEXT DEFAULT (datetime(\'now\')))');
+    const MARK = 'under_contract_means_exchanged_v1';
+    const done = db.prepare('SELECT 1 FROM fixups_applied WHERE name=?').get(MARK);
+    let p = 0;
+    if (!done) {
+      // Belt and braces: never touch a record that already has a settlement date.
+      const promote = db.prepare(
+        `UPDATE sales SET status=? WHERE id=? AND status<>? AND COALESCE(TRIM(settlement_date),'')=''`
+      );
+      db.transaction(() => {
+        for (const id of exchangedIds) p += promote.run(EXCHANGED, id, EXCHANGED).changes;
+        db.prepare('INSERT OR IGNORE INTO fixups_applied (name) VALUES (?)').run(MARK);
+      })();
+    }
+
+    if (n || p) console.log(`[fixup] Exchanged status: ${n} variants canonicalised, ${p} under-contract sales reclassified`);
+  } catch (e) { console.error('[fixup] Exchanged status error:', e.message); }
+})();
+
+
 // ── Force reseed endpoint — call this to immediately restore all data ──────────
 app.post('/api/admin/reseed', requireAuth, (req, res) => {
   try {
