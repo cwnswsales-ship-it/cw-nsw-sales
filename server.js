@@ -1137,6 +1137,18 @@ For DEVELOPMENT SITES specifically: land_area = the total site area; gfa = the a
 
 Return ONLY the JSON object.`;
 
+// Uploaded documents must never be silently truncated — losing rows from a
+// comps schedule is worse than refusing the file. Cap generously, then fail loud.
+const DOC_TEXT_LIMIT = 400000;
+function docText(label, body) {
+  if (body.length > DOC_TEXT_LIMIT) {
+    const err = new Error(`${label} is too large to process in one pass (${body.length.toLocaleString()} characters, limit ${DOC_TEXT_LIMIT.toLocaleString()}). Nothing was imported — split it into smaller files and upload them separately so no sales are lost.`);
+    err.tooLarge = true;
+    throw err;
+  }
+  return { type: 'text', text: `${label} contents:\n${body}` };
+}
+
 app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
   if (!anthropic) return res.status(503).json({ error: 'AI not configured. Set ANTHROPIC_API_KEY in Railway.' });
   const { filename = '', mimeType = '', data } = req.body;
@@ -1178,7 +1190,7 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
           if (cells.some(x => x !== '')) lines.push(cells.join('\t'));
         });
       });
-      contentBlock = { type: 'text', text: 'Spreadsheet contents:\n' + lines.join('\n').slice(0, 100000) };
+      contentBlock = docText('Spreadsheet', lines.join('\n'));
     } else if (isDocx) {
       // Word document: unzip and strip the XML down to readable text (tables kept as " | " cells)
       const JSZip = require('jszip');
@@ -1194,9 +1206,9 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
         .replace(/<[^>]+>/g, '')
         .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#8217;|&#x2019;/g, "'")
         .replace(/\n{3,}/g, '\n\n');
-      contentBlock = { type: 'text', text: 'Word document contents:\n' + text.slice(0, 100000) };
+      contentBlock = docText('Word document', text);
     } else if (isCsv) {
-      contentBlock = { type: 'text', text: 'CSV contents:\n' + Buffer.from(data, 'base64').toString('utf8').slice(0, 100000) };
+      contentBlock = docText('CSV', Buffer.from(data, 'base64').toString('utf8'));
     } else if (isPDF) {
       contentBlock = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } };
     } else {
@@ -1216,7 +1228,7 @@ app.post('/api/extract-sales-batch', requireAuth, async (req, res) => {
     res.json({ success: true, count: parsed.sales.length, sales: parsed.sales, filename });
   } catch (err) {
     console.error('Sales batch extraction error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(err.tooLarge ? 413 : 500).json({ error: err.message });
   }
 });
 
@@ -2185,17 +2197,32 @@ function applySeed(seedPath) {
     const fillCols = saleCols.filter(c => c !== 'id');
     const fill = db.prepare(`UPDATE sales SET ${fillCols.map(c => `${c}=COALESCE(${c},@${c})`).join(',')} WHERE id=@id`);
     const norm = r => Object.fromEntries(saleCols.map(c => [c, r[c] ?? null]));
-    let n = 0;
+    // Blank-filling alone loses curated notes: a record that already has notes
+    // would silently drop everything the seed adds. Merge them instead — append
+    // any seed segment (split on ' | ') the live note doesn't already carry.
+    const getNotes = db.prepare('SELECT notes FROM sales WHERE id = ?');
+    const setNotes = db.prepare('UPDATE sales SET notes = ? WHERE id = ?');
+    const mergeNotes = (r) => {
+      if (!r.notes) return 0;
+      const cur = (getNotes.get(r.id) || {}).notes || '';
+      const have = cur.toLowerCase();
+      const add = String(r.notes).split(' | ')
+        .map(x => x.trim()).filter(x => x && !have.includes(x.slice(0, 40).toLowerCase()));
+      if (!add.length) return 0;
+      setNotes.run([cur, ...add].filter(Boolean).join(' | '), r.id);
+      return 1;
+    };
+    let n = 0, merged = 0;
     db.transaction(() => {
       for (const r of sales) {
         if (deletedSaleIds.has(r.id)) continue;
         const nr = norm(r);
         const ch = ins.run(nr).changes;
         n += ch;
-        if (!ch) fill.run(nr);
+        if (!ch) { fill.run(nr); merged += mergeNotes(r); }
       }
     })();
-    console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected, blanks back-filled)`);
+    console.log(`[seed] ${n}/${sales.length} sales inserted (${deletedSaleIds.size} deletions respected, blanks back-filled, ${merged} notes merged)`);
   } catch (e) { console.error('[seed] Sales error:', e.message); }
 
   try {
