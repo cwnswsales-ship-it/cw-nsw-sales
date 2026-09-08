@@ -682,11 +682,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <input class="filter-input" id="sf-search" placeholder="Search address, suburb, agent..." oninput="debounce(loadSales,400)()">
         <select class="filter-select" id="sf-asset" onchange="loadSales()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
-          <option>Medical/Healthcare</option><option>Development Site</option>
-          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="sf-process" onchange="loadSales()">
           <option value="">All Processes</option>
@@ -817,11 +812,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <input class="filter-input" id="tf-search" placeholder="Search address, agent, vendor..." oninput="debounce(loadTracking,400)()">
         <select class="filter-select" id="tf-asset" onchange="loadTracking()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
-          <option>Medical/Healthcare</option><option>Development Site</option>
-          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="tf-region" onchange="onRegionChange('tf')">
           <option value="">All Regions</option>
@@ -871,11 +861,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </select>
         <select class="filter-select" id="an-asset" onchange="renderAnalytics()">
           <option value="">All Asset Classes</option>
-          <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
-          <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
-          <option>Medical/Healthcare</option><option>Development Site</option>
-          <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-          <option>Apartment Blocks</option><option>Commercial</option>
         </select>
         <select class="filter-select" id="an-region" onchange="renderAnalytics()">
           <option value="">All Regions</option>
@@ -927,11 +912,6 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           </select>
           <select class="filter-select" id="aa-asset" onchange="renderAgentAnalytics()">
             <option value="">All Asset Classes</option>
-            <option>Childcare</option><option>Cinema</option><option>Commercial Office</option><option>Industrial</option>
-            <option>Retail</option><option>Strata Retail</option><option>Strata Office</option>
-            <option>Medical/Healthcare</option><option>Development Site</option>
-            <option>Fast Food/QSR</option><option>Service Station</option><option>Pub/Hotel</option>
-            <option>Apartment Blocks</option><option>Commercial</option>
           </select>
         </div>
       </div>
@@ -1174,7 +1154,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 // ═══════════════════════════════════════════════════════════════
 const S = {
   token: localStorage.getItem('auth_token'),
-  salesData: [], trackingData: [],
+  salesData: [], trackingData: [], assetFiltersMerged: false,
   salesSort: { col: 'created_at', dir: 'desc' },
   trackingSort: { col: 'created_at', dir: 'desc' },
   sfYears: new Set(), tfYears: new Set(),
@@ -1261,6 +1241,26 @@ async function checkAuth() {
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
+// Every asset-class filter is built from ASSET_CLASSES, so a class added there
+// is immediately filterable everywhere. (These lists used to be hardcoded per
+// filter and silently fell out of sync — Boarding House, Shop Top, Co-Living
+// and Car Park were in the data but missing from the dropdowns.) Any class
+// found in the data but not in the constant is appended, so nothing a record
+// actually uses can ever be unfilterable.
+function populateAssetFilters() {
+  const extra = [...S.salesData, ...(S.trackingData || [])]
+    .map(r => r.asset_class).filter(Boolean);
+  const list = [...new Set([...ASSET_CLASSES, ...extra])].sort((a, b) => a.localeCompare(b));
+  for (const id of ['sf-asset', 'tf-asset', 'an-asset', 'aa-asset']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const keep = el.value;                     // don't disturb an active filter
+    el.innerHTML = '<option value="">All Asset Classes</option>' +
+      list.map(c => `<option${c === keep ? ' selected' : ''}>${c}</option>`).join('');
+    el.value = keep;
+  }
+}
+
 async function initApp() {
   // Each step runs independently — a failure in one must not stop the others
   const step = (name, fn) => { try { fn(); } catch (e) { console.error('[init] ' + name + ':', e.message); } };
@@ -1268,6 +1268,7 @@ async function initApp() {
   step('dashboard',() => loadDashboard());
   step('years',    () => { initYearMS('sf'); initYearMS('tf'); });
   step('resizers', () => ['sales-table','tracking-table','agent-table','quote-table','portfolio-table'].forEach(makeColumnsResizable));
+  step('assets',   () => populateAssetFilters());
   step('suburbs',  () => loadSuburbCatalogue());
 }
 
@@ -1741,6 +1742,12 @@ async function loadSales() {
   if (!data) return;
   S.salesData = data;
   refreshDatalists();
+  // Once, on the first unfiltered load, fold in any class the data uses that
+  // the constant doesn't know about (a filtered load would see a partial set).
+  if (!S.assetFiltersMerged && !buildParams('sf')) {
+    S.assetFiltersMerged = true;
+    populateAssetFilters();
+  }
   renderSalesFiltered();
 }
 
