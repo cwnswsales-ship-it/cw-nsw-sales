@@ -1558,7 +1558,13 @@ app.post('/api/extract-portfolio', requireAuth, async (req, res) => {
 
 // Get all portfolio listings
 app.get('/api/portfolio', requireAuth, (req, res) => {
-  const rows = db.prepare('SELECT * FROM portfolio_listings ORDER BY auction_date ASC, state ASC, suburb ASC').all();
+  // Two trackers share this table: CBRE (fed by PDF) and Stonebridge (scraped).
+  // Legacy rows predate the column, so a null source means CBRE.
+  const src = req.query.source;
+  const rows = src
+    ? db.prepare(`SELECT * FROM portfolio_listings WHERE COALESCE(source,'CBRE') = ?
+                  ORDER BY auction_date ASC, state ASC, suburb ASC`).all(src)
+    : db.prepare('SELECT * FROM portfolio_listings ORDER BY auction_date ASC, state ASC, suburb ASC').all();
   res.json(rows);
 });
 
@@ -1569,8 +1575,8 @@ app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
   const ins = db.prepare(`
     INSERT INTO portfolio_listings (id, portfolio, tenant, address, suburb, state, region, asset_class,
       net_rent, price_guide, yield_percent, wale, land_area, floor_area, auction_date,
-      auction_location, agent1, firm1, agent2, firm2, notes)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      auction_location, agent1, firm1, agent2, firm2, notes, source, first_seen_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
   `);
   const insertAll = db.transaction((rows) => {
     rows.forEach(l => {
@@ -1580,7 +1586,7 @@ app.post('/api/portfolio/bulk', requireAuth, (req, res) => {
         l.wale || null, l.land_area || null, l.floor_area || null,
         l.auction_date || null, l.auction_location || null,
         l.agent1 || null, l.firm1 || null, l.agent2 || null, l.firm2 || null,
-        l.notes || null);
+        l.notes || null, l.source || 'CBRE');
     });
   });
   insertAll(listings);
@@ -1603,8 +1609,13 @@ app.put('/api/portfolio/:id', requireAuth, (req, res) => {
 
 // Delete one portfolio listing
 app.delete('/api/portfolio/:id', requireAuth, (req, res) => {
+  // A scraped listing must stay deleted: the next scan would otherwise re-insert
+  // it under a fresh id, so suppress its stable key as well as the row id.
+  const row = db.prepare('SELECT listing_key FROM portfolio_listings WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM portfolio_listings WHERE id = ?').run(req.params.id);
   db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listings')").run(req.params.id);
+  if (row && row.listing_key)
+    db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listing_key')").run(row.listing_key);
   backupDb().catch(() => {});
   res.json({ ok: true });
 });
@@ -1612,10 +1623,11 @@ app.delete('/api/portfolio/:id', requireAuth, (req, res) => {
 // Clear all portfolio listings
 app.delete('/api/portfolio', requireAuth, (req, res) => {
   // Record every id so the boot-time snapshot merge can't resurrect them
-  const ids = db.prepare('SELECT id FROM portfolio_listings').all();
+  const ids = db.prepare('SELECT id, listing_key FROM portfolio_listings').all();
   const rec = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listings')");
+  const recKey = db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listing_key')");
   db.transaction(() => {
-    for (const { id } of ids) rec.run(id);
+    for (const { id, listing_key } of ids) { rec.run(id); if (listing_key) recKey.run(listing_key); }
     db.prepare('DELETE FROM portfolio_listings').run();
   })();
   backupDb().catch(() => {});
@@ -1791,6 +1803,191 @@ app.post('/api/tracking/dedupe', requireAuth, (req, res) => {
 });
 
 // Convert portfolio listing → tracking campaign
+
+// ══════════════════════════════════════════════════════════════════════════
+// STONEBRIDGE PORTFOLIO — same tracker as CBRE, but the source is the web.
+// Scanned on demand and once a month; new listings raise a red bell in the UI
+// until the user reviews them.
+// ══════════════════════════════════════════════════════════════════════════
+const stonebridge = require('./scrapers/stonebridge');
+const SB = 'Stonebridge';
+
+// Reuse the region the register already assigns to that suburb, rather than
+// keeping a second hardcoded suburb→region map that could drift from the first.
+function regionForSuburb(suburb) {
+  if (!suburb) return null;
+  const row = db.prepare(`
+    SELECT region, COUNT(*) c FROM sales
+    WHERE LOWER(TRIM(suburb)) = LOWER(TRIM(?)) AND region IS NOT NULL AND region <> ''
+    GROUP BY region ORDER BY c DESC LIMIT 1`).get(suburb);
+  return row ? row.region : null;
+}
+
+const sbUpsert = db.transaction((listings, scanId) => {
+  const findByKey = db.prepare(
+    "SELECT * FROM portfolio_listings WHERE source=? AND listing_key=?");
+  const ins = db.prepare(`
+    INSERT INTO portfolio_listings (id, source, portfolio, campaign, tenant, address, suburb,
+      state, region, asset_class, net_rent, price_guide, yield_percent, wale, land_area,
+      floor_area, auction_date, auction_location, agent1, firm1, agent2, firm2, notes,
+      source_url, listing_key, status, is_new, first_seen_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Active',1,datetime('now'))
+  `);
+  // Refresh detail on a listing we already track, but never overwrite the
+  // user's own status/result or clobber a known value with a fresh null.
+  const upd = db.prepare(`
+    UPDATE portfolio_listings SET
+      tenant=COALESCE(?,tenant), address=COALESCE(?,address), suburb=COALESCE(?,suburb),
+      asset_class=COALESCE(?,asset_class), net_rent=COALESCE(?,net_rent),
+      price_guide=COALESCE(?,price_guide), yield_percent=COALESCE(?,yield_percent),
+      wale=COALESCE(?,wale), land_area=COALESCE(?,land_area), floor_area=COALESCE(?,floor_area),
+      auction_date=COALESCE(?,auction_date), auction_location=COALESCE(?,auction_location),
+      campaign=COALESCE(?,campaign), agent1=COALESCE(?,agent1), agent2=COALESCE(?,agent2),
+      source_url=COALESCE(?,source_url), notes=COALESCE(?,notes),
+      updated_at=datetime('now')
+    WHERE id=?`);
+  // A listing the user already deleted must not come back on the next scan.
+  // Matched on the stable listing key, because the resurrected row would
+  // otherwise carry a brand new id that no deletion record mentions.
+  const deletedKeys = new Set(db.prepare(
+    "SELECT id FROM deletions WHERE table_name='portfolio_listing_key'").all().map(r => r.id));
+
+  let added = 0, updated = 0;
+  const newOnes = [];
+  for (const l of listings) {
+    if (deletedKeys.has(l.listing_key)) continue;   // user removed it — stay removed
+    const existing = findByKey.get(SB, l.listing_key);
+    if (existing) {
+      upd.run(l.tenant, l.address, l.suburb, l.asset_class, l.net_rent, l.price_guide,
+        l.yield_percent, l.wale, l.land_area, l.floor_area, l.auction_date,
+        l.auction_location, l.campaign, l.agent1, l.agent2, l.source_url, l.notes,
+        existing.id);
+      updated++;
+    } else {
+      const id = uuidv4();
+      ins.run(id, SB, l.campaign || 'Stonebridge National Portfolio', l.campaign || null,
+        l.tenant, l.address, l.suburb, l.state || 'NSW', regionForSuburb(l.suburb),
+        l.asset_class, l.net_rent, l.price_guide, l.yield_percent, l.wale, l.land_area,
+        l.floor_area, l.auction_date, l.auction_location, l.agent1, SB, l.agent2, SB,
+        l.notes, l.source_url, l.listing_key);
+      added++;
+      newOnes.push({ id, address: l.address, suburb: l.suburb, tenant: l.tenant });
+    }
+  }
+  db.prepare('UPDATE portfolio_scans SET added=?, updated=? WHERE id=?').run(added, updated, scanId);
+  return { added, updated, newOnes };
+});
+
+// One scan. `trigger` records whether it was the schedule or the user.
+async function runStonebridgeScan(trigger) {
+  const scanId = uuidv4();
+  db.prepare(`INSERT INTO portfolio_scans (id, source, status, trigger) VALUES (?,?,?,?)`)
+    .run(scanId, SB, 'running', trigger);
+  const finish = (status, patch = {}) => {
+    db.prepare(`UPDATE portfolio_scans SET status=?, found=?, error=?, detail=?,
+                finished_at=datetime('now') WHERE id=?`)
+      .run(status, patch.found || 0, patch.error || null, patch.detail || null, scanId);
+  };
+
+  if (!anthropic) {
+    const error = 'AI not configured — set ANTHROPIC_API_KEY in Railway. The scan reads Stonebridge pages with Claude.';
+    finish('failed', { error });
+    return { ok: false, error, scanId };
+  }
+
+  try {
+    const { listings, pagesFetched, failures } =
+      await stonebridge.scrape(anthropic, { log: m => console.log('[stonebridge]', m) });
+    const { added, updated, newOnes } = sbUpsert(listings, scanId);
+    finish('ok', {
+      found: listings.length,
+      detail: `${pagesFetched} pages read, ${failures.length} fetch failures`,
+    });
+    console.log(`[stonebridge] scan ${trigger}: ${listings.length} NSW listings — ${added} new, ${updated} updated`);
+    if (added) backupDb().catch(() => {});
+    return { ok: true, found: listings.length, added, updated, newOnes, pagesFetched, scanId };
+  } catch (e) {
+    console.error('[stonebridge] scan failed:', e.message);
+    finish('failed', { error: e.message });
+    return { ok: false, error: e.message, unreachable: !!e.unreachable, scanId };
+  }
+}
+
+// Run a scan now (the "Scan Web Now" button).
+app.post('/api/portfolio/stonebridge/scan', requireAuth, async (req, res) => {
+  const r = await runStonebridgeScan('manual');
+  res.status(r.ok ? 200 : 502).json(r);
+});
+
+// Bell state: how many unreviewed new listings, plus when we last looked.
+app.get('/api/portfolio/stonebridge/status', requireAuth, (req, res) => {
+  const newCount = db.prepare(
+    "SELECT COUNT(*) c FROM portfolio_listings WHERE source=? AND is_new=1").get(SB).c;
+  const total = db.prepare(
+    "SELECT COUNT(*) c FROM portfolio_listings WHERE source=?").get(SB).c;
+  const last = db.prepare(
+    "SELECT * FROM portfolio_scans WHERE source=? AND status='ok' ORDER BY started_at DESC LIMIT 1").get(SB);
+  const lastAttempt = db.prepare(
+    "SELECT * FROM portfolio_scans WHERE source=? ORDER BY started_at DESC LIMIT 1").get(SB);
+  res.json({ newCount, total, lastScan: last || null, lastAttempt: lastAttempt || null,
+             nextDueAt: nextStonebridgeScanDue() });
+});
+
+// The user has looked at the new listings — clear the bell.
+app.post('/api/portfolio/stonebridge/acknowledge', requireAuth, (req, res) => {
+  const { id } = req.body || {};
+  const n = id
+    ? db.prepare('UPDATE portfolio_listings SET is_new=0 WHERE id=? AND source=?').run(id, SB).changes
+    : db.prepare('UPDATE portfolio_listings SET is_new=0 WHERE source=? AND is_new=1').run(SB).changes;
+  res.json({ ok: true, cleared: n });
+});
+
+// Scan history, so the user can see the monthly job is actually running.
+app.get('/api/portfolio/stonebridge/scans', requireAuth, (req, res) => {
+  res.json(db.prepare(
+    'SELECT * FROM portfolio_scans WHERE source=? ORDER BY started_at DESC LIMIT 24').all(SB));
+});
+
+// ── Monthly schedule ──────────────────────────────────────────────────────
+// Railway restarts often, so "once a month" is derived from the last
+// successful scan recorded in the DB, not from an in-process timer. The
+// interval below is only how often we CHECK whether a month has elapsed.
+const SB_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
+
+const sqliteUtc = (t) => (t ? new Date(String(t).replace(' ', 'T') + 'Z').getTime() : NaN);
+
+function lastStonebridgeScanAt() {
+  const row = db.prepare(
+    "SELECT started_at FROM portfolio_scans WHERE source=? AND status='ok' ORDER BY started_at DESC LIMIT 1").get(SB);
+  const t = row ? sqliteUtc(row.started_at) : NaN;
+  return Number.isFinite(t) ? t : null;
+}
+function nextStonebridgeScanDue() {
+  const last = lastStonebridgeScanAt();
+  return new Date((last || Date.now()) + SB_PERIOD_MS).toISOString();
+}
+
+async function stonebridgeScheduleTick() {
+  try {
+    const last = lastStonebridgeScanAt();
+    if (last && Date.now() - last < SB_PERIOD_MS) return;
+    // Don't hammer a broken source: back off if the last attempt failed recently.
+    const fail = db.prepare(
+      "SELECT started_at FROM portfolio_scans WHERE source=? AND status='failed' ORDER BY started_at DESC LIMIT 1").get(SB);
+    const failedAt = fail ? sqliteUtc(fail.started_at) : NaN;
+    if (Number.isFinite(failedAt) && Date.now() - failedAt < 24 * 60 * 60 * 1000) return;
+    console.log('[stonebridge] monthly scan due — running');
+    await runStonebridgeScan(last ? 'monthly' : 'first-run');
+  } catch (e) {
+    console.error('[stonebridge] schedule tick error:', e.message);
+  }
+}
+
+// Check 2 minutes after boot, then every 6 hours. A container that sleeps
+// through the due date picks the scan up on its next start.
+setTimeout(stonebridgeScheduleTick, 2 * 60 * 1000);
+setInterval(stonebridgeScheduleTick, 6 * 60 * 60 * 1000);
+
 app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   const listing = db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id);
   if (!listing) return res.status(404).json({ error: 'Not found' });
@@ -2445,8 +2642,9 @@ try { dedupeTracking(); } catch (e) { console.error('[dedupe] Startup dedupe err
     let regions = 0;
     const updR = db.prepare("UPDATE sales SET region=? WHERE suburb=? AND (region IS NULL OR region='')");
     db.transaction(() => { for (const [sub, reg] of Object.entries(REGION_MAP)) regions += updR.run(reg, sub).changes; })();
-    // Obvious error: Mosman is North Shore
+    // Obvious errors: Mosman is North Shore, Brookvale is Northern Beaches
     db.prepare("UPDATE sales SET region='North Shore' WHERE suburb='Mosman' AND region='Eastern Suburbs'").run();
+    db.prepare("UPDATE sales SET region='Northern Beaches' WHERE suburb='Brookvale' AND region<>'Northern Beaches'").run();
 
     // Suburbs embedded in the address but missing from the suburb field
     db.prepare("UPDATE sales SET suburb='Rosebery', region=COALESCE(region,'City Fringe') WHERE (suburb IS NULL OR suburb='') AND address LIKE '%, Rosebery%'").run();
@@ -2664,6 +2862,76 @@ try {
   } catch (e) { console.error('[fixup] Exchanged status error:', e.message); }
 })();
 
+
+// ── Seed the Stonebridge tracker with the current NSW campaign (once) ─────────
+// Details verified from Stonebridge's own campaign announcements and trade
+// coverage (commo.com.au, Aug 2026) for the September 2026 National Portfolio.
+// Seeded rather than left empty so the tracker is useful before the first scan;
+// the scan matches on listing_key, so it refreshes these rows instead of
+// duplicating them, and corrects anything that has since changed.
+(function seedStonebridge() {
+  try {
+    db.exec("CREATE TABLE IF NOT EXISTS fixups_applied (name TEXT PRIMARY KEY, applied_at TEXT DEFAULT (datetime('now')))");
+    const MARK = 'stonebridge_seed_sept2026_v1';
+    if (db.prepare('SELECT 1 FROM fixups_applied WHERE name=?').get(MARK)) return;
+
+    const CAMPAIGN = 'Sept 2026 National Portfolio';
+    const rows = [
+      { tenant: 'Leaps & Bounds Preschool', address: '45 Pacific Parade', suburb: 'Manly',
+        region: 'Northern Beaches', asset_class: 'Childcare', net_rent: 331950, land_area: 613, wale: 15,
+        auction_date: '2026-09-09', auction_location: 'Auction',
+        agent1: 'Rory Alexander', agent2: "Brett O'Neill",
+        source_url: 'https://stonebridge.com.au/september-national-portfolio/',
+        notes: '68 childcare places, 15 basement car parks. 15-year net lease to 2037 with options to 2057. Net income $331,950 pa + GST. Corner site with dual street frontage; underlying land value reported above $4.5m. NSW land tax exemption applies to childcare.' },
+      { tenant: 'Steam Ahead Childcare', address: 'Pittwater Road', suburb: 'Brookvale',
+        region: 'Northern Beaches', asset_class: 'Childcare', wale: 20,
+        auction_date: '2026-09-10', auction_location: 'Expressions of Interest',
+        agent1: 'Rory Alexander', agent2: "Brett O'Neill",
+        source_url: 'https://stonebridge.com.au/listing/i-steam-ahead-childc-pittwater-road-brookvale/',
+        notes: 'New 20-year net lease. Sydney Northern Beaches childcare investment. Street number to be confirmed on next web scan.' },
+      { tenant: 'Childcare centre (operator to confirm)', address: null, suburb: 'Elanora Heights',
+        region: 'Northern Beaches', asset_class: 'Childcare',
+        auction_date: '2026-09-10', auction_location: 'Expressions of Interest',
+        agent1: 'Rory Alexander', agent2: "Brett O'Neill",
+        source_url: 'https://stonebridge.com.au/september-national-portfolio/',
+        notes: 'Third of three Northern Beaches childcare centres in the September portfolio. Address and income not yet published — the monthly scan will fill these in. Median house price in catchment $2.6m.' },
+    ];
+
+    const stonebridgeLib = require('./scrapers/stonebridge');
+    const ins = db.prepare(`
+      INSERT INTO portfolio_listings (id, source, portfolio, campaign, tenant, address, suburb,
+        state, region, asset_class, net_rent, price_guide, yield_percent, wale, land_area,
+        auction_date, auction_location, agent1, firm1, agent2, firm2, notes, source_url,
+        listing_key, status, is_new, first_seen_at)
+      VALUES (?,'Stonebridge',?,?,?,?,?,'NSW',?,?,?,?,?,?,?,?,?,?,'Stonebridge',?,'Stonebridge',?,?,?,'Active',1,datetime('now'))`);
+    const findKey = db.prepare("SELECT 1 FROM portfolio_listings WHERE source='Stonebridge' AND listing_key=?");
+
+    let n = 0;
+    db.transaction(() => {
+      for (const r of rows) {
+        const key = stonebridgeLib.listingKey(r);
+        if (findKey.get(key)) continue;
+        ins.run(uuidv4(), CAMPAIGN, CAMPAIGN, r.tenant, r.address, r.suburb,
+          r.region || regionForSuburb(r.suburb), r.asset_class, r.net_rent || null, r.price_guide || null,
+          r.yield_percent || null, r.wale || null, r.land_area || null,
+          r.auction_date, r.auction_location, r.agent1, r.agent2, r.notes, r.source_url, key);
+        n++;
+      }
+      db.prepare('INSERT OR IGNORE INTO fixups_applied (name) VALUES (?)').run(MARK);
+    })();
+    if (n) console.log(`[fixup] Stonebridge: seeded ${n} September 2026 NSW listings`);
+  } catch (e) { console.error('[fixup] Stonebridge seed error:', e.message); }
+})();
+
+// ── Stamp pre-existing portfolio rows as CBRE (idempotent) ───────────────────
+// The source column arrived with the Stonebridge tracker; everything that was
+// already in the table came from a CBRE / Burgess Rawson PDF upload.
+(function stampPortfolioSource() {
+  try {
+    const n = db.prepare("UPDATE portfolio_listings SET source='CBRE' WHERE source IS NULL OR TRIM(source)=''").run().changes;
+    if (n) console.log(`[fixup] Portfolio: ${n} existing listings stamped as CBRE`);
+  } catch (e) { console.error('[fixup] Portfolio source error:', e.message); }
+})();
 
 // ── Force reseed endpoint — call this to immediately restore all data ──────────
 app.post('/api/admin/reseed', requireAuth, (req, res) => {

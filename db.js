@@ -181,6 +181,35 @@ try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
+// ── Multi-portfolio support (CBRE from PDF, Stonebridge scraped from the web) ──
+// `source` separates the two trackers; the rest supports the new-listing bell.
+try { db.exec("ALTER TABLE portfolio_listings ADD COLUMN source TEXT DEFAULT 'CBRE'"); } catch(e) {}
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN source_url TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN listing_key TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN first_seen_at TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN is_new INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE portfolio_listings ADD COLUMN campaign TEXT'); } catch(e) {}
+
+// One row per scan of a web-sourced portfolio. Drives the monthly schedule
+// (last successful run) and gives the user an audit trail of what was found.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS portfolio_scans (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    status TEXT NOT NULL,
+    found INTEGER DEFAULT 0,
+    added INTEGER DEFAULT 0,
+    updated INTEGER DEFAULT 0,
+    trigger TEXT,
+    error TEXT,
+    detail TEXT,
+    started_at TEXT DEFAULT (datetime('now')),
+    finished_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_scans_source ON portfolio_scans (source, started_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_portfolio_source ON portfolio_listings (source);
+`);
+
 // Units + parking for apartment block analysis (price per unit, parking spots)
 try { db.exec('ALTER TABLE sales ADD COLUMN units INTEGER'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN parking INTEGER'); } catch(e) {}
