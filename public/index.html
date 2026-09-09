@@ -264,6 +264,10 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .close-overdue{color:var(--danger);font-weight:700}
 .close-urgent{color:var(--accent);font-weight:700}
 .close-soon{color:var(--info);font-weight:600}
+.row-clickable{cursor:pointer}
+.row-clickable .td-actions,.row-clickable .td-cb,
+.row-clickable select,.row-clickable button,.row-clickable a{cursor:auto}
+.row-clickable .td-actions button,.row-clickable .td-actions a,.row-clickable select{cursor:pointer}
 /* New-listing bell on the Stonebridge nav item + tab */
 .nav-bell{margin-left:auto;display:inline-flex;align-items:center;gap:3px;background:var(--accent);color:#fff;
   border-radius:11px;padding:2px 7px 2px 5px;font-size:10.5px;font-weight:800;line-height:1;
@@ -1904,7 +1908,8 @@ function renderSales(data) {
         ].filter(Boolean).join(' · ')}</small>`
       : '';
     return `
-    <tr class="${rowCls}" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')">
+    <tr class="${rowCls} row-clickable" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')"
+        onclick="openRecordFromRow(event,'sale','${s.id}')" title="Click to open this sale record">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
       <td class="td-addr">${s.address}${isExchanged(s) ? ' <span class="badge-pill b-exchanged" style="margin-left:4px" title="Exchanged (under contract) — not yet settled">Exchanged</span>' : ''}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
       <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${
@@ -1977,10 +1982,34 @@ async function undoLastSalesAdd() {
   loadSales();
 }
 
+
+// ── Click a row to open its record ────────────────────────────────────────────
+// Guarded three ways, because these rows are also draggable and the address is
+// something the user copies out by hand:
+//   1. clicks that land on a control (checkbox, status select, button, link)
+//      belong to that control, not the row;
+//   2. a click that finishes more than a few pixels from where it started was a
+//      drag or a text selection, not a click;
+//   3. if any text is selected, the user was selecting, not opening.
+let rowClickOrigin = null;
+document.addEventListener('mousedown', (e) => { rowClickOrigin = { x: e.clientX, y: e.clientY }; }, true);
+
+function openRecordFromRow(e, type, id) {
+  const t = e.target;
+  if (t.closest('input, select, textarea, button, a, label, .td-actions, .td-cb')) return;
+  if (rowClickOrigin) {
+    const moved = Math.abs(e.clientX - rowClickOrigin.x) + Math.abs(e.clientY - rowClickOrigin.y);
+    if (moved > 6) return;                      // dragged, or dragged out a selection
+  }
+  const sel = window.getSelection && window.getSelection().toString();
+  if (sel && sel.trim().length) return;         // they were highlighting text
+  if (type === 'sale') openEditSale(id); else openEditTracking(id);
+}
+
 async function openEditSale(id) {
   const sale = S.salesData.find(s => s.id === id);
   if (!sale) return;
-  openModal('Edit Sale', saleForm(sale), async () => {
+  openModal(`Edit Sale — ${[sale.address, sale.suburb].filter(Boolean).join(', ')}`, saleForm(sale), async () => {
     const body = getFormData('sale-form');
     if (!body.address) return alert('Address is required');
     const data = await PUT('/sales/' + id, body);
@@ -2194,7 +2223,8 @@ function renderTracking(data) {
       `<option value="${s}"${s===t.status?' selected':''}>${s}</option>`).join('');
     const statusCls = statusSelectClass(t.status);
     return `
-    <tr class="${urgencyClass}" draggable="true" ondragstart="dragRecordStart(event,'campaign','${t.id}')">
+    <tr class="${urgencyClass} row-clickable" draggable="true" ondragstart="dragRecordStart(event,'campaign','${t.id}')"
+        onclick="openRecordFromRow(event,'campaign','${t.id}')" title="Click to open this campaign record">
       <td class="td-addr">${t.address}<small>${[t.suburb,t.region].filter(Boolean).join(' · ')}</small></td>
       <td>${assetBadge(t.asset_class)}</td>
       <td>${processBadge(t.process)}</td>
@@ -2298,7 +2328,7 @@ async function dedupeCampaigns() {
 async function openEditTracking(id) {
   const t = S.trackingData.find(x => x.id === id);
   if (!t) return;
-  openModal('Edit Tracking', trackingForm(t), async () => {
+  openModal(`Edit Campaign — ${[t.address, t.suburb].filter(Boolean).join(', ')}`, trackingForm(t), async () => {
     const body = getFormData('tracking-form');
     if (!body.address) return alert('Address is required');
     const data = await PUT('/tracking/' + id, body);
@@ -2892,6 +2922,10 @@ function openModal(title, bodyHTML, onSubmit, submitLabel='Save') {
   document.getElementById('modal-submit').textContent = submitLabel;
   S.modalSubmit = onSubmit;
   document.getElementById('modal-overlay').classList.add('open');
+  // Always open at the top — the body keeps its scroll position between opens,
+  // so a long record would otherwise appear halfway down at the previous offset.
+  const body = document.getElementById('modal-body');
+  if (body) body.scrollTop = 0;
 }
 
 function closeModal() {
