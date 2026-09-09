@@ -1925,11 +1925,13 @@ app.get('/api/portfolio/stonebridge/status', requireAuth, (req, res) => {
     "SELECT COUNT(*) c FROM portfolio_listings WHERE source=? AND is_new=1").get(SB).c;
   const total = db.prepare(
     "SELECT COUNT(*) c FROM portfolio_listings WHERE source=?").get(SB).c;
+  const tracked = db.prepare(
+    "SELECT COUNT(*) c FROM tracking WHERE firm1=? OR firm2=?").get(SB, SB).c;
   const last = db.prepare(
     "SELECT * FROM portfolio_scans WHERE source=? AND status='ok' ORDER BY started_at DESC LIMIT 1").get(SB);
   const lastAttempt = db.prepare(
     "SELECT * FROM portfolio_scans WHERE source=? ORDER BY started_at DESC LIMIT 1").get(SB);
-  res.json({ newCount, total, lastScan: last || null, lastAttempt: lastAttempt || null,
+  res.json({ newCount, total, tracked, lastScan: last || null, lastAttempt: lastAttempt || null,
              nextDueAt: nextStonebridgeScanDue() });
 });
 
@@ -2000,7 +2002,8 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   if (existing) {
     db.prepare(`UPDATE portfolio_listings SET status='Tracking', tracking_id=?, updated_at=datetime('now') WHERE id=?`)
       .run(existing.id, req.params.id);
-    return res.json({ tracking: existing, duplicate: true });
+    const removed = retireScrapedListing(listing);
+    return res.json({ tracking: existing, duplicate: true, removed });
   }
 
   const trackId = uuidv4();
@@ -2012,7 +2015,8 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   `).run(trackId,
     body.address || listing.address, body.suburb || listing.suburb,
     body.region || listing.region || null, body.asset_class || listing.asset_class,
-    'Auction', body.status || 'Active Campaign',
+    body.process || (/expression|eoi/i.test(listing.auction_location || '') ? 'EOI' : 'Auction'),
+    body.status || 'Active Campaign',
     body.price_guide || listing.price_guide || null,
     body.net_rent || listing.net_rent || null,
     body.estimated_yield || listing.yield_percent || null,
@@ -2027,9 +2031,28 @@ app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   );
   db.prepare(`UPDATE portfolio_listings SET status='Tracking', tracking_id=?, updated_at=datetime('now') WHERE id=?`)
     .run(trackId, req.params.id);
+  const removed = retireScrapedListing(listing);
   backupDb().catch(() => {});
-  res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId) });
+  res.json({ tracking: db.prepare('SELECT * FROM tracking WHERE id = ?').get(trackId), removed });
 });
+
+// A web-sourced listing that has been moved into Campaigns leaves the tracker —
+// the campaign is now where it lives, and the tracker is for opportunities not
+// yet picked up. Its stable key is suppressed too, or the monthly scan would
+// find it on the site next month and put it straight back.
+// CBRE listings are untouched: that tracker keeps them with a 'Tracking' status.
+function retireScrapedListing(listing) {
+  if (!listing || listing.source !== 'Stonebridge') return false;
+  db.transaction(() => {
+    db.prepare('DELETE FROM portfolio_listings WHERE id = ?').run(listing.id);
+    db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listings')")
+      .run(listing.id);
+    if (listing.listing_key)
+      db.prepare("INSERT OR REPLACE INTO deletions (id, table_name) VALUES (?, 'portfolio_listing_key')")
+        .run(listing.listing_key);
+  })();
+  return true;
+}
 
 // ── New Listings Search (Serper.dev + Claude) ────────────────────────────────
 

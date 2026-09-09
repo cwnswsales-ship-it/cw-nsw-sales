@@ -1165,7 +1165,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         </div>
         <div class="header-actions">
           <span id="sb-scan-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"></span>
-          <button class="btn btn-primary btn-sm" id="sb-track-all-btn" onclick="trackAllStonebridge()" title="Track all listings — moves them to Campaigns active pipeline">→ Track All in Campaigns</button>
+          <button class="btn btn-primary btn-sm" id="sb-track-all-btn" onclick="trackAllStonebridge()" title="Move all listings into the Campaigns active pipeline and remove them from this tracker">→ Track All in Campaigns</button>
           <button class="btn btn-secondary btn-sm" onclick="showStonebridgeHistory()" title="See when the monthly scan last ran">Scan History</button>
           <button class="btn btn-primary btn-sm" id="sb-scan-btn" onclick="scanStonebridge()" title="Search stonebridge.com.au now for new NSW listings">⟳ Scan Web Now</button>
         </div>
@@ -5062,13 +5062,18 @@ function renderChartProcess(data) {
 // STONEBRIDGE PORTFOLIO — same tracker as CBRE, sourced from the web
 // ═══════════════════════════════════════════════════════════════
 async function loadStonebridge() {
-  const data = await GET('/portfolio?source=Stonebridge');
+  // Status first: the table's empty state and the tracked count both depend on
+  // it, and rendering before it lands shows "no listings yet" when in fact
+  // everything has been moved to Campaigns.
+  const [data] = await Promise.all([
+    GET('/portfolio?source=Stonebridge'),
+    loadStonebridgeStatus(),
+  ]);
   if (!data) return;
   S.stonebridgeData = data;
   populateStonebridgeAssetFilter(data);
   renderStonebridgeTable();
   updateStonebridgeStats(data);
-  loadStonebridgeStatus();
 }
 
 function populateStonebridgeAssetFilter(data) {
@@ -5085,7 +5090,8 @@ function updateStonebridgeStats(data) {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('sb-total', data.length || '–');
   set('sb-active', data.filter(l => l.status === 'Active').length || '–');
-  set('sb-tracking-count', data.filter(l => l.status === 'Tracking').length || '–');
+  // Tracked listings have left this tracker for Campaigns, so count them there.
+  set('sb-tracking-count', (S.sbStatus && S.sbStatus.tracked) || '–');
   set('sb-new-count', data.filter(l => l.is_new).length || '–');
 }
 
@@ -5110,6 +5116,8 @@ async function loadStonebridgeStatus() {
       ? `Found by the scan on ${fmtScanTime(st.lastScan.started_at)}. Marked in red below.`
       : 'Marked in red below.';
   }
+  const trackedEl = document.getElementById('sb-tracking-count');
+  if (trackedEl) trackedEl.textContent = st.tracked || '–';
   const status = document.getElementById('sb-scan-status');
   if (status) status.innerHTML = stonebridgeScanSummary(st);
 }
@@ -5153,9 +5161,12 @@ function renderStonebridgeTable() {
 
   const tbody = document.getElementById('stonebridge-tbody');
   if (!filtered.length) {
+    const allTracked = !data.length && S.sbStatus && S.sbStatus.tracked;
     tbody.innerHTML = `<tr><td colspan="12" class="empty-state" style="padding:50px 20px">
-      <h3>${data.length ? 'No results match your filters' : 'No Stonebridge listings yet'}</h3>
+      <h3>${data.length ? 'No results match your filters'
+        : allTracked ? 'All listings moved to Campaigns' : 'No Stonebridge listings yet'}</h3>
       <p>${data.length ? 'Try clearing the filters'
+        : allTracked ? `All ${S.sbStatus.tracked} Stonebridge listing${S.sbStatus.tracked !== 1 ? 's are' : ' is'} now tracked in Campaigns. The next monthly scan will bring in anything new.`
         : 'Hit “Scan Web Now” to search stonebridge.com.au for current NSW investment opportunities. After the first scan this runs automatically once a month.'}</p>
     </td></tr>`;
     return;
@@ -5202,7 +5213,7 @@ function renderStonebridgeTable() {
       <td class="td-actions">
         ${l.source_url ? `<a href="${esc(l.source_url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-icon" title="Open the Stonebridge listing">🔗</a>` : ''}
         ${l.is_new ? `<button class="btn btn-secondary btn-sm btn-icon" onclick="acknowledgeStonebridge('${l.id}')" title="Mark reviewed">✓</button>` : ''}
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="trackOneStonebridge('${l.id}')" title="Track in Campaigns">⇄</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="trackOneStonebridge('${l.id}')" title="Move to Campaigns — removes it from this tracker">⇄</button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteStonebridge('${l.id}')" title="Remove">🗑</button>
       </td>
     </tr>`;
@@ -5245,7 +5256,7 @@ async function trackOneStonebridge(id) {
   const l = (S.stonebridgeData || []).find(x => x.id === id);
   if (!l) return;
   const data = await POST('/portfolio/' + id + '/track', stonebridgeTrackBody(l));
-  if (data && !data.error) { showToast('Moved to Campaigns'); loadStonebridge(); }
+  if (data && !data.error) { showToast('Moved to Campaigns — removed from this tracker'); loadStonebridge(); }
 }
 
 function stonebridgeTrackBody(l) {
@@ -5276,7 +5287,7 @@ async function trackAllStonebridge() {
   const untracked = (S.stonebridgeData || []).filter(l =>
     !['Tracking','Sold','Withdrawn','Passed In'].includes(l.status));
   if (!untracked.length) { showToast('All listings are already tracked'); return; }
-  if (!confirm(`Track all ${untracked.length} Stonebridge listing${untracked.length !== 1 ? 's' : ''} in Active Campaigns?`)) return;
+  if (!confirm(`Move all ${untracked.length} Stonebridge listing${untracked.length !== 1 ? 's' : ''} into Active Campaigns?\n\nThey will be removed from this tracker — Campaigns becomes where you follow them.`)) return;
   const btn = document.getElementById('sb-track-all-btn');
   let done = 0;
   if (btn) { btn.disabled = true; btn.textContent = `Tracking 0/${untracked.length}…`; }
@@ -5286,7 +5297,7 @@ async function trackAllStonebridge() {
     if (btn) btn.textContent = `Tracking ${done}/${untracked.length}…`;
   }
   if (btn) { btn.disabled = false; btn.textContent = '→ Track All in Campaigns'; }
-  showToast(`${done} listing${done !== 1 ? 's' : ''} moved to Campaigns`);
+  showToast(`${done} listing${done !== 1 ? 's' : ''} moved to Campaigns — removed from this tracker`);
   loadStonebridge();
 }
 
