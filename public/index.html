@@ -1300,8 +1300,40 @@ async function api(method, path, body) {
     if (body) opts.body = JSON.stringify(body);
     const r = await fetch('/api' + path, opts);
     if (r.status === 401) { logout(); return null; }
-    return r.json();
-  } catch(e) { console.error(e); return null; }
+
+    // A server error can come back as an HTML page, not JSON. Parsing that threw,
+    // and the throw was swallowed — so a failed save looked like a dead button.
+    // Always tell the user something went wrong; never fail silently.
+    const text = await r.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (e) { /* not JSON — handled below */ }
+
+    if (!r.ok) {
+      const msg = (data && (data.error || data.message)) || httpErrorMessage(r.status, text);
+      apiError(`${method} ${path} failed`, msg);
+      return data;                      // {error} when the server sent one, else null
+    }
+    return data;
+  } catch(e) {
+    console.error(e);
+    apiError(`${method} ${path} failed`, 'Could not reach the server. Check your connection and try again.');
+    return null;
+  }
+}
+
+// Pull something human out of a non-JSON error body (Express prints a stack).
+function httpErrorMessage(status, text) {
+  const m = String(text || '').match(/<pre>([\s\S]*?)(?:<br>|<\/pre>)/);
+  const detail = m ? m[1].replace(/&nbsp;/g, ' ').trim() : '';
+  if (detail) return `${detail} (HTTP ${status})`;
+  if (status === 413) return 'That file is too large for the server to accept.';
+  if (status >= 500) return `The server hit an error (HTTP ${status}). Nothing was saved.`;
+  return `Request failed (HTTP ${status}).`;
+}
+
+function apiError(where, msg) {
+  console.error(where + ':', msg);
+  try { showToast('⚠ ' + msg, true); } catch (e) { alert(msg); }
 }
 const GET   = p      => api('GET', p);
 const POST  = (p, b) => api('POST', p, b);
@@ -5066,17 +5098,22 @@ function suburbToRegion(suburb) {
 
 // ═══════════════════════════════════════════════════════════════
 
-function showToast(msg) {
+let toastTimer = null;
+// isError: a failed save has to be seen, so it reads as an error and holds
+// long enough to read — a 2.5s grey toast is fine for "saved", not for "lost".
+function showToast(msg, isError) {
   let t = document.getElementById('nl-toast');
   if (!t) {
     t = document.createElement('div');
     t.id = 'nl-toast';
-    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .2s';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .2s;max-width:min(520px,calc(100vw - 48px))';
     document.body.appendChild(t);
   }
+  t.style.background = isError ? 'var(--accent)' : 'var(--text)';
   t.textContent = msg;
   t.style.opacity = '1';
-  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, isError ? 8000 : 2500);
 }
 
 function renderChartProcess(data) {

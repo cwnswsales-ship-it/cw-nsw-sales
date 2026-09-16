@@ -5,7 +5,8 @@
   "scripts": {
     "prestart": "node scripts/db-restore.js",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node scripts/check-inserts.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
+    "playwright-core": "^1.63.0",
     "uuid": "^9.0.0"
   }
 }
