@@ -21,7 +21,8 @@ const LIST_URLS = [
 ];
 
 const UA = 'Mozilla/5.0 (compatible; CW-NSW-SalesIntelligence/1.0; +portfolio-tracking)';
-const FETCH_TIMEOUT_MS = 20000;
+const FETCH_TIMEOUT_MS = 12000;
+const SCAN_BUDGET_MS = 90000;      // whole-crawl deadline, see below
 const MAX_LISTING_PAGES = 40;      // cap the crawl so one run can't sprawl
 const MAX_CHARS_PER_PAGE = 12000;  // plenty for a listing page once stripped
 
@@ -209,7 +210,15 @@ async function scrape(anthropic, { log = () => {} } = {}) {
   const listingUrls = new Set();
   const failures = [];
 
+  // Per-request timeouts alone are not a bound: 7 indexes plus 40 listing pages
+  // could each burn the full timeout, so an unreachable site would keep one scan
+  // grinding for a quarter of an hour. The deadline caps the whole crawl, and we
+  // extract from whatever was fetched before it expired.
+  const deadline = Date.now() + SCAN_BUDGET_MS;
+  const outOfTime = () => Date.now() >= deadline;
+
   for (const url of LIST_URLS) {
+    if (outOfTime()) { log('scan budget spent — stopping index crawl'); break; }
     try {
       const html = await fetchText(url);
       extractListingLinks(html, url).forEach(u => listingUrls.add(u));
@@ -222,9 +231,12 @@ async function scrape(anthropic, { log = () => {} } = {}) {
   }
 
   const detailUrls = [...listingUrls].slice(0, MAX_LISTING_PAGES);
+  let fetchedDetails = 0;
   for (const url of detailUrls) {
+    if (outOfTime()) { log(`scan budget spent — stopped after ${fetchedDetails}/${detailUrls.length} listings`); break; }
     try {
       pages.push({ url, text: htmlToText(await fetchText(url)) });
+      fetchedDetails++;
     } catch (e) {
       failures.push(`${url}: ${e.message}`);
     }
@@ -241,7 +253,7 @@ async function scrape(anthropic, { log = () => {} } = {}) {
   }
 
   const listings = await scrapeFromPages(anthropic, pages);
-  return { listings, pagesFetched: pages.length, failures };
+  return { listings, pagesFetched: pages.length, failures, truncated: outOfTime() };
 }
 
 module.exports = {

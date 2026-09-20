@@ -1896,12 +1896,13 @@ async function runStonebridgeScan(trigger) {
   }
 
   try {
-    const { listings, pagesFetched, failures } =
+    const { listings, pagesFetched, failures, truncated } =
       await stonebridge.scrape(anthropic, { log: m => console.log('[stonebridge]', m) });
     const { added, updated, newOnes } = sbUpsert(listings, scanId);
     finish('ok', {
       found: listings.length,
-      detail: `${pagesFetched} pages read, ${failures.length} fetch failures`,
+      detail: `${pagesFetched} pages read, ${failures.length} fetch failures` +
+              (truncated ? ' — stopped at the time limit, so this scan may be partial' : ''),
     });
     console.log(`[stonebridge] scan ${trigger}: ${listings.length} NSW listings — ${added} new, ${updated} updated`);
     if (added) backupDb().catch(() => {});
