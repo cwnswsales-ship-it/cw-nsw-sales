@@ -181,6 +181,11 @@ try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
+// Tenure: was the property sold with a tenant in place or with vacant
+// possession? Income implies tenanted, so this is derived unless set by hand.
+try { db.exec('ALTER TABLE sales ADD COLUMN tenure TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE tracking ADD COLUMN tenure TEXT'); } catch(e) {}
+
 // ── Multi-portfolio support (CBRE from PDF, Stonebridge scraped from the web) ──
 // `source` separates the two trackers; the rest supports the new-listing bell.
 try { db.exec("ALTER TABLE portfolio_listings ADD COLUMN source TEXT DEFAULT 'CBRE'"); } catch(e) {}

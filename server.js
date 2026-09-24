@@ -183,8 +183,8 @@ app.post('/api/sales', requireAuth, (req, res) => {
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
-      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Sold', body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
@@ -192,7 +192,7 @@ app.post('/api/sales', requireAuth, (req, res) => {
     body.constraint1 || null, body.constraint2 || null,
     body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
-    body.campaign_close_date, year, body.notes, body.source_url);
+    body.campaign_close_date, year, body.notes, body.source_url, body.tenure);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
@@ -211,8 +211,8 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
-      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -235,7 +235,7 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
         r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
         r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
         r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
-        year, r.notes || null, r.source_url || null);
+        year, r.notes || null, r.source_url || null, r.tenure || null);
       inserted++;
     }
   })();
@@ -306,7 +306,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
       zoning=?, zoning2=?, zoning_other=?, dev_stage=?, constraint1=?, constraint2=?,
       fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
-      updated_at=datetime('now')
+      tenure=?, updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
     body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.yield_percent, body.wale,
@@ -316,7 +316,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
     body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
-    body.notes, body.source_url, req.params.id);
+    body.notes, body.source_url, body.tenure, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
 });
@@ -378,14 +378,14 @@ app.post('/api/tracking', requireAuth, (req, res) => {
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
       price_guide, adjusted_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
       vendor, purchaser, agent1, agent2, firm1, firm2,
-      campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id, tenure)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
-    body.notes, body.source_url, body.discovery_id || null);
+    body.notes, body.source_url, body.discovery_id || null, body.tenure || null);
   const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
   backupDb().catch(() => {});
   res.json(row);
@@ -401,14 +401,14 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
       units=?, zoning=?, fsr=?, height_limit=?,
       vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
-      updated_at=datetime('now')
+      tenure=?, updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
-    body.notes, body.source_url, req.params.id);
+    body.notes, body.source_url, body.tenure, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
@@ -560,6 +560,7 @@ const XL_COLS = [
   { header: 'Asset Class',              key: 'asset_class',   width: 20, type: 'text'    },
   { header: 'Sale Date',                key: 'exchange_date', width: 13, type: 'date'    },
   { header: 'Sale Price',               key: 'price',         width: 15, type: 'currency'},
+  { header: 'Tenure',                   key: 'tenure',        width: 17, type: 'text'    },
   { header: 'Net Rent p.a.',            key: 'net_rent',      width: 14, type: 'currency'},
   { header: 'Gross Rent p.a.',          key: 'gross_rent',    width: 14, type: 'currency'},
   { header: 'Net Yield %',              key: 'yield_percent', width: 10, type: 'pct'     },
@@ -572,6 +573,7 @@ const XL_COLS = [
   { header: 'Rate $/Ha',                key: 'rate_ha',       width: 13, type: 'currency'},
   { header: 'Rate $/Ac',                key: 'rate_ac',       width: 13, type: 'currency'},
   { header: 'Floor m²',                key: 'floor_area',    width: 10, type: 'area'    },
+  { header: 'Capital Value $/m²',      key: 'cap_value',     width: 15, type: 'currency'},
   { header: 'GFA m²',                  key: 'gfa',           width: 10, type: 'area'    },
   { header: 'Rate $/m² (Perm. GFA)',   key: 'rate_pgfa',     width: 16, type: 'currency'},
   { header: 'Units/Keys',               key: 'units',         width: 9,  type: 'int'     },
@@ -623,6 +625,9 @@ function withExportComputed(rows) {
     const fsrNum = r.fsr ? parseFloat(String(r.fsr).match(/(\d+(?:\.\d+)?)/)?.[1]) : null;
     if (r.price > 0 && r.land_area > 0 && fsrNum > 0) out.rate_pgfa = Math.round(r.price / (r.land_area * fsrNum));
     if (r.price > 0 && r.units > 0) out.unit_rate = Math.round(r.price / r.units);
+    // Capital value: what the buyer paid per square metre of building.
+    if (r.price > 0 && r.floor_area > 0) out.cap_value = Math.round(r.price / r.floor_area);
+    out.tenure = out.tenure || deriveTenure(r);
     const guide = r.adjusted_guide || r.price_guide;
     if (guide > 0 && r.price > 0) out.quote_var = Math.round((r.price - guide) / guide * 10000) / 100;
     if (out.gross_yield == null && r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
@@ -709,6 +714,7 @@ function buildAnalysisWorkbook(r, source) {
     ['Address', r.address], ['Suburb', r.suburb],
     ['Region', r.region], ['Asset Class', r.asset_class],
     ['Status', r.status], ['Process', r.process],
+    ['Tenure', r.tenure || deriveTenure(r)],
   ]);
 
   addSection('SALE');
@@ -733,7 +739,7 @@ function buildAnalysisWorkbook(r, source) {
   addSection('AREAS & RATES');
   addPairs([
     ['Land Area', money(r.land_area), AREA], ['Rate $/m² (Site)', (price > 0 && r.land_area > 0) ? Math.round(price / r.land_area) : null, CUR],
-    ['Floor Area', money(r.floor_area), AREA], ['Rate $/m² (Floor)', (price > 0 && r.floor_area > 0) ? Math.round(price / r.floor_area) : null, CUR],
+    ['Floor Area', money(r.floor_area), AREA], ['Capital Value $/m² (Floor)', (price > 0 && r.floor_area > 0) ? Math.round(price / r.floor_area) : null, CUR],
     ['GFA', money(r.gfa), AREA], ['Rate $/m² (GFA)', (price > 0 && r.gfa > 0) ? Math.round(price / r.gfa) : null, CUR],
     ['Permissible GFA (land × FSR)', permGfa, AREA], ['Rate $/m² (Perm. GFA)', (price > 0 && permGfa > 0) ? Math.round(price / permGfa) : null, CUR],
     [`Units / Rooms / Keys`, money(r.units), '#,##0'], ['Parking', money(r.parking), '#,##0'],
@@ -1730,7 +1736,26 @@ function normaliseParties(body) {
   } else if (body.gross_rent == null && basis && body.gross_yield > 0) {
     body.gross_rent = Math.round(basis * body.gross_yield / 100);
   }
+  body.tenure = deriveTenure(body);
   return body;
+}
+
+// Tenanted or sold with vacant possession.
+// Income in the record settles it: you cannot have rent and no tenant. Absent
+// income, a yield of VP says vacant possession. Otherwise keep what was chosen
+// by hand, and leave it blank rather than guessing from silence — a record with
+// no income captured yet is not evidence that the property was empty.
+const TENANTED = 'Tenanted';
+const VACANT   = 'Vacant Possession';
+function deriveTenure(r) {
+  if (!r) return null;
+  const income = (r.net_rent > 0) || (r.gross_rent > 0);
+  if (income) return TENANTED;                                  // income wins, always
+  if (String(r.yield_percent || '').toUpperCase() === 'VP') return VACANT;
+  const chosen = String(r.tenure || '').trim().toLowerCase();
+  if (chosen.startsWith('ten')) return TENANTED;
+  if (chosen.startsWith('vac') || chosen === 'vp') return VACANT;
+  return null;
 }
 
 // ── Tracking duplicate detection ──────────────────────────────────────────────
@@ -2886,6 +2911,30 @@ try {
   } catch (e) { console.error('[fixup] Exchanged status error:', e.message); }
 })();
 
+
+// ── Backfill tenure from the income already on record (idempotent) ───────────
+// Income means a tenant was in place; a yield recorded as VP means vacant
+// possession. Records with neither stay blank — silence is not evidence that a
+// property was empty, and a wrong guess here would skew the analysis.
+(function backfillTenure() {
+  try {
+    let n = 0;
+    for (const t of ['sales', 'tracking']) {
+      n += db.prepare(`UPDATE ${t} SET tenure='Tenanted'
+        WHERE COALESCE(TRIM(tenure),'')='' AND (net_rent > 0 OR gross_rent > 0)`).run().changes;
+      n += db.prepare(`UPDATE ${t} SET tenure='Vacant Possession'
+        WHERE COALESCE(TRIM(tenure),'')='' AND COALESCE(net_rent,0)=0 AND COALESCE(gross_rent,0)=0
+          AND UPPER(TRIM(COALESCE(${t === 'sales' ? 'yield_percent' : 'estimated_yield'},''))) = 'VP'`).run().changes;
+    }
+    // Income always wins, even over a hand-set value — you cannot collect rent
+    // from a property you bought empty.
+    for (const t of ['sales', 'tracking']) {
+      n += db.prepare(`UPDATE ${t} SET tenure='Tenanted'
+        WHERE tenure IS NOT NULL AND tenure <> 'Tenanted' AND (net_rent > 0 OR gross_rent > 0)`).run().changes;
+    }
+    if (n) console.log(`[fixup] Tenure set on ${n} records from income / VP yield`);
+  } catch (e) { console.error('[fixup] Tenure backfill error:', e.message); }
+})();
 
 // ── Seed the Stonebridge tracker with the current NSW campaign (once) ─────────
 // Details verified from Stonebridge's own campaign announcements and trade

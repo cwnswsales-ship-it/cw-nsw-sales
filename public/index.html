@@ -746,6 +746,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
             <th onclick="sortTable('sales','land_area')">Land m²</th>
             <th title="Land rate (price ÷ land area)">Land $/m²</th>
             <th onclick="sortTable('sales','floor_area')">Floor m²</th>
+            <th title="Capital Value — sale price ÷ floor area">Capital Value $/m²</th>
             <th title="Allowable GFA Rate (price ÷ land × FSR) — Development Sites only">GFA Rate $/m²</th>
             <th title="DA-approved GFA Rate (price ÷ approved floor area) — where DA approved">DA GFA $/m²</th>
             <th onclick="sortTable('sales','agent1')">Agent / Firm</th>
@@ -1280,6 +1281,29 @@ const DEV_STAGES = ['Raw','DA Lodged','DA Approved','HDA Lodged','HDA Approved',
 const CONSTRAINTS = ['Flood','Bushfire','Biodiversity/Offsets','Contamination','Heritage','Acid Sulfate Soils',
   'Slope/Cut-Fill','Noise Buffers','Mine Subsidence','Riparian/Waterways','Utilities Easements','Other'];
 // A sale in this register is settled unless it is only exchanged (under contract).
+// Tenanted or sold with vacant possession. Income settles it automatically —
+// the selector only matters when there is no income on the record.
+const TENURES = ['Tenanted', 'Vacant Possession'];
+
+// Keep the tenure selector honest as income is typed. Called from the yield
+// calculators, so it reacts the moment a rent figure appears.
+function syncTenure(prefix) {
+  const form = prefix === 'sf' ? 'sale-form' : 'tracking-form';
+  const el = document.querySelector(`#${form} [name="tenure"]`);
+  if (!el) return;
+  const num = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const hasIncome = num(`${prefix}-net-rent`) > 0 || num(`${prefix}-gross-rent`) > 0;
+  const hint = document.getElementById(`${prefix}-tenure-hint`);
+  if (hasIncome) {
+    el.value = 'Tenanted';
+    el.disabled = true;                       // income means a tenant, full stop
+    if (hint) hint.textContent = 'Set automatically — income is recorded';
+  } else {
+    el.disabled = false;
+    if (hint) hint.textContent = 'Enter income above and this sets itself';
+  }
+}
+
 const SALE_STATUSES = ['Sold','Exchanged - Awaiting Settlement','Under Final Negotiations'];
 const TRACK_STATUSES = ['Active Campaign','Under Offer','Exchanged - Awaiting Settlement','Failed Campaign','Failed Auction','Withdrawn'];
 const FAILED_STATUSES = ['Failed Campaign','Failed Auction'];
@@ -1943,7 +1967,8 @@ function renderSales(data) {
     <tr class="${rowCls} row-clickable" id="row-${s.id}" draggable="true" ondragstart="dragRecordStart(event,'sale','${s.id}')"
         onclick="openRecordFromRow(event,'sale','${s.id}')" title="Click to open this sale record">
       <td class="td-cb"><input type="checkbox" ${checked} onchange="toggleSaleSelect('${s.id}',this.checked)"></td>
-      <td class="td-addr">${s.address}${isExchanged(s) ? ' <span class="badge-pill b-exchanged" style="margin-left:4px" title="Exchanged (under contract) — not yet settled">Exchanged</span>' : ''}<small>${[s.suburb,s.region].filter(Boolean).join(' · ')}</small></td>
+      <td class="td-addr">${s.address}${isExchanged(s) ? ' <span class="badge-pill b-exchanged" style="margin-left:4px" title="Exchanged (under contract) — not yet settled">Exchanged</span>' : ''}<small>${
+        [s.suburb, s.region].filter(Boolean).join(' · ')}${s.tenure ? ' · ' + (s.tenure === 'Vacant Possession' ? 'VP' : 'Tenanted') : ''}</small></td>
       <td class="td-mono">${s.price ? '$'+fmt(s.price) : '–'}${
         varianceChip(quoteVariance(s.adjusted_guide || s.price_guide, s.price), 'vs guide')}${aptMeta}</td>
       <td class="td-mono">${fmtMonthYear(s.exchange_date)}</td>
@@ -1957,6 +1982,7 @@ function renderSales(data) {
       <td class="td-mono">${s.land_area ? fmt(s.land_area)+'m²' : '–'}</td>
       <td class="td-mono">${(s.price && s.land_area) ? '$'+fmt(Math.round(s.price/s.land_area)) : '–'}</td>
       <td class="td-mono">${s.floor_area ? fmt(s.floor_area)+'m²' : '–'}</td>
+      <td class="td-mono">${(s.price && s.floor_area) ? '$'+fmt(Math.round(s.price/s.floor_area)) : '–'}</td>
       <td class="td-mono">${gfaRate ? '$'+fmt(Math.round(gfaRate)) : '–'}</td>
       <td class="td-mono ${daGfaRate?'td-da-gfa':''}">${daGfaRate ? '$'+fmt(Math.round(daGfaRate)) : '–'}</td>
       <td>${[s.agent1,s.firm1].filter(Boolean).join('<br><small style="color:var(--muted);font-size:11px">') + (s.firm1?'</small>':'')}</td>
@@ -2067,6 +2093,7 @@ function saleForm(s={}) {
     <div class="form-group"><label>Price ($)</label><input name="price" id="sf-price" type="number" step="1000" value="${s.price||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" type="number" step="1000" value="${s.price_guide||''}" title="What the property was quoted at"></div>
     <div class="form-group"><label>Adjusted Guide ($)</label><input name="adjusted_guide" type="number" step="1000" value="${s.adjusted_guide||''}" placeholder="If repriced during campaign"></div>
+    <div class="form-group"><label>Tenure</label>${sel('tenure', TENURES, s.tenure || '')}<small id="sf-tenure-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="sf-net-rent" type="number" step="100" value="${s.net_rent||''}" oninput="calcSaleYield()"></div>
     <div class="form-group"><label>Gross Rent ($/yr)</label><input name="gross_rent" id="sf-gross-rent" type="number" step="100" value="${s.gross_rent||''}" oninput="calcSaleYield()" title="For apartment blocks the gross yield is the focus — both are calculated"></div>
     <div class="form-group"><label>Net Yield %</label><input name="yield_percent" id="sf-yield" type="text" inputmode="decimal" value="${s.yield_percent||''}" placeholder="Auto-calculated · or VP" title="Calculated automatically from price and net rent — or type VP for vacant possession"></div>
@@ -2433,6 +2460,7 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Price Guide ($)</label><input name="price_guide" id="tf-price-guide" type="number" step="1000" value="${t.price_guide||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Adjusted Guide ($)</label><input name="adjusted_guide" id="tf-adj-guide" type="number" step="1000" value="${t.adjusted_guide||''}" oninput="calcTrackingYield()" placeholder="If the campaign was repriced" title="Revised guide after a failed or repriced campaign"><small id="tf-adj-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Sale Price ($) — if exchanged</label><input name="sale_price" id="tf-sale-price" type="number" step="1000" value="${t.sale_price||''}" oninput="calcTrackingYield()" placeholder="Leave blank if undisclosed"><small id="tf-var-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Tenure</label>${sel('tenure', TENURES, t.tenure || '')}<small id="tf-tenure-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Net Rent ($/yr)</label><input name="net_rent" id="tf-net-rent" type="number" step="100" value="${t.net_rent||''}" oninput="calcTrackingYield()"></div>
     <div class="form-group"><label>Est. Yield %</label><input name="estimated_yield" id="tf-est-yield" type="number" step="0.01" value="${t.estimated_yield||''}" placeholder="Auto-calculated from price &amp; rent" title="Calculated automatically when price guide and net rent are both entered"></div>
     <div class="form-group"><label>Gross Income ($/yr)</label><input name="gross_rent" id="tf-gross-rent" type="number" step="100" value="${t.gross_rent||''}" oninput="calcTrackingYield()"></div>
@@ -2958,6 +2986,8 @@ function openModal(title, bodyHTML, onSubmit, submitLabel='Save') {
   // so a long record would otherwise appear halfway down at the previous offset.
   const body = document.getElementById('modal-body');
   if (body) body.scrollTop = 0;
+  // Reflect income-implies-tenanted as soon as a record opens, not just on edit
+  try { syncTenure('sf'); syncTenure('tf'); } catch (e) {}
 }
 
 function closeModal() {
@@ -3144,6 +3174,7 @@ function calcFromGrossYield(prefix) {
 }
 
 function calcTrackingYield() {
+  syncTenure('tf');
   const price = parseFloat(document.getElementById('tf-price-guide')?.value);
   const rent  = parseFloat(document.getElementById('tf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('tf-gross-rent')?.value);
@@ -3179,6 +3210,7 @@ function calcTrackingYield() {
 }
 
 function calcSaleYield() {
+  syncTenure('sf');
   const price = parseFloat(document.getElementById('sf-price')?.value);
   const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('sf-gross-rent')?.value);
