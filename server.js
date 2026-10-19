@@ -183,8 +183,9 @@ app.post('/api/sales', requireAuth, (req, res) => {
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
-      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Sold', body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
@@ -192,7 +193,8 @@ app.post('/api/sales', requireAuth, (req, res) => {
     body.constraint1 || null, body.constraint2 || null,
     body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
-    body.campaign_close_date, year, body.notes, body.source_url, body.tenure);
+    body.campaign_close_date, year, body.notes, body.source_url, body.tenure,
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
@@ -211,8 +213,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
-      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -235,7 +238,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
         r.fsr || null, r.height_limit || null, r.vendor || null, r.purchaser || null,
         r.agent1 || null, r.agent2 || null, r.firm1 || null, r.firm2 || null,
         r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
-        year, r.notes || null, r.source_url || null, r.tenure || null);
+        year, r.notes || null, r.source_url || null, r.tenure || null,
+        r.approved_fsr || null, r.approved_gfa || null, r.approved_height || null,
+        r.approved_config || null, r.da_number || null);
       inserted++;
     }
   })();
@@ -306,7 +311,8 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
       zoning=?, zoning2=?, zoning_other=?, dev_stage=?, constraint1=?, constraint2=?,
       fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
-      tenure=?, updated_at=datetime('now')
+      tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
+      updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
     body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.yield_percent, body.wale,
@@ -316,7 +322,8 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
     body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
-    body.notes, body.source_url, body.tenure, req.params.id);
+    body.notes, body.source_url, body.tenure,
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
 });
@@ -378,14 +385,16 @@ app.post('/api/tracking', requireAuth, (req, res) => {
     INSERT INTO tracking (id, address, suburb, region, asset_class, process, status,
       price_guide, adjusted_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
       vendor, purchaser, agent1, agent2, firm1, firm2,
-      campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id, tenure)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id, tenure,
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
-    body.notes, body.source_url, body.discovery_id || null, body.tenure || null);
+    body.notes, body.source_url, body.discovery_id || null, body.tenure || null,
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null);
   const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
   backupDb().catch(() => {});
   res.json(row);
@@ -401,14 +410,16 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
       units=?, zoning=?, fsr=?, height_limit=?,
       vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
-      tenure=?, updated_at=datetime('now')
+      tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
+      updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
-    body.notes, body.source_url, body.tenure, req.params.id);
+    body.notes, body.source_url, body.tenure,
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
@@ -584,6 +595,12 @@ const XL_COLS = [
   { header: 'FSR',                      key: 'fsr',           width: 8,  type: 'text'    },
   { header: 'Height',                   key: 'height_limit',  width: 9,  type: 'text'    },
   { header: 'Dev Stage',                key: 'dev_stage',     width: 15, type: 'text'    },
+  { header: 'DA Number',                key: 'da_number',     width: 16, type: 'text'    },
+  { header: 'Approved FSR',             key: 'approved_fsr',  width: 12, type: 'text'    },
+  { header: 'Approved GFA m²',         key: 'approved_gfa',  width: 14, type: 'area'    },
+  { header: 'Rate $/m² (Approved GFA)',key: 'rate_appgfa',   width: 20, type: 'currency'},
+  { header: 'Approved Height',          key: 'approved_height', width: 15, type: 'text'  },
+  { header: 'Approved Config',          key: 'approved_config', width: 24, type: 'text'  },
   { header: 'Constraints',              key: 'constraints',   width: 22, type: 'text'    },
   { header: 'Firm 1',                   key: 'firm1',         width: 24, type: 'text'    },
   { header: 'Firm 2',                   key: 'firm2',         width: 24, type: 'text'    },
@@ -627,6 +644,10 @@ function withExportComputed(rows) {
     if (r.price > 0 && r.units > 0) out.unit_rate = Math.round(r.price / r.units);
     // Capital value: what the buyer paid per square metre of building.
     if (r.price > 0 && r.floor_area > 0) out.cap_value = Math.round(r.price / r.floor_area);
+    // Rate on what the DA actually approved — the number a developer buys on.
+    const appGfa = r.approved_gfa || (r.price > 0 && r.land_area > 0 && parseFloat(String(r.approved_fsr || '').match(/(\d+(?:\.\d+)?)/)?.[1]) > 0
+      ? r.land_area * parseFloat(String(r.approved_fsr).match(/(\d+(?:\.\d+)?)/)[1]) : null);
+    if (r.price > 0 && appGfa > 0) out.rate_appgfa = Math.round(r.price / appGfa);
     out.tenure = out.tenure || deriveTenure(r);
     const guide = r.adjusted_guide || r.price_guide;
     if (guide > 0 && r.price > 0) out.quote_var = Math.round((r.price - guide) / guide * 10000) / 100;
@@ -751,6 +772,21 @@ function buildAnalysisWorkbook(r, source) {
     ['FSR', r.fsr], ['Height Limit', r.height_limit],
     ['Development Stage', r.dev_stage], ['Constraints', [r.constraint1, r.constraint2].filter(Boolean).join(' · ')],
   ]);
+
+  // What the consent actually grants, kept apart from the LEP controls above —
+  // a developer prices off the approval, not the zoning.
+  if (r.da_number || r.approved_fsr || r.approved_gfa || r.approved_height || r.approved_config) {
+    const appGfa = r.approved_gfa ||
+      (r.land_area > 0 && parseFloat(String(r.approved_fsr || '').match(/(\d+(?:\.\d+)?)/)?.[1]) > 0
+        ? Math.round(r.land_area * parseFloat(String(r.approved_fsr).match(/(\d+(?:\.\d+)?)/)[1])) : null);
+    addSection('DA APPROVAL');
+    addPairs([
+      ['DA Number', r.da_number], ['Approved Configuration', r.approved_config],
+      ['Approved FSR', r.approved_fsr], ['Approved Height', r.approved_height],
+      ['Approved GFA', money(appGfa), AREA],
+      ['Rate $/m² (Approved GFA)', (price > 0 && appGfa > 0) ? Math.round(price / appGfa) : null, CUR],
+    ]);
+  }
 
   addSection('AGENCY');
   addPairs([

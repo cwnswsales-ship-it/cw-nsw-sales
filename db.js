@@ -181,6 +181,17 @@ try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
+// What the DA actually approved, as distinct from what the LEP permits.
+// fsr / height_limit / gfa hold the planning controls; these hold the consent.
+// FSR and height stay TEXT because they are written "2.5:1", "11.5 m", "4 storeys".
+for (const t of ['sales', 'tracking']) {
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN approved_fsr TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN approved_gfa REAL`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN approved_height TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN approved_config TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN da_number TEXT`); } catch(e) {}
+}
+
 // Tenure: was the property sold with a tenant in place or with vacant
 // possession? Income implies tenanted, so this is derived unless set by hand.
 try { db.exec('ALTER TABLE sales ADD COLUMN tenure TEXT'); } catch(e) {}

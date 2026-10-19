@@ -1278,6 +1278,14 @@ const ASSET_CLASSES = ['Apartment Blocks','Boarding House','Car Park','Childcare
 const PROCESSES = ['EOI','Auction','Private Treaty','Off-Market','Tender','Sale by Negotiation'];
 const DEV_STAGES = ['Raw','DA Lodged','DA Approved','HDA Lodged','HDA Approved','SSD Lodged','SSD Approved',
   'Civils Completed','Stage 1 Masterplan','Stage 2 Masterplan','Stage 3 Masterplan','Stage 4 Masterplan'];
+// What the consent approves the site to be built as. Mixed-use is the norm on
+// anything with a retail podium, so the combinations are listed, not just the
+// three single uses.
+const APPROVED_CONFIGS = ['Residential', 'Commercial', 'Retail',
+  'Residential + Retail', 'Residential + Commercial', 'Commercial + Retail',
+  'Residential + Commercial + Retail', 'Hotel / Short Stay', 'Seniors Living',
+  'Student Accommodation', 'Build-to-Rent', 'Industrial', 'Other'];
+
 const CONSTRAINTS = ['Flood','Bushfire','Biodiversity/Offsets','Contamination','Heritage','Acid Sulfate Soils',
   'Slope/Cut-Fill','Noise Buffers','Mine Subsidence','Riparian/Waterways','Utilities Easements','Other'];
 // A sale in this register is settled unless it is only exchanged (under contract).
@@ -1820,6 +1828,30 @@ function parseFSR(fsr) {
 }
 
 // GFA rate = sale price ÷ (land area × FSR) — calculated for ANY sale with an FSR
+// Approved GFA fills itself from land × approved FSR, the same way the
+// permissible GFA does — but stops the moment the user types a figure, because
+// a consent's GFA is often not a clean multiple of the FSR.
+function calcApprovedGFA(prefix) {
+  const form = prefix === 'sf' ? 'sale-form' : 'tracking-form';
+  const landEl = document.querySelector(`#${form} [name="land_area"]`);
+  const land = parseFloat(landEl?.value) || 0;
+  const fsr  = parseFSR(document.getElementById(`${prefix}-app-fsr`)?.value);
+  const gfaEl = document.getElementById(`${prefix}-app-gfa`);
+  const hint  = document.getElementById(`${prefix}-app-gfa-hint`);
+  if (!gfaEl) return;
+  if (gfaEl.value === '' || gfaEl.dataset.auto === '1') {
+    if (land > 0 && fsr > 0) { gfaEl.value = Math.round(land * fsr); gfaEl.dataset.auto = '1'; }
+    else if (gfaEl.dataset.auto === '1') { gfaEl.value = ''; }
+  }
+  if (hint) {
+    const price = parseFloat(document.getElementById(prefix === 'sf' ? 'sf-price' : 'tf-price-guide')?.value) || 0;
+    const gfa = parseFloat(gfaEl.value) || 0;
+    hint.textContent = (price > 0 && gfa > 0)
+      ? `$${fmt(Math.round(price / gfa))}/m² on approved GFA`
+      : (gfaEl.dataset.auto === '1' ? 'Auto from land × approved FSR — type to override' : '');
+  }
+}
+
 function calcGFARates(s) {
   const fsrNum = parseFSR(s.fsr);
   const allowableGFA = (fsrNum && s.land_area) ? s.land_area * fsrNum : null;
@@ -1827,8 +1859,10 @@ function calcGFARates(s) {
   // Adopted/approved GFA rate — uses the dedicated gfa field (legacy rows kept it in floor_area)
   const isDev = s.asset_class === 'Development Site';
   const hasDA = s.notes && /da.approv/i.test(s.notes);
-  const adoptedGFA = s.gfa || ((isDev || hasDA) ? s.floor_area : null);
-  const daGfaRate = ((isDev || hasDA || s.gfa) && adoptedGFA && s.price) ? s.price / adoptedGFA : null;
+  // Prefer the explicitly approved GFA now that it has its own field; fall back
+  // to the older adopted-GFA field, then to floor_area for legacy rows.
+  const adoptedGFA = s.approved_gfa || s.gfa || ((isDev || hasDA) ? s.floor_area : null);
+  const daGfaRate = ((isDev || hasDA || s.gfa || s.approved_gfa) && adoptedGFA && s.price) ? s.price / adoptedGFA : null;
   return { gfaRate, daGfaRate, allowableGFA };
 }
 
@@ -2126,6 +2160,11 @@ function saleForm(s={}) {
     <div class="form-group"><label>Development Stage</label>${sel('dev_stage', DEV_STAGES, s.dev_stage)}</div>
     <div class="form-group"><label>Constraints</label>${sel('constraint1', CONSTRAINTS, s.constraint1)}</div>
     <div class="form-group"><label>Constraints 2</label>${sel('constraint2', CONSTRAINTS, s.constraint2)}</div>
+    <div class="form-group"><label>DA Number</label><input name="da_number" value="${esc(s.da_number)}" placeholder="e.g. DA-2024/0531"></div>
+    <div class="form-group"><label>Approved Configuration</label>${sel('approved_config', APPROVED_CONFIGS, s.approved_config)}</div>
+    <div class="form-group"><label>Approved FSR</label><input name="approved_fsr" id="sf-app-fsr" value="${esc(s.approved_fsr)}" oninput="calcApprovedGFA('sf')" placeholder="As approved, e.g. 2.5:1" title="What the DA approved — may differ from the LEP control above"></div>
+    <div class="form-group"><label>Approved GFA (m²)</label><input name="approved_gfa" id="sf-app-gfa" type="number" step="1" value="${s.approved_gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × approved FSR"><small id="sf-app-gfa-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Approved Height</label><input name="approved_height" value="${esc(s.approved_height)}" placeholder="e.g. 24 m / 8 storeys"></div>
     <div class="form-group full"><label>Notes</label><textarea name="notes">${esc(s.notes)}</textarea></div>
     <div class="form-group full"><label>Source URL</label><input name="source_url" type="url" value="${esc(s.source_url)}"></div>
   </form>`;
@@ -2472,6 +2511,12 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" id="tf-units" type="number" step="1" min="0" value="${t.units||''}" oninput="calcTrackingYield()" placeholder="Units, rooms or keys" title="Boarding houses & hotels: enter rooms — price per key calculates off the price guide"><small id="tf-key-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
     <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(t.fsr)}"></div>
+    <div class="form-section">DA Approval</div>
+    <div class="form-group"><label>DA Number</label><input name="da_number" value="${esc(t.da_number)}" placeholder="e.g. DA-2024/0531"></div>
+    <div class="form-group"><label>Approved Configuration</label>${sel('approved_config', APPROVED_CONFIGS, t.approved_config)}</div>
+    <div class="form-group"><label>Approved FSR</label><input name="approved_fsr" id="tf-app-fsr" value="${esc(t.approved_fsr)}" oninput="calcApprovedGFA('tf')" placeholder="As approved, e.g. 2.5:1"></div>
+    <div class="form-group"><label>Approved GFA (m²)</label><input name="approved_gfa" id="tf-app-gfa" type="number" step="1" value="${t.approved_gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × approved FSR"><small id="tf-app-gfa-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>Approved Height</label><input name="approved_height" value="${esc(t.approved_height)}" placeholder="e.g. 24 m / 8 storeys"></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}" list="dl-firms" placeholder="Agency, e.g. CBRE"></div>
@@ -3175,6 +3220,7 @@ function calcFromGrossYield(prefix) {
 
 function calcTrackingYield() {
   syncTenure('tf');
+  try { calcApprovedGFA('tf'); } catch (e) {}
   const price = parseFloat(document.getElementById('tf-price-guide')?.value);
   const rent  = parseFloat(document.getElementById('tf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('tf-gross-rent')?.value);
@@ -3211,6 +3257,7 @@ function calcTrackingYield() {
 
 function calcSaleYield() {
   syncTenure('sf');
+  try { calcApprovedGFA('sf'); } catch (e) {}
   const price = parseFloat(document.getElementById('sf-price')?.value);
   const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('sf-gross-rent')?.value);
