@@ -184,8 +184,9 @@ app.post('/api/sales', requireAuth, (req, res) => {
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
-      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number,
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Sold', body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
@@ -194,7 +195,9 @@ app.post('/api/sales', requireAuth, (req, res) => {
     body.fsr, body.height_limit, body.vendor, body.purchaser, body.agent1, body.agent2,
     body.firm1, body.firm2, body.exchange_date, body.settlement_date,
     body.campaign_close_date, year, body.notes, body.source_url, body.tenure,
-    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null);
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
+    body.og_council || null, body.og_water || null, body.og_land_tax || null,
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
@@ -214,8 +217,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, gfa, units, parking,
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
-      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number,
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -240,7 +244,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
         r.exchange_date || null, r.settlement_date || null, r.campaign_close_date || null,
         year, r.notes || null, r.source_url || null, r.tenure || null,
         r.approved_fsr || null, r.approved_gfa || null, r.approved_height || null,
-        r.approved_config || null, r.da_number || null);
+        r.approved_config || null, r.da_number || null,
+        r.og_council || null, r.og_water || null, r.og_land_tax || null,
+        r.og_fire || null, r.og_insurance || null, r.og_pest || null);
       inserted++;
     }
   })();
@@ -312,6 +318,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
       fsr=?, height_limit=?, vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
       tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
+      og_council=?, og_water=?, og_land_tax=?, og_fire=?, og_insurance=?, og_pest=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
@@ -323,7 +330,9 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.exchange_date, body.settlement_date, body.campaign_close_date, year,
     body.notes, body.source_url, body.tenure,
-    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null, req.params.id);
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
+    body.og_council || null, body.og_water || null, body.og_land_tax || null,
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
 });
@@ -386,15 +395,18 @@ app.post('/api/tracking', requireAuth, (req, res) => {
       price_guide, adjusted_guide, sale_price, net_rent, gross_rent, gross_yield, estimated_yield, wale, land_area, floor_area, units, zoning, fsr, height_limit,
       vendor, purchaser, agent1, agent2, firm1, firm2,
       campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id, tenure,
-      approved_fsr, approved_gfa, approved_height, approved_config, da_number)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      approved_fsr, approved_gfa, approved_height, approved_config, da_number,
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
     body.notes, body.source_url, body.discovery_id || null, body.tenure || null,
-    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null);
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
+    body.og_council || null, body.og_water || null, body.og_land_tax || null,
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null);
   const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
   backupDb().catch(() => {});
   res.json(row);
@@ -411,6 +423,7 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
       vendor=?, purchaser=?, agent1=?, agent2=?, firm1=?, firm2=?,
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
+      og_council=?, og_water=?, og_land_tax=?, og_fire=?, og_insurance=?, og_pest=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
@@ -419,7 +432,9 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
     body.vendor, body.purchaser, body.agent1, body.agent2, body.firm1, body.firm2,
     body.campaign_close_date, body.exchange_date, body.expected_settlement_date, year,
     body.notes, body.source_url, body.tenure,
-    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null, req.params.id);
+    body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
+    body.og_council || null, body.og_water || null, body.og_land_tax || null,
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
@@ -577,6 +592,16 @@ const XL_COLS = [
   { header: 'Net Yield %',              key: 'yield_percent', width: 10, type: 'pct'     },
   { header: 'Gross Yield %',            key: 'gross_yield',   width: 11, type: 'pct'     },
   { header: 'WALE (yrs)',               key: 'wale',          width: 10, type: 'num1'    },
+  { header: 'Council p.a.',             key: 'og_council',    width: 13, type: 'currency'},
+  { header: 'Water p.a.',               key: 'og_water',      width: 13, type: 'currency'},
+  { header: 'Land Tax p.a.',            key: 'og_land_tax',   width: 13, type: 'currency'},
+  { header: 'Statutory Total',          key: 'og_statutory',  width: 15, type: 'currency'},
+  { header: 'Fire p.a.',                key: 'og_fire',       width: 12, type: 'currency'},
+  { header: 'Insurance p.a.',           key: 'og_insurance',  width: 14, type: 'currency'},
+  { header: 'Pest p.a.',                key: 'og_pest',       width: 12, type: 'currency'},
+  { header: 'OPEX Total',               key: 'og_opex',       width: 13, type: 'currency'},
+  { header: 'Outgoings Total',          key: 'og_total',      width: 15, type: 'currency'},
+  { header: 'Outgoings $/m²',          key: 'og_rate',       width: 14, type: 'currency'},
   { header: 'Land m²',                 key: 'land_area',     width: 10, type: 'area'    },
   { header: 'Land (Ha)',                key: 'land_ha',       width: 9,  type: 'num2'    },
   { header: 'Land (Ac)',                key: 'land_ac',       width: 9,  type: 'num2'    },
@@ -625,6 +650,22 @@ function colLetter(n) {
   return s;
 }
 
+// Statutory charges (levied by an authority) and operating costs (run by the
+// owner). A field left blank means "not captured" — it is excluded from the
+// total rather than counted as zero, so a partial record cannot masquerade as
+// a complete one.
+const OG_STATUTORY = ['og_council', 'og_water', 'og_land_tax'];
+const OG_OPEX      = ['og_fire', 'og_insurance', 'og_pest'];
+function outgoings(r) {
+  const sum = keys => {
+    const vals = keys.map(k => Number(r[k])).filter(v => Number.isFinite(v) && v > 0);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0)) : null;
+  };
+  const statutory = sum(OG_STATUTORY), opex = sum(OG_OPEX);
+  const total = (statutory === null && opex === null) ? null : (statutory || 0) + (opex || 0);
+  return { statutory, opex, total };
+}
+
 // Derived export columns: site rate, permissible-GFA rate ($ / (land × FSR)), gross yield
 function withExportComputed(rows) {
   return rows.map(r => {
@@ -652,6 +693,13 @@ function withExportComputed(rows) {
     const guide = r.adjusted_guide || r.price_guide;
     if (guide > 0 && r.price > 0) out.quote_var = Math.round((r.price - guide) / guide * 10000) / 100;
     if (out.gross_yield == null && r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
+    // Outgoings: statutory charges vs operating costs, and the rate per m².
+    // Only total what is actually recorded — a blank is "not captured", not zero.
+    const og = outgoings(r);
+    if (og.statutory !== null) out.og_statutory = og.statutory;
+    if (og.opex !== null)      out.og_opex      = og.opex;
+    if (og.total !== null)     out.og_total     = og.total;
+    if (og.total !== null && r.floor_area > 0) out.og_rate = Math.round(og.total / r.floor_area);
     out.constraints = [r.constraint1, r.constraint2].filter(Boolean).join(' · ') || null;
     return out;
   });
@@ -756,6 +804,21 @@ function buildAnalysisWorkbook(r, source) {
     ['WALE (years)', money(r.wale), '0.0'],
     [`Rate per ${unitWord}`, perUnit, CUR],
   ]);
+
+  const og = outgoings(r);
+  if (og.total !== null) {
+    addSection('OUTGOINGS');
+    addPairs([
+      ['Council p.a.', money(r.og_council), CUR],   ['Fire p.a.', money(r.og_fire), CUR],
+      ['Water p.a.', money(r.og_water), CUR],       ['Building Insurance p.a.', money(r.og_insurance), CUR],
+      ['Land Tax p.a.', money(r.og_land_tax), CUR], ['Pest p.a.', money(r.og_pest), CUR],
+      ['Statutory Total', money(og.statutory), CUR],['OPEX Total', money(og.opex), CUR],
+      ['Outgoings Total', money(og.total), CUR],
+      ['Outgoings $/m²', (og.total > 0 && r.floor_area > 0) ? Math.round(og.total / r.floor_area) : null, CUR],
+      ['% of Gross Rent', (og.total > 0 && r.gross_rent > 0) ? Math.round(og.total / r.gross_rent * 10000) / 100 : null, PCT],
+      ['Gross less Outgoings', (r.gross_rent > 0) ? r.gross_rent - og.total : null, CUR],
+    ]);
+  }
 
   addSection('AREAS & RATES');
   addPairs([

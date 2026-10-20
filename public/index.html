@@ -1831,6 +1831,52 @@ function parseFSR(fsr) {
 // Approved GFA fills itself from land × approved FSR, the same way the
 // permissible GFA does — but stops the moment the user types a figure, because
 // a consent's GFA is often not a clean multiple of the FSR.
+// Running outgoings total, split statutory vs OPEX, with a cross-check against
+// the income already entered. Net rent = gross rent − outgoings, so when all
+// three are present and they disagree, say so — a silent mismatch here is how a
+// yield ends up wrong. A blank field means "not captured", never zero, so it is
+// left out of the total rather than counted as nil.
+const OG_STATUTORY_FIELDS = ['og_council', 'og_water', 'og_land_tax'];
+const OG_OPEX_FIELDS      = ['og_fire', 'og_insurance', 'og_pest'];
+
+function calcOutgoings(prefix) {
+  const form = document.getElementById(prefix === 'sf' ? 'sale-form' : 'tracking-form');
+  const box  = document.getElementById(`${prefix}-og-summary`);
+  if (!form || !box) return;
+  const val = n => {
+    const el = form.querySelector(`[name="${n}"]`);
+    const v = parseFloat(el?.value);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const sum = keys => {
+    const vals = keys.map(val).filter(v => v !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+  };
+  const statutory = sum(OG_STATUTORY_FIELDS), opex = sum(OG_OPEX_FIELDS);
+  if (statutory === null && opex === null) { box.innerHTML = 'Statutory: Council · Water · Land Tax &nbsp;|&nbsp; OPEX: Fire · Building Insurance · Pest'; return; }
+  const total = (statutory || 0) + (opex || 0);
+
+  const gross = val('gross_rent'), net = val('net_rent');
+  const floor = val('floor_area');
+  const parts = [
+    `Statutory <b>$${fmt(statutory || 0)}</b>`,
+    `OPEX <b>$${fmt(opex || 0)}</b>`,
+    `Total <b>$${fmt(total)}</b>`,
+  ];
+  if (floor) parts.push(`<b>$${fmt(Math.round(total / floor))}</b>/m²`);
+  if (gross) parts.push(`<b>${(total / gross * 100).toFixed(1)}%</b> of gross`);
+  if (gross && net) {
+    const implied = gross - net;
+    const off = Math.abs(implied - total);
+    parts.push(off <= Math.max(500, implied * 0.02)
+      ? `✓ ties to gross less net ($${fmt(Math.round(implied))})`
+      : `<span class="og-warn">⚠ gross less net is $${fmt(Math.round(implied))} — $${fmt(Math.round(off))} apart</span>`);
+  } else if (gross && !net) {
+    parts.push(`Gross less outgoings <b>$${fmt(Math.round(gross - total))}</b>`);
+  }
+  box.innerHTML = parts.join('<span style="opacity:.4">·</span>');
+}
+
 function calcApprovedGFA(prefix) {
   const form = prefix === 'sf' ? 'sale-form' : 'tracking-form';
   const landEl = document.querySelector(`#${form} [name="land_area"]`);
@@ -2134,10 +2180,18 @@ function saleForm(s={}) {
     <div class="form-group"><label>Gross Yield %</label><input name="gross_yield" id="sf-gross-yield" type="number" step="0.01" value="${s.gross_yield||''}" oninput="calcFromGrossYield('sf')" placeholder="Auto ↔ Gross Rent" title="Calculated from price and gross rent — or type the yield and the gross rent calculates back"></div>
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${s.wale||''}"></div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" id="sf-land" type="number" step="1" value="${s.land_area||''}" oninput="calcSaleYield()"><small id="sf-land-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
-    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}" title="Lettable building area"></div>
+    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${s.floor_area||''}" oninput="calcOutgoings('sf')" title="Lettable building area"></div>
     <div class="form-group"><label>GFA (m²)</label><input name="gfa" id="sf-gfa" type="number" step="1" value="${s.gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × FSR" title="Gross floor area — auto-calculates from land × FSR, or type the adopted/approved GFA"></div>
     <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" id="sf-units" type="number" step="1" min="0" value="${s.units||''}" oninput="calcSaleYield()" placeholder="Units, lots, rooms or keys" title="Boarding houses & hotels: enter the number of rooms — price per key calculates automatically"><small id="sf-key-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Parking Spots</label><input name="parking" type="number" step="1" min="0" value="${s.parking||''}" placeholder="Cars / LUGs"></div>
+    <div class="form-section">Outgoings ($/yr)</div>
+    <div class="form-group"><label>Council</label><input name="og_council" type="number" step="100" min="0" value="${s.og_council||''}" oninput="calcOutgoings('sf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Fire</label><input name="og_fire" type="number" step="100" min="0" value="${s.og_fire||''}" oninput="calcOutgoings('sf')" placeholder="OPEX"></div>
+    <div class="form-group"><label>Water</label><input name="og_water" type="number" step="100" min="0" value="${s.og_water||''}" oninput="calcOutgoings('sf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Building Insurance</label><input name="og_insurance" type="number" step="100" min="0" value="${s.og_insurance||''}" oninput="calcOutgoings('sf')" placeholder="OPEX"></div>
+    <div class="form-group"><label>Land Tax</label><input name="og_land_tax" type="number" step="100" min="0" value="${s.og_land_tax||''}" oninput="calcOutgoings('sf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Pest</label><input name="og_pest" type="number" step="100" min="0" value="${s.og_pest||''}" oninput="calcOutgoings('sf')" placeholder="OPEX"></div>
+    <div class="form-group full"><div id="sf-og-summary" class="og-summary"></div></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(s.firm1)}" list="dl-firms" placeholder="Agency, e.g. CBRE"></div>
@@ -2507,7 +2561,7 @@ function trackingForm(t={}) {
     <div class="form-group"><label>WALE (years)</label><input name="wale" type="number" step="0.1" value="${t.wale||''}"></div>
     <div class="form-section">Property</div>
     <div class="form-group"><label>Land Area (m²)</label><input name="land_area" type="number" step="1" value="${t.land_area||''}"></div>
-    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${t.floor_area||''}"></div>
+    <div class="form-group"><label>Floor Area (m²)</label><input name="floor_area" type="number" step="1" value="${t.floor_area||''}" oninput="calcOutgoings('tf')"></div>
     <div class="form-group"><label>Units / Rooms / Keys</label><input name="units" id="tf-units" type="number" step="1" min="0" value="${t.units||''}" oninput="calcTrackingYield()" placeholder="Units, rooms or keys" title="Boarding houses & hotels: enter rooms — price per key calculates off the price guide"><small id="tf-key-hint" style="color:var(--accent);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Zoning</label><input name="zoning" value="${esc(t.zoning)}" list="dl-zoning" placeholder="e.g. MU1 - Mixed Use"></div>
     <div class="form-group"><label>FSR</label><input name="fsr" value="${esc(t.fsr)}"></div>
@@ -2517,6 +2571,14 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Approved FSR</label><input name="approved_fsr" id="tf-app-fsr" value="${esc(t.approved_fsr)}" oninput="calcApprovedGFA('tf')" placeholder="As approved, e.g. 2.5:1"></div>
     <div class="form-group"><label>Approved GFA (m²)</label><input name="approved_gfa" id="tf-app-gfa" type="number" step="1" value="${t.approved_gfa||''}" oninput="this.dataset.auto='0'" placeholder="Auto: land × approved FSR"><small id="tf-app-gfa-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
     <div class="form-group"><label>Approved Height</label><input name="approved_height" value="${esc(t.approved_height)}" placeholder="e.g. 24 m / 8 storeys"></div>
+    <div class="form-section">Outgoings ($/yr)</div>
+    <div class="form-group"><label>Council</label><input name="og_council" type="number" step="100" min="0" value="${t.og_council||''}" oninput="calcOutgoings('tf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Fire</label><input name="og_fire" type="number" step="100" min="0" value="${t.og_fire||''}" oninput="calcOutgoings('tf')" placeholder="OPEX"></div>
+    <div class="form-group"><label>Water</label><input name="og_water" type="number" step="100" min="0" value="${t.og_water||''}" oninput="calcOutgoings('tf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Building Insurance</label><input name="og_insurance" type="number" step="100" min="0" value="${t.og_insurance||''}" oninput="calcOutgoings('tf')" placeholder="OPEX"></div>
+    <div class="form-group"><label>Land Tax</label><input name="og_land_tax" type="number" step="100" min="0" value="${t.og_land_tax||''}" oninput="calcOutgoings('tf')" placeholder="Statutory"></div>
+    <div class="form-group"><label>Pest</label><input name="og_pest" type="number" step="100" min="0" value="${t.og_pest||''}" oninput="calcOutgoings('tf')" placeholder="OPEX"></div>
+    <div class="form-group full"><div id="tf-og-summary" class="og-summary"></div></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
     <div class="form-group"><label>Firm 1</label><input name="firm1" value="${esc(t.firm1)}" list="dl-firms" placeholder="Agency, e.g. CBRE"></div>
@@ -3032,7 +3094,7 @@ function openModal(title, bodyHTML, onSubmit, submitLabel='Save') {
   const body = document.getElementById('modal-body');
   if (body) body.scrollTop = 0;
   // Reflect income-implies-tenanted as soon as a record opens, not just on edit
-  try { syncTenure('sf'); syncTenure('tf'); } catch (e) {}
+  try { syncTenure('sf'); syncTenure('tf'); calcOutgoings('sf'); calcOutgoings('tf'); } catch (e) {}
 }
 
 function closeModal() {
@@ -3220,7 +3282,7 @@ function calcFromGrossYield(prefix) {
 
 function calcTrackingYield() {
   syncTenure('tf');
-  try { calcApprovedGFA('tf'); } catch (e) {}
+  try { calcApprovedGFA('tf'); calcOutgoings('tf'); } catch (e) {}
   const price = parseFloat(document.getElementById('tf-price-guide')?.value);
   const rent  = parseFloat(document.getElementById('tf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('tf-gross-rent')?.value);
@@ -3257,7 +3319,7 @@ function calcTrackingYield() {
 
 function calcSaleYield() {
   syncTenure('sf');
-  try { calcApprovedGFA('sf'); } catch (e) {}
+  try { calcApprovedGFA('sf'); calcOutgoings('sf'); } catch (e) {}
   const price = parseFloat(document.getElementById('sf-price')?.value);
   const rent  = parseFloat(document.getElementById('sf-net-rent')?.value);
   const gross = parseFloat(document.getElementById('sf-gross-rent')?.value);

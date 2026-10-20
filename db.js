@@ -181,6 +181,16 @@ try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
+// Outgoings, as annual dollar amounts. Split the way a rent roll splits them:
+// statutory charges levied by an authority, and operating costs the owner runs.
+// Net rent = gross rent − outgoings, so these are what bridges the two.
+for (const t of ['sales', 'tracking']) {
+  for (const c of ['og_council', 'og_water', 'og_land_tax',
+                   'og_fire', 'og_insurance', 'og_pest']) {
+    try { db.exec(`ALTER TABLE ${t} ADD COLUMN ${c} REAL`); } catch(e) {}
+  }
+}
+
 // What the DA actually approved, as distinct from what the LEP permits.
 // fsr / height_limit / gfa hold the planning controls; these hold the consent.
 // FSR and height stay TEXT because they are written "2.5:1", "11.5 m", "4 storeys".
