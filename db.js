@@ -181,6 +181,20 @@ try { db.exec('ALTER TABLE sales ADD COLUMN constraint2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning2 TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN zoning_other TEXT'); } catch(e) {}
 
+// Operating expenses, itemised. These join the existing fire/insurance/pest
+// trio in the OPEX group; statutory stays council/water/land tax.
+// og_total_override holds a hand-entered total when the itemised sum is not
+// the figure to report — kept separate so the computed sum is never lost.
+for (const t of ['sales', 'tracking']) {
+  for (const c of ['og_aircon', 'og_cleaning', 'og_supervision', 'og_electricity',
+                   'og_gas_oil', 'og_lifts', 'og_repairs', 'og_security',
+                   'og_gardening', 'og_admin', 'og_total_override']) {
+    try { db.exec(`ALTER TABLE ${t} ADD COLUMN ${c} REAL`); } catch(e) {}
+  }
+  // When the property was first listed — days on market is exchange minus this.
+  try { db.exec(`ALTER TABLE ${t} ADD COLUMN listing_date TEXT`); } catch(e) {}
+}
+
 // Outgoings, as annual dollar amounts. Split the way a rent roll splits them:
 // statutory charges levied by an authority, and operating costs the owner runs.
 // Net rent = gross rent − outgoings, so these are what bridges the two.

@@ -264,6 +264,13 @@ tbody td{padding:9px 11px;color:var(--text);vertical-align:middle}
 .close-overdue{color:var(--danger);font-weight:700}
 .close-urgent{color:var(--accent);font-weight:700}
 .close-soon{color:var(--info);font-weight:600}
+.og-summary{background:var(--bg);border:1px solid rgb(221 224 228 / .9);border-radius:8px;padding:10px 12px;
+  font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;min-height:18px}
+.og-summary b{color:var(--text);font-weight:700}
+.og-summary .og-warn{color:var(--accent);font-weight:700}
+.chart-n{float:right;font-weight:600;font-size:10.5px;color:var(--muted);letter-spacing:0;text-transform:none}
+.chart-empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:150px;
+  color:var(--muted);font-size:12px;text-align:center;padding:16px;line-height:1.5}
 .row-clickable{cursor:pointer}
 .row-clickable .td-actions,.row-clickable .td-cb,
 .row-clickable select,.row-clickable button,.row-clickable a{cursor:auto}
@@ -884,21 +891,30 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
         <div><h1>Analytics</h1><div class="sub">Market analysis and sales insights</div></div>
       </div>
       <div class="filters-bar">
-        <select class="filter-select" id="an-year" onchange="renderAnalytics()">
-          <option value="">All Years</option>
-          <option>2026</option><option>2025</option><option>2024</option>
-          <option>2023</option><option>2022</option><option>2021</option>
+        <select class="filter-select" id="an-period" onchange="renderAnalytics()" title="Rolling windows use the sale date; a sale with no sale date falls back to its recorded year">
+          <option value="">All Time</option>
+          <option value="12m">Last 12 Months</option>
+          <option value="24m">Last 24 Months</option>
+          <option value="36m">Last 36 Months</option>
+          <option disabled>──────────</option>
+          <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+          <option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option>
         </select>
         <select class="filter-select" id="an-asset" onchange="renderAnalytics()">
           <option value="">All Asset Classes</option>
         </select>
-        <select class="filter-select" id="an-region" onchange="renderAnalytics()">
+        <select class="filter-select" id="an-region" onchange="S.anSuburbs.clear();renderAnalyticsSuburbDD();renderAnalytics()">
           <option value="">All Regions</option>
           <option>CBD/City</option><option>City Fringe</option><option>Eastern Suburbs</option><option>Inner West</option>
           <option>North Shore</option><option>Northern Beaches</option><option>Western Sydney</option>
           <option>Hills District</option><option>Southern Sydney</option><option>South West Sydney</option>
         </select>
+        <div class="ms-wrap" id="an-suburbs-wrap">
+          <button class="ms-btn" id="an-suburbs-btn" onclick="toggleAnalyticsSuburbDD()">All Suburbs</button>
+          <div class="ms-dropdown" id="an-suburbs-dd"></div>
+        </div>
         <button class="btn btn-secondary btn-sm" onclick="clearAnalyticsFilters()">Clear</button>
+        <span class="filter-count" id="an-count-label"></span>
       </div>
       <div class="analytics-content">
         <div class="stats-row" id="analytics-kpis"></div>
@@ -918,6 +934,29 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           <div class="dash-panel">
             <div class="dash-panel-header">Sale Process Mix</div>
             <div class="chart-wrap"><canvas id="chart-process"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Avg Land Rate $/m² by Asset Class<span id="chart-landrate-n" class="chart-n"></span></div>
+            <div class="chart-wrap"><canvas id="chart-landrate"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Avg Capital Value $/m² by Asset Class<span id="chart-capvalue-n" class="chart-n"></span></div>
+            <div class="chart-wrap"><canvas id="chart-capvalue"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Outgoings — Avg $/m² by Cost Item<span id="chart-outgoings-n" class="chart-n"></span></div>
+            <div class="chart-wrap"><canvas id="chart-outgoings"></canvas></div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-header">Avg Days on Market<span id="chart-dom-n" class="chart-n"></span></div>
+            <div class="chart-wrap">
+              <select class="filter-select" id="an-dom-by" onchange="renderChartDOM(getAnalyticsData())" style="font-size:11px;padding:3px 8px;margin-bottom:6px">
+                <option value="asset_class">By Asset Class</option>
+                <option value="region">By Region</option>
+                <option value="suburb">By Suburb</option>
+              </select>
+              <canvas id="chart-dom"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -1256,7 +1295,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 const S = {
   token: localStorage.getItem('auth_token'),
   salesData: [], trackingData: [], assetFiltersMerged: false,
-  stonebridgeData: [], sbStatus: null,
+  stonebridgeData: [], sbStatus: null, anSuburbs: new Set(),
   salesSort: { col: 'created_at', dir: 'desc' },
   trackingSort: { col: 'created_at', dir: 'desc' },
   sfYears: new Set(), tfYears: new Set(),
@@ -1837,7 +1876,17 @@ function parseFSR(fsr) {
 // yield ends up wrong. A blank field means "not captured", never zero, so it is
 // left out of the total rather than counted as nil.
 const OG_STATUTORY_FIELDS = ['og_council', 'og_water', 'og_land_tax'];
-const OG_OPEX_FIELDS      = ['og_fire', 'og_insurance', 'og_pest'];
+const OG_OPEX_FIELDS      = ['og_fire', 'og_insurance', 'og_pest', 'og_aircon', 'og_cleaning',
+  'og_supervision', 'og_electricity', 'og_gas_oil', 'og_lifts', 'og_repairs',
+  'og_security', 'og_gardening', 'og_admin'];
+
+// Drop a manual total and go back to the calculated sum.
+function resetOutgoingsTotal(prefix) {
+  const el = document.getElementById(`${prefix}-og-total`);
+  if (!el) return;
+  el.value = ''; el.dataset.manual = '0';
+  calcOutgoings(prefix);
+}
 
 function calcOutgoings(prefix) {
   const form = document.getElementById(prefix === 'sf' ? 'sale-form' : 'tracking-form');
@@ -1853,8 +1902,28 @@ function calcOutgoings(prefix) {
     return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
   };
   const statutory = sum(OG_STATUTORY_FIELDS), opex = sum(OG_OPEX_FIELDS);
-  if (statutory === null && opex === null) { box.innerHTML = 'Statutory: Council · Water · Land Tax &nbsp;|&nbsp; OPEX: Fire · Building Insurance · Pest'; return; }
-  const total = (statutory || 0) + (opex || 0);
+  const computed = (statutory === null && opex === null) ? null : (statutory || 0) + (opex || 0);
+
+  // Total Overall Outgoings: auto-fills from the sum, but a figure typed in
+  // stands. The computed sum is still shown so the two can be compared.
+  const totalEl = document.getElementById(`${prefix}-og-total`);
+  const totalHint = document.getElementById(`${prefix}-og-total-hint`);
+  const manual = totalEl && totalEl.dataset.manual === '1' && totalEl.value !== '';
+  if (totalEl && !manual) totalEl.value = computed === null ? '' : computed;
+  if (totalHint) {
+    const typed = totalEl ? parseFloat(totalEl.value) : NaN;
+    totalHint.textContent = !manual
+      ? (computed === null ? 'Fills itself as you enter costs above' : 'Calculated from the items above — type to override')
+      : (computed === null ? 'Manual total' :
+         Math.abs(typed - computed) < 1 ? 'Manual total, matches the items above'
+         : `Manual total — the items above add to $${fmt(computed)}`);
+  }
+
+  if (computed === null && !manual) {
+    box.innerHTML = 'Statutory: Council · Water · Land Tax &nbsp;|&nbsp; OPEX: Fire · Insurance · Pest · Air Con · Cleaning · Supervision · Electricity · Gas &amp; Oil · Lifts · Repairs · Security · Gardening · Admin';
+    return;
+  }
+  const total = manual ? (parseFloat(totalEl.value) || 0) : computed;
 
   const gross = val('gross_rent'), net = val('net_rent');
   const floor = val('floor_area');
@@ -2191,6 +2260,19 @@ function saleForm(s={}) {
     <div class="form-group"><label>Building Insurance</label><input name="og_insurance" type="number" step="100" min="0" value="${s.og_insurance||''}" oninput="calcOutgoings('sf')" placeholder="OPEX"></div>
     <div class="form-group"><label>Land Tax</label><input name="og_land_tax" type="number" step="100" min="0" value="${s.og_land_tax||''}" oninput="calcOutgoings('sf')" placeholder="Statutory"></div>
     <div class="form-group"><label>Pest</label><input name="og_pest" type="number" step="100" min="0" value="${s.og_pest||''}" oninput="calcOutgoings('sf')" placeholder="OPEX"></div>
+    <div class="form-section">Operating Expenses ($/yr)</div>
+    <div class="form-group"><label>Air Conditioning / Ventilation</label><input name="og_aircon" type="number" step="100" min="0" value="${s.og_aircon||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Common Area Cleaning</label><input name="og_cleaning" type="number" step="100" min="0" value="${s.og_cleaning||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Building Supervision</label><input name="og_supervision" type="number" step="100" min="0" value="${s.og_supervision||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Electricity</label><input name="og_electricity" type="number" step="100" min="0" value="${s.og_electricity||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Gas &amp; Oil</label><input name="og_gas_oil" type="number" step="100" min="0" value="${s.og_gas_oil||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Lifts &amp; Escalators</label><input name="og_lifts" type="number" step="100" min="0" value="${s.og_lifts||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Repairs &amp; Maintenance</label><input name="og_repairs" type="number" step="100" min="0" value="${s.og_repairs||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Security / Access Control</label><input name="og_security" type="number" step="100" min="0" value="${s.og_security||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Gardening / Landscaping</label><input name="og_gardening" type="number" step="100" min="0" value="${s.og_gardening||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Administration / Management Fee</label><input name="og_admin" type="number" step="100" min="0" value="${s.og_admin||''}" oninput="calcOutgoings('sf')"></div>
+    <div class="form-group"><label>Total Overall Outgoings ($/yr)</label><input name="og_total_override" id="sf-og-total" type="number" step="100" min="0" value="${s.og_total_override||''}" data-manual="${s.og_total_override ? '1' : '0'}" oninput="this.dataset.manual='1';calcOutgoings('sf')" placeholder="Auto — sum of everything above"><small id="sf-og-total-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>&nbsp;</label><button type="button" class="btn btn-secondary btn-sm" onclick="resetOutgoingsTotal('sf')" title="Discard the manual total and go back to the calculated sum">↺ Use calculated total</button></div>
     <div class="form-group full"><div id="sf-og-summary" class="og-summary"></div></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(s.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
@@ -2200,6 +2282,7 @@ function saleForm(s={}) {
     <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(s.vendor)}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(s.purchaser)}"></div>
     <div class="form-section">Dates</div>
+    <div class="form-group"><label>Listed Date</label><input name="listing_date" type="date" value="${s.listing_date||''}" title="When the property was first listed — days on market is measured from here to exchange"></div>
     <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date" value="${s.exchange_date||''}"></div>
     <div class="form-group"><label>Settlement Date</label><input name="settlement_date" type="date" value="${s.settlement_date||''}"></div>
     <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${s.campaign_close_date||''}"></div>
@@ -2578,6 +2661,19 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Building Insurance</label><input name="og_insurance" type="number" step="100" min="0" value="${t.og_insurance||''}" oninput="calcOutgoings('tf')" placeholder="OPEX"></div>
     <div class="form-group"><label>Land Tax</label><input name="og_land_tax" type="number" step="100" min="0" value="${t.og_land_tax||''}" oninput="calcOutgoings('tf')" placeholder="Statutory"></div>
     <div class="form-group"><label>Pest</label><input name="og_pest" type="number" step="100" min="0" value="${t.og_pest||''}" oninput="calcOutgoings('tf')" placeholder="OPEX"></div>
+    <div class="form-section">Operating Expenses ($/yr)</div>
+    <div class="form-group"><label>Air Conditioning / Ventilation</label><input name="og_aircon" type="number" step="100" min="0" value="${t.og_aircon||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Common Area Cleaning</label><input name="og_cleaning" type="number" step="100" min="0" value="${t.og_cleaning||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Building Supervision</label><input name="og_supervision" type="number" step="100" min="0" value="${t.og_supervision||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Electricity</label><input name="og_electricity" type="number" step="100" min="0" value="${t.og_electricity||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Gas &amp; Oil</label><input name="og_gas_oil" type="number" step="100" min="0" value="${t.og_gas_oil||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Lifts &amp; Escalators</label><input name="og_lifts" type="number" step="100" min="0" value="${t.og_lifts||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Repairs &amp; Maintenance</label><input name="og_repairs" type="number" step="100" min="0" value="${t.og_repairs||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Security / Access Control</label><input name="og_security" type="number" step="100" min="0" value="${t.og_security||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Gardening / Landscaping</label><input name="og_gardening" type="number" step="100" min="0" value="${t.og_gardening||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Administration / Management Fee</label><input name="og_admin" type="number" step="100" min="0" value="${t.og_admin||''}" oninput="calcOutgoings('tf')"></div>
+    <div class="form-group"><label>Total Overall Outgoings ($/yr)</label><input name="og_total_override" id="tf-og-total" type="number" step="100" min="0" value="${t.og_total_override||''}" data-manual="${t.og_total_override ? '1' : '0'}" oninput="this.dataset.manual='1';calcOutgoings('tf')" placeholder="Auto — sum of everything above"><small id="tf-og-total-hint" style="color:var(--muted);font-size:10.5px;display:block;margin-top:2px"></small></div>
+    <div class="form-group"><label>&nbsp;</label><button type="button" class="btn btn-secondary btn-sm" onclick="resetOutgoingsTotal('tf')" title="Discard the manual total and go back to the calculated sum">↺ Use calculated total</button></div>
     <div class="form-group full"><div id="tf-og-summary" class="og-summary"></div></div>
     <div class="form-section">Parties</div>
     <div class="form-group"><label>Agent 1</label><input name="agent1" value="${esc(t.agent1)}" list="dl-agents" placeholder="Individual, e.g. Anna Chen"></div>
@@ -2587,6 +2683,7 @@ function trackingForm(t={}) {
     <div class="form-group"><label>Vendor</label><input name="vendor" value="${esc(t.vendor)}"></div>
     <div class="form-group"><label>Purchaser</label><input name="purchaser" value="${esc(t.purchaser)}" placeholder="Add once exchanged"></div>
     <div class="form-section">Dates</div>
+    <div class="form-group"><label>Listed Date</label><input name="listing_date" type="date" value="${t.listing_date||''}" title="When the campaign launched — days on market is measured from here to exchange"></div>
     <div class="form-group"><label>Campaign Close Date</label><input name="campaign_close_date" type="date" value="${t.campaign_close_date||''}"></div>
     <div class="form-group"><label>Exchange Date</label><input name="exchange_date" type="date" value="${t.exchange_date||''}"></div>
     <div class="form-group"><label>Exp. Settlement Date</label><input name="expected_settlement_date" type="date" value="${t.expected_settlement_date||''}"></div>
@@ -3545,21 +3642,268 @@ async function loadAnalytics() {
   renderAnalytics();
 }
 
-function clearAnalyticsFilters() {
-  ['an-year','an-asset','an-region'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  renderAnalytics();
+// ── Market Analytics: period + suburb filtering ──────────────────────────────
+// One Period control rather than two that can contradict each other. Rolling
+// windows ("last 12 months") key off the sale date; a sale with no sale date
+// falls back to its recorded year so it is not silently dropped from a year
+// selection. A sale with neither only appears under All Time.
+function analyticsPeriodMatch(s, period) {
+  if (!period) return true;
+  const m = /^(\d+)m$/.exec(period);
+  if (m) {
+    const t = Date.parse(s.exchange_date || '');
+    if (Number.isFinite(t)) {
+      const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - parseInt(m[1]));
+      return t >= cutoff.getTime();
+    }
+    // No sale date — fall back to the year, counting it in if it could plausibly fall inside
+    if (!s.year) return false;
+    const yearsBack = Math.ceil(parseInt(m[1]) / 12);
+    return s.year >= new Date().getFullYear() - yearsBack + 1;
+  }
+  return String(s.year) === period;
 }
 
 function getAnalyticsData() {
-  const year = document.getElementById('an-year')?.value || '';
+  const period     = document.getElementById('an-period')?.value || '';
   const assetClass = document.getElementById('an-asset')?.value || '';
-  const region = document.getElementById('an-region')?.value || '';
-  return analyticsRawData.filter(s => {
-    if (year && String(s.year) !== year) return false;
+  const region     = document.getElementById('an-region')?.value || '';
+  const subs       = S.anSuburbs;
+  const out = analyticsRawData.filter(s => {
+    if (!analyticsPeriodMatch(s, period)) return false;
     if (assetClass && s.asset_class !== assetClass) return false;
     if (region && s.region !== region) return false;
+    if (subs.size && !subs.has(s.suburb || '')) return false;
     return true;
   });
+  const label = document.getElementById('an-count-label');
+  if (label) label.textContent = out.length === analyticsRawData.length
+    ? `${out.length} sales` : `${out.length} of ${analyticsRawData.length} sales`;
+  return out;
+}
+
+function clearAnalyticsFilters() {
+  ['an-period','an-asset','an-region'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  S.anSuburbs.clear();
+  renderAnalyticsSuburbDD();
+  renderAnalytics();
+}
+
+// ── Suburb multi-select, region-aware like the one on the Sales page ─────────
+// Suburbs present in the data, narrowed to the chosen region, with counts.
+function analyticsSuburbList() {
+  const region = document.getElementById('an-region')?.value || '';
+  const counts = {};
+  analyticsRawData.forEach(s => {
+    if (!s.suburb) return;
+    if (region && s.region !== region) return;
+    counts[s.suburb] = (counts[s.suburb] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([suburb, n]) => ({ suburb, n }))
+    .sort((a, b) => a.suburb.localeCompare(b.suburb));
+}
+
+function renderAnalyticsSuburbDD() {
+  const dd = document.getElementById('an-suburbs-dd');
+  const btn = document.getElementById('an-suburbs-btn');
+  if (!dd || !btn) return;
+  const sel = S.anSuburbs;
+  const q = (document.getElementById('an-suburb-search')?.value || '').toLowerCase();
+  const opts = analyticsSuburbList().filter(x => !q || x.suburb.toLowerCase().includes(q));
+  dd.innerHTML = `
+    <div style="padding:6px 10px 4px"><input id="an-suburb-search" class="filter-input" placeholder="Type to search…"
+      style="width:100%;min-height:30px;font-size:12px" value="${esc(q)}" oninput="renderAnalyticsSuburbDD()" onclick="event.stopPropagation()"></div>
+    <div class="ms-clear" onclick="clearAnalyticsSuburbs()">Clear selection</div>` +
+    (opts.length ? opts.map(x => `<label class="ms-option"><input type="checkbox" value="${esc(x.suburb)}" ${sel.has(x.suburb) ? 'checked' : ''}
+      onchange="toggleAnalyticsSuburb('${x.suburb.replace(/'/g, "\\'")}')"> ${esc(x.suburb)} <span style="color:var(--muted);font-size:10px;margin-left:auto">${x.n}</span></label>`).join('')
+    : '<div style="padding:8px 12px;font-size:11px;color:var(--muted)">No suburbs match</div>');
+  const sb = document.getElementById('an-suburb-search');
+  if (q && sb) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+  btn.textContent = sel.size ? `${sel.size} Suburb${sel.size > 1 ? 's' : ''}` : 'All Suburbs';
+  btn.classList.toggle('active', !!sel.size);
+}
+
+function toggleAnalyticsSuburbDD() {
+  const dd = document.getElementById('an-suburbs-dd');
+  if (!dd) return;
+  const willOpen = !dd.classList.contains('open');
+  dd.classList.toggle('open');
+  if (willOpen) {
+    renderAnalyticsSuburbDD();
+    setTimeout(() => document.getElementById('an-suburb-search')?.focus(), 50);
+  }
+}
+
+function toggleAnalyticsSuburb(name) {
+  S.anSuburbs.has(name) ? S.anSuburbs.delete(name) : S.anSuburbs.add(name);
+  renderAnalyticsSuburbDD();
+  renderAnalytics();
+}
+function clearAnalyticsSuburbs() {
+  S.anSuburbs.clear();
+  renderAnalyticsSuburbDD();
+  renderAnalytics();
+}
+
+// ── Shared chart helpers ─────────────────────────────────────────────────────
+// Every average states how many sales it came from. An average of three sales
+// and an average of ninety look identical on a bar chart otherwise.
+function setChartCount(id, n, noun = 'sale') {
+  const el = document.getElementById(id);
+  if (el) el.textContent = n ? `${n} ${noun}${n === 1 ? '' : 's'}` : '';
+}
+
+function showChartEmpty(canvasId, message) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  let ph = c.parentElement.querySelector('.chart-empty');
+  if (!ph) { ph = document.createElement('div'); ph.className = 'chart-empty'; c.parentElement.appendChild(ph); }
+  ph.textContent = message;
+  ph.style.display = 'flex';
+  c.style.display = 'none';
+}
+function hideChartEmpty(canvasId) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ph = c.parentElement.querySelector('.chart-empty');
+  if (ph) ph.style.display = 'none';
+  c.style.display = '';
+}
+
+// Average a per-record value across a grouping key, dropping groups too thin to mean anything.
+function avgByGroup(data, groupKey, valueFn, minN = 1) {
+  const groups = {};
+  data.forEach(r => {
+    const k = r[groupKey];
+    const v = valueFn(r);
+    if (!k || !Number.isFinite(v) || v <= 0) return;
+    (groups[k] = groups[k] || []).push(v);
+  });
+  return Object.entries(groups)
+    .filter(([, vals]) => vals.length >= minN)
+    .map(([k, vals]) => ({ k, avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length }))
+    .sort((a, b) => b.avg - a.avg);
+}
+
+function barChart(canvasId, rows, { label, colour, fmtVal }) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  hideChartEmpty(canvasId);
+  analyticsCharts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.k),
+      datasets: [{ label, data: rows.map(r => Math.round(r.avg)), backgroundColor: colour, borderRadius: 4 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: c => `${fmtVal(c.parsed.y)} · from ${rows[c.dataIndex].n} sale${rows[c.dataIndex].n !== 1 ? 's' : ''}`,
+        } },
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => fmtVal(v), font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0 } },
+      },
+    },
+  });
+}
+
+// ── a) Average land rate $/m² ────────────────────────────────────────────────
+function renderChartLandRate(data) {
+  destroyChart('chart-landrate');
+  const rows = avgByGroup(data, 'asset_class', r => (r.price > 0 && r.land_area > 0) ? r.price / r.land_area : null);
+  setChartCount('chart-landrate-n', rows.reduce((t, r) => t + r.n, 0));
+  if (!rows.length) return showChartEmpty('chart-landrate', 'No sales in this selection have both a price and a land area.');
+  barChart('chart-landrate', rows, { label: 'Avg $/m² of site', colour: CW_PALETTE[1], fmtVal: v => '$' + fmt(v) });
+}
+
+// ── a) Average capital value $/m² ────────────────────────────────────────────
+function renderChartCapValue(data) {
+  destroyChart('chart-capvalue');
+  const rows = avgByGroup(data, 'asset_class', r => (r.price > 0 && r.floor_area > 0) ? r.price / r.floor_area : null);
+  setChartCount('chart-capvalue-n', rows.reduce((t, r) => t + r.n, 0));
+  if (!rows.length) return showChartEmpty('chart-capvalue', 'No sales in this selection have both a price and a floor area.');
+  barChart('chart-capvalue', rows, { label: 'Avg $/m² of building', colour: CW_PALETTE[0], fmtVal: v => '$' + fmt(v) });
+}
+
+// ── b) Outgoings breakdown, average $/m² per cost item ───────────────────────
+// Averaged only over the sales that actually record that item, so a cost most
+// properties do not carry is not diluted towards zero by everyone else's blank.
+const OG_CHART_ITEMS = [
+  ['og_council', 'Council', 'statutory'], ['og_water', 'Water', 'statutory'], ['og_land_tax', 'Land Tax', 'statutory'],
+  ['og_fire', 'Fire', 'opex'], ['og_insurance', 'Insurance', 'opex'], ['og_pest', 'Pest', 'opex'],
+  ['og_aircon', 'Air Con', 'opex'], ['og_cleaning', 'Cleaning', 'opex'], ['og_supervision', 'Supervision', 'opex'],
+  ['og_electricity', 'Electricity', 'opex'], ['og_gas_oil', 'Gas & Oil', 'opex'], ['og_lifts', 'Lifts', 'opex'],
+  ['og_repairs', 'Repairs', 'opex'], ['og_security', 'Security', 'opex'], ['og_gardening', 'Gardening', 'opex'],
+  ['og_admin', 'Admin', 'opex'],
+];
+
+function renderChartOutgoings(data) {
+  destroyChart('chart-outgoings');
+  const withFloor = data.filter(r => r.floor_area > 0);
+  const rows = OG_CHART_ITEMS.map(([key, label, group]) => {
+    const vals = withFloor.filter(r => r[key] > 0).map(r => r[key] / r.floor_area);
+    return vals.length ? { key, label, group, avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
+  }).filter(Boolean).sort((a, b) => b.avg - a.avg);
+
+  const n = new Set(withFloor.filter(r => OG_CHART_ITEMS.some(([k]) => r[k] > 0)).map(r => r.id)).size;
+  setChartCount('chart-outgoings-n', n, 'sale with outgoings');
+  if (!rows.length) {
+    return showChartEmpty('chart-outgoings',
+      'No sales in this selection have outgoings recorded against a floor area. Enter them on a sale and they will appear here.');
+  }
+  const ctx = document.getElementById('chart-outgoings');
+  hideChartEmpty('chart-outgoings');
+  analyticsCharts['chart-outgoings'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.label),
+      datasets: [{
+        label: 'Avg $/m²',
+        data: rows.map(r => Math.round(r.avg * 100) / 100),
+        backgroundColor: rows.map(r => r.group === 'statutory' ? CW_PALETTE[1] : CW_PALETTE[0]),
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: c => `$${c.parsed.x.toFixed(2)}/m² · ${rows[c.dataIndex].group === 'statutory' ? 'Statutory' : 'OPEX'} · from ${rows[c.dataIndex].n} sale${rows[c.dataIndex].n !== 1 ? 's' : ''}`,
+        } },
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { callback: v => '$' + v, font: { size: 10 } } },
+        y: { ticks: { font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+// ── c) Average days on market ────────────────────────────────────────────────
+function renderChartDOM(data) {
+  destroyChart('chart-dom');
+  const by = document.getElementById('an-dom-by')?.value || 'asset_class';
+  const dom = r => {
+    const start = Date.parse(r.listing_date || '');
+    const end = Date.parse(r.exchange_date || '');
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+    const d = Math.round((end - start) / 86400000);
+    return (d >= 0 && d <= 1825) ? d : null;    // ignore inverted or absurd spans
+  };
+  const rows = avgByGroup(data, by, dom).slice(0, 15);
+  setChartCount('chart-dom-n', rows.reduce((t, r) => t + r.n, 0), 'sale with both dates');
+  if (!rows.length) {
+    return showChartEmpty('chart-dom',
+      'Days on market needs a Listed Date and a Sale Date on the same record. Add a Listed Date when entering a sale — new campaigns stamp it automatically.');
+  }
+  barChart('chart-dom', rows, { label: 'Avg days on market', colour: CW_PALETTE[3], fmtVal: v => v + 'd' });
 }
 
 function renderAnalytics() {
@@ -3579,6 +3923,10 @@ function renderAnalytics() {
   renderChartByAsset(data);
   renderChartYield(data);
   renderChartProcess(data);
+  renderChartLandRate(data);
+  renderChartCapValue(data);
+  renderChartOutgoings(data);
+  renderChartDOM(data);
 }
 
 const CW_PALETTE = ['#ed1c24','#221c4e','#c8141b','#4b4a7c','#f56a63','#6e6e9c','#a11318','#a0a0c0','#faa19c','#c9c9dc'];

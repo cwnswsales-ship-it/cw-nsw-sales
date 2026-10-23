@@ -185,8 +185,9 @@ app.post('/api/sales', requireAuth, (req, res) => {
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
       approved_fsr, approved_gfa, approved_height, approved_config, da_number,
-      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest,
+      og_aircon, og_cleaning, og_supervision, og_electricity, og_gas_oil, og_lifts, og_repairs, og_security, og_gardening, og_admin, og_total_override, listing_date)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Sold', body.price, body.price_guide, body.adjusted_guide || null, body.net_rent, body.gross_rent || null, body.gross_yield || null,
     body.yield_percent, body.wale, body.land_area, body.floor_area, body.gfa || null, body.units || null, body.parking || null,
@@ -197,7 +198,19 @@ app.post('/api/sales', requireAuth, (req, res) => {
     body.campaign_close_date, year, body.notes, body.source_url, body.tenure,
     body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
     body.og_council || null, body.og_water || null, body.og_land_tax || null,
-    body.og_fire || null, body.og_insurance || null, body.og_pest || null);
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null,
+    body.og_aircon || null,
+    body.og_cleaning || null,
+    body.og_supervision || null,
+    body.og_electricity || null,
+    body.og_gas_oil || null,
+    body.og_lifts || null,
+    body.og_repairs || null,
+    body.og_security || null,
+    body.og_gardening || null,
+    body.og_admin || null,
+    body.og_total_override || null,
+    body.listing_date || null);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(id));
 });
@@ -218,8 +231,9 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
       zoning, zoning2, zoning_other, dev_stage, constraint1, constraint2, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
       exchange_date, settlement_date, campaign_close_date, year, notes, source_url, tenure,
       approved_fsr, approved_gfa, approved_height, approved_config, da_number,
-      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest,
+      og_aircon, og_cleaning, og_supervision, og_electricity, og_gas_oil, og_lifts, og_repairs, og_security, og_gardening, og_admin, og_total_override, listing_date)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   let inserted = 0, skipped = 0;
   const insertedIds = [];
@@ -246,7 +260,19 @@ app.post('/api/sales/bulk', requireAuth, (req, res) => {
         r.approved_fsr || null, r.approved_gfa || null, r.approved_height || null,
         r.approved_config || null, r.da_number || null,
         r.og_council || null, r.og_water || null, r.og_land_tax || null,
-        r.og_fire || null, r.og_insurance || null, r.og_pest || null);
+        r.og_fire || null, r.og_insurance || null, r.og_pest || null,
+        r.og_aircon || null,
+        r.og_cleaning || null,
+        r.og_supervision || null,
+        r.og_electricity || null,
+        r.og_gas_oil || null,
+        r.og_lifts || null,
+        r.og_repairs || null,
+        r.og_security || null,
+        r.og_gardening || null,
+        r.og_admin || null,
+        r.og_total_override || null,
+        r.listing_date || null);
       inserted++;
     }
   })();
@@ -319,6 +345,7 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
       exchange_date=?, settlement_date=?, campaign_close_date=?, year=?, notes=?, source_url=?,
       tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
       og_council=?, og_water=?, og_land_tax=?, og_fire=?, og_insurance=?, og_pest=?,
+      og_aircon=?, og_cleaning=?, og_supervision=?, og_electricity=?, og_gas_oil=?, og_lifts=?, og_repairs=?, og_security=?, og_gardening=?, og_admin=?, og_total_override=?, listing_date=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process, body.status || 'Sold',
@@ -332,7 +359,19 @@ app.put('/api/sales/:id', requireAuth, (req, res) => {
     body.notes, body.source_url, body.tenure,
     body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
     body.og_council || null, body.og_water || null, body.og_land_tax || null,
-    body.og_fire || null, body.og_insurance || null, body.og_pest || null, req.params.id);
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null,
+    body.og_aircon || null,
+    body.og_cleaning || null,
+    body.og_supervision || null,
+    body.og_electricity || null,
+    body.og_gas_oil || null,
+    body.og_lifts || null,
+    body.og_repairs || null,
+    body.og_security || null,
+    body.og_gardening || null,
+    body.og_admin || null,
+    body.og_total_override || null,
+    body.listing_date || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id));
 });
@@ -382,6 +421,10 @@ app.get('/api/tracking', requireAuth, (req, res) => {
 app.post('/api/tracking', requireAuth, (req, res) => {
   const body = req.body;
   normaliseParties(body);
+  // A campaign created today was listed today unless told otherwise. Stamping it
+  // here is what lets days-on-market fill itself from now on, instead of needing
+  // someone to remember a date months later.
+  if (!body.listing_date) body.listing_date = new Date().toISOString().slice(0, 10);
   // Block duplicates: same street number + name with a compatible suburb
   const existing = db.prepare("SELECT * FROM tracking WHERE status != 'Converted to Sale'").all()
     .find(t => trackDupKey(t) === trackDupKey(body) && suburbsCompatible(t, body));
@@ -396,8 +439,9 @@ app.post('/api/tracking', requireAuth, (req, res) => {
       vendor, purchaser, agent1, agent2, firm1, firm2,
       campaign_close_date, exchange_date, expected_settlement_date, year, notes, source_url, discovery_id, tenure,
       approved_fsr, approved_gfa, approved_height, approved_config, da_number,
-      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest,
+      og_aircon, og_cleaning, og_supervision, og_electricity, og_gas_oil, og_lifts, og_repairs, og_security, og_gardening, og_admin, og_total_override, listing_date)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, body.address, body.suburb, body.region, body.asset_class, body.process,
     body.status || 'Active Campaign', body.price_guide, body.adjusted_guide || null, body.sale_price || null, body.net_rent, body.gross_rent || null, body.gross_yield || null, body.estimated_yield,
     body.wale, body.land_area, body.floor_area, body.units || null, body.zoning, body.fsr, body.height_limit,
@@ -406,7 +450,19 @@ app.post('/api/tracking', requireAuth, (req, res) => {
     body.notes, body.source_url, body.discovery_id || null, body.tenure || null,
     body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
     body.og_council || null, body.og_water || null, body.og_land_tax || null,
-    body.og_fire || null, body.og_insurance || null, body.og_pest || null);
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null,
+    body.og_aircon || null,
+    body.og_cleaning || null,
+    body.og_supervision || null,
+    body.og_electricity || null,
+    body.og_gas_oil || null,
+    body.og_lifts || null,
+    body.og_repairs || null,
+    body.og_security || null,
+    body.og_gardening || null,
+    body.og_admin || null,
+    body.og_total_override || null,
+    body.listing_date || null);
   const row = db.prepare('SELECT * FROM tracking WHERE id = ?').get(id);
   backupDb().catch(() => {});
   res.json(row);
@@ -424,6 +480,7 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
       campaign_close_date=?, exchange_date=?, expected_settlement_date=?, year=?, notes=?, source_url=?,
       tenure=?, approved_fsr=?, approved_gfa=?, approved_height=?, approved_config=?, da_number=?,
       og_council=?, og_water=?, og_land_tax=?, og_fire=?, og_insurance=?, og_pest=?,
+      og_aircon=?, og_cleaning=?, og_supervision=?, og_electricity=?, og_gas_oil=?, og_lifts=?, og_repairs=?, og_security=?, og_gardening=?, og_admin=?, og_total_override=?, listing_date=?,
       updated_at=datetime('now')
     WHERE id=?
   `).run(body.address, body.suburb, body.region, body.asset_class, body.process,
@@ -434,7 +491,19 @@ app.put('/api/tracking/:id', requireAuth, (req, res) => {
     body.notes, body.source_url, body.tenure,
     body.approved_fsr || null, body.approved_gfa || null, body.approved_height || null, body.approved_config || null, body.da_number || null,
     body.og_council || null, body.og_water || null, body.og_land_tax || null,
-    body.og_fire || null, body.og_insurance || null, body.og_pest || null, req.params.id);
+    body.og_fire || null, body.og_insurance || null, body.og_pest || null,
+    body.og_aircon || null,
+    body.og_cleaning || null,
+    body.og_supervision || null,
+    body.og_electricity || null,
+    body.og_gas_oil || null,
+    body.og_lifts || null,
+    body.og_repairs || null,
+    body.og_security || null,
+    body.og_gardening || null,
+    body.og_admin || null,
+    body.og_total_override || null,
+    body.listing_date || null, req.params.id);
   backupDb().catch(() => {});
   res.json(db.prepare('SELECT * FROM tracking WHERE id = ?').get(req.params.id));
 });
@@ -513,14 +582,39 @@ app.post('/api/tracking/:id/sell', requireAuth, (req, res) => {
     INSERT INTO sales (id, address, suburb, region, asset_class, process, status,
       price, price_guide, adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale, land_area, floor_area, units,
       zoning, fsr, height_limit, vendor, purchaser, agent1, agent2, firm1, firm2,
-      exchange_date, settlement_date, campaign_close_date, year, notes, source_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      exchange_date, settlement_date, campaign_close_date, year, notes, source_url,
+      tenure, listing_date, da_number, approved_fsr, approved_gfa, approved_height, approved_config, og_council, og_water, og_land_tax, og_fire, og_insurance, og_pest, og_aircon, og_cleaning, og_supervision, og_electricity, og_gas_oil, og_lifts, og_repairs, og_security, og_gardening, og_admin, og_total_override)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(saleId, tracked.address, tracked.suburb, tracked.region, tracked.asset_class,
     tracked.process, 'Sold', price, tracked.price_guide, tracked.adjusted_guide, net_rent, gross_rent, gross_yield, yield_percent, wale,
     land_area, floor_area, units, tracked.zoning, tracked.fsr, tracked.height_limit,
     tracked.vendor, purchaser, tracked.agent1, tracked.agent2, tracked.firm1, tracked.firm2,
     exchange_date, pick(body.settlement_date, tracked.expected_settlement_date),
-    tracked.campaign_close_date, year, body.notes || tracked.notes, tracked.source_url);
+    tracked.campaign_close_date, year, body.notes || tracked.notes, tracked.source_url,
+    tracked.tenure ?? null,
+    tracked.listing_date ?? null,
+    tracked.da_number ?? null,
+    tracked.approved_fsr ?? null,
+    tracked.approved_gfa ?? null,
+    tracked.approved_height ?? null,
+    tracked.approved_config ?? null,
+    tracked.og_council ?? null,
+    tracked.og_water ?? null,
+    tracked.og_land_tax ?? null,
+    tracked.og_fire ?? null,
+    tracked.og_insurance ?? null,
+    tracked.og_pest ?? null,
+    tracked.og_aircon ?? null,
+    tracked.og_cleaning ?? null,
+    tracked.og_supervision ?? null,
+    tracked.og_electricity ?? null,
+    tracked.og_gas_oil ?? null,
+    tracked.og_lifts ?? null,
+    tracked.og_repairs ?? null,
+    tracked.og_security ?? null,
+    tracked.og_gardening ?? null,
+    tracked.og_admin ?? null,
+    tracked.og_total_override ?? null);
   db.prepare("UPDATE tracking SET status='Converted to Sale', updated_at=datetime('now') WHERE id=?")
     .run(req.params.id);
   backupDb().catch(() => {});
@@ -599,9 +693,21 @@ const XL_COLS = [
   { header: 'Fire p.a.',                key: 'og_fire',       width: 12, type: 'currency'},
   { header: 'Insurance p.a.',           key: 'og_insurance',  width: 14, type: 'currency'},
   { header: 'Pest p.a.',                key: 'og_pest',       width: 12, type: 'currency'},
+  { header: 'Air Con / Vent p.a.',      key: 'og_aircon',     width: 15, type: 'currency'},
+  { header: 'Common Area Cleaning p.a.',key: 'og_cleaning',   width: 18, type: 'currency'},
+  { header: 'Building Supervision p.a.',key: 'og_supervision',width: 18, type: 'currency'},
+  { header: 'Electricity p.a.',         key: 'og_electricity',width: 14, type: 'currency'},
+  { header: 'Gas & Oil p.a.',           key: 'og_gas_oil',    width: 13, type: 'currency'},
+  { header: 'Lifts & Escalators p.a.',  key: 'og_lifts',      width: 17, type: 'currency'},
+  { header: 'Repairs & Maintenance p.a.',key:'og_repairs',    width: 19, type: 'currency'},
+  { header: 'Security / Access p.a.',   key: 'og_security',   width: 16, type: 'currency'},
+  { header: 'Gardening p.a.',           key: 'og_gardening',  width: 14, type: 'currency'},
+  { header: 'Admin / Mgmt Fee p.a.',    key: 'og_admin',      width: 16, type: 'currency'},
   { header: 'OPEX Total',               key: 'og_opex',       width: 13, type: 'currency'},
   { header: 'Outgoings Total',          key: 'og_total',      width: 15, type: 'currency'},
   { header: 'Outgoings $/m²',          key: 'og_rate',       width: 14, type: 'currency'},
+  { header: 'Listed Date',              key: 'listing_date',  width: 13, type: 'date'    },
+  { header: 'Days on Market',           key: 'days_on_market',width: 14, type: 'int'     },
   { header: 'Land m²',                 key: 'land_area',     width: 10, type: 'area'    },
   { header: 'Land (Ha)',                key: 'land_ha',       width: 9,  type: 'num2'    },
   { header: 'Land (Ac)',                key: 'land_ac',       width: 9,  type: 'num2'    },
@@ -655,15 +761,31 @@ function colLetter(n) {
 // total rather than counted as zero, so a partial record cannot masquerade as
 // a complete one.
 const OG_STATUTORY = ['og_council', 'og_water', 'og_land_tax'];
-const OG_OPEX      = ['og_fire', 'og_insurance', 'og_pest'];
+const OG_OPEX      = ['og_fire', 'og_insurance', 'og_pest', 'og_aircon', 'og_cleaning',
+                      'og_supervision', 'og_electricity', 'og_gas_oil', 'og_lifts',
+                      'og_repairs', 'og_security', 'og_gardening', 'og_admin'];
 function outgoings(r) {
   const sum = keys => {
     const vals = keys.map(k => Number(r[k])).filter(v => Number.isFinite(v) && v > 0);
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0)) : null;
   };
   const statutory = sum(OG_STATUTORY), opex = sum(OG_OPEX);
-  const total = (statutory === null && opex === null) ? null : (statutory || 0) + (opex || 0);
-  return { statutory, opex, total };
+  const computed = (statutory === null && opex === null) ? null : (statutory || 0) + (opex || 0);
+  // A hand-entered total wins for reporting, but the computed sum is kept so the
+  // two can be compared — an override that silently replaced it would hide a gap.
+  const override = Number(r.og_total_override) > 0 ? Math.round(Number(r.og_total_override)) : null;
+  return { statutory, opex, computed, override, total: override ?? computed };
+}
+
+// Days the property was openly marketed: listed until it exchanged. Needs both
+// dates; without a listing date there is no honest answer, so it returns null
+// rather than guessing from the campaign close.
+function daysOnMarket(r) {
+  const start = Date.parse(r.listing_date || '');
+  const end   = Date.parse(r.exchange_date || r.campaign_close_date || '');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const days = Math.round((end - start) / 86400000);
+  return (days >= 0 && days <= 1825) ? days : null;   // ignore inverted or absurd spans
 }
 
 // Derived export columns: site rate, permissible-GFA rate ($ / (land × FSR)), gross yield
@@ -695,6 +817,7 @@ function withExportComputed(rows) {
     if (out.gross_yield == null && r.price > 0 && r.gross_rent > 0) out.gross_yield = Math.round(r.gross_rent / r.price * 10000) / 100;
     // Outgoings: statutory charges vs operating costs, and the rate per m².
     // Only total what is actually recorded — a blank is "not captured", not zero.
+    out.days_on_market = daysOnMarket(r);
     const og = outgoings(r);
     if (og.statutory !== null) out.og_statutory = og.statutory;
     if (og.opex !== null)      out.og_opex      = og.opex;
@@ -793,6 +916,8 @@ function buildAnalysisWorkbook(r, source) {
     ['Variance vs Guide', variance === null ? '' : variance, PCT],
     ['Result', variance === null ? '' : (variance > 2.5 ? 'Sold above quote' : variance < -2.5 ? 'Sold below quote' : 'On quote')],
     ['Settlement Date', fmtExportDate(r.settlement_date || r.expected_settlement_date)],
+    ['Listed Date', fmtExportDate(r.listing_date)],
+    ['Days on Market', daysOnMarket(r)],
     ['Campaign Close', fmtExportDate(r.campaign_close_date)],
     ['Vendor', r.vendor], ['Purchaser', r.purchaser],
   ]);
@@ -812,8 +937,14 @@ function buildAnalysisWorkbook(r, source) {
       ['Council p.a.', money(r.og_council), CUR],   ['Fire p.a.', money(r.og_fire), CUR],
       ['Water p.a.', money(r.og_water), CUR],       ['Building Insurance p.a.', money(r.og_insurance), CUR],
       ['Land Tax p.a.', money(r.og_land_tax), CUR], ['Pest p.a.', money(r.og_pest), CUR],
+      ['Air Con / Ventilation', money(r.og_aircon), CUR], ['Lifts & Escalators', money(r.og_lifts), CUR],
+      ['Common Area Cleaning', money(r.og_cleaning), CUR], ['Repairs & Maintenance', money(r.og_repairs), CUR],
+      ['Building Supervision', money(r.og_supervision), CUR], ['Security / Access', money(r.og_security), CUR],
+      ['Electricity', money(r.og_electricity), CUR],      ['Gardening / Landscaping', money(r.og_gardening), CUR],
+      ['Gas & Oil', money(r.og_gas_oil), CUR],            ['Admin / Management Fee', money(r.og_admin), CUR],
       ['Statutory Total', money(og.statutory), CUR],['OPEX Total', money(og.opex), CUR],
       ['Outgoings Total', money(og.total), CUR],
+      ['— of which overridden', og.override !== null ? 'Manual total; itemised sum $' + (og.computed || 0).toLocaleString() : ''],
       ['Outgoings $/m²', (og.total > 0 && r.floor_area > 0) ? Math.round(og.total / r.floor_area) : null, CUR],
       ['% of Gross Rent', (og.total > 0 && r.gross_rent > 0) ? Math.round(og.total / r.gross_rent * 10000) / 100 : null, PCT],
       ['Gross less Outgoings', (r.gross_rent > 0) ? r.gross_rent - og.total : null, CUR],
@@ -1202,7 +1333,15 @@ app.post('/api/extract-im', requireAuth, async (req, res) => {
 // ── Batch sales extraction: IM, comps spreadsheet, or photo of a sales table ──
 const SALES_BATCH_PROMPT = `You are a commercial real estate analyst. This document contains one or more completed property SALES — it may be a single-property Information Memorandum, a comparable-sales table, an agency results sheet, or a screenshot/photo of a spreadsheet.
 
-Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown fences:
+Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown fences.
+
+OUTGOINGS: documents often give an outgoings schedule or a "net income after outgoings"
+line. Record each cost item ONLY where the document states it. Never apportion a total
+across items, never infer a figure from a percentage, and never copy a per-sqm rate into a
+dollar field — leave it null. If only a total is given, put it in og_total_override and
+leave the items null. All outgoings are ANNUAL dollars; convert monthly or quarterly
+figures to annual and ignore GST-inclusive/exclusive distinctions.
+
 
 {
   "sales": [
@@ -1231,6 +1370,30 @@ Extract EVERY sale and return ONLY a valid JSON object — no prose, no markdown
       "purchaser": null or "purchaser name",
       "agent1": null or "agent name",
       "firm1": null or "agency name",
+      "tenure": null or exactly "Tenanted" or "Vacant Possession" (income stated means Tenanted),
+      "listing_date": "YYYY-MM-DD" or null (when first listed / campaign launched, if stated),
+      "da_number": null or "development consent number, e.g. DA-2024/0531",
+      "approved_fsr": null or "FSR the DA approved, e.g. 2.5:1",
+      "approved_gfa": null or number (GFA the DA approved, in sqm),
+      "approved_height": null or "approved height, e.g. 24 m / 8 storeys",
+      "approved_config": null or one of: Residential | Commercial | Retail | Residential + Retail | Residential + Commercial | Commercial + Retail | Residential + Commercial + Retail | Hotel / Short Stay | Seniors Living | Student Accommodation | Build-to-Rent | Industrial | Other,
+      "og_council": null or number (council rates $ pa),
+      "og_water": null or number (water rates $ pa),
+      "og_land_tax": null or number (land tax $ pa),
+      "og_fire": null or number (fire services/protection $ pa),
+      "og_insurance": null or number (building insurance $ pa),
+      "og_pest": null or number (pest control $ pa),
+      "og_aircon": null or number (air conditioning / ventilation $ pa),
+      "og_cleaning": null or number (common area cleaning $ pa),
+      "og_supervision": null or number (building supervision $ pa),
+      "og_electricity": null or number (electricity $ pa),
+      "og_gas_oil": null or number (gas & oil $ pa),
+      "og_lifts": null or number (lifts & escalators $ pa),
+      "og_repairs": null or number (repairs & maintenance $ pa),
+      "og_security": null or number (security / access control $ pa),
+      "og_gardening": null or number (gardening / landscaping $ pa),
+      "og_admin": null or number (administration / management fee $ pa),
+      "og_total_override": null or number (a stated TOTAL outgoings figure when the document gives a total but not the breakdown),
       "notes": "other useful metrics — e.g. '9 units · $777,777/unit · Market rent $284,039 pa · Equivalent yield 4.03%' — max 200 chars"
     }
   ]
