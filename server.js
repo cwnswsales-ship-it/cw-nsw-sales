@@ -2567,6 +2567,18 @@ async function backupDb() {
     backupState.lastStatus = 'error';
     backupState.lastError  = e.message;
     console.error('[db-backup] Error:', e.message);
+    // A signature mismatch is almost never a "bad password" — the secret is one
+    // of several things that go into a SigV4 signature. Name the rest, because
+    // the error alone sends people to re-paste a key that was already correct.
+    if (/signature|SignatureDoesNotMatch/i.test(e.message || '')) {
+      console.error('[db-backup] The signing inputs were:' +
+        ` endpoint=${process.env.BUCKET_ENDPOINT_URL || '(unset)'}` +
+        ` region=${process.env.BUCKET_REGION || 'auto (default — set BUCKET_REGION if the provider expects a real region)'}` +
+        ` bucket=${process.env.BUCKET_NAME || '(unset)'}` +
+        ` keyId=${(process.env.BUCKET_ACCESS_KEY_ID || '').slice(0, 8)}…` +
+        ` secretLength=${(process.env.BUCKET_SECRET_ACCESS_KEY || '').length}` +
+        ' · region and endpoint are part of the signature, so a mismatch in either produces this exact error.');
+    }
     return false;
   } finally {
     backupState.inProgress = false;
