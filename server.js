@@ -2275,8 +2275,9 @@ async function stonebridgeScheduleTick() {
 
 // Check 2 minutes after boot, then every 6 hours. A container that sleeps
 // through the due date picks the scan up on its next start.
-setTimeout(stonebridgeScheduleTick, 2 * 60 * 1000);
-setInterval(stonebridgeScheduleTick, 6 * 60 * 60 * 1000);
+const sbTick = () => { stonebridgeScheduleTick().catch(e => console.error('[stonebridge] tick failed:', e.message)); };
+setTimeout(sbTick, 2 * 60 * 1000);
+setInterval(sbTick, 6 * 60 * 60 * 1000);
 
 app.post('/api/portfolio/:id/track', requireAuth, (req, res) => {
   const listing = db.prepare('SELECT * FROM portfolio_listings WHERE id = ?').get(req.params.id);
@@ -2572,13 +2573,18 @@ async function backupDb() {
   }
 }
 
-// Back up every 5 minutes
-setInterval(backupDb, 5 * 60 * 1000);
+// Back up every 5 minutes.
+// setInterval does not await, so a rejection here is an UNHANDLED rejection and
+// Node exits the process. A failing backup — bad bucket credentials, say — must
+// never take the site down with it.
+setInterval(() => { backupDb().catch(e => console.error('[db-backup] Scheduled backup failed:', e.message)); },
+  5 * 60 * 1000);
 
 // Back up on Railway deploy shutdown signal
 process.on('SIGTERM', async () => {
   console.log('[shutdown] Backing up DB before exit...');
-  await backupDb();
+  try { await backupDb(); }
+  catch (e) { console.error('[shutdown] Final backup failed:', e.message); }
   process.exit(0);
 });
 
@@ -3318,6 +3324,17 @@ app.get('/api/admin/export', requireAuth, (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Last line of defence. Node exits on an unhandled rejection by default, which
+// turns any stray background error into an outage. Log it loudly and keep
+// serving — a broken backup is not a reason to stop answering requests.
+process.on('unhandledRejection', (reason) => {
+  console.error('[fatal-guard] Unhandled promise rejection — server kept alive:',
+    reason && reason.stack ? reason.stack : reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[fatal-guard] Uncaught exception — server kept alive:', err && err.stack ? err.stack : err);
 });
 
 app.listen(PORT, () => {
