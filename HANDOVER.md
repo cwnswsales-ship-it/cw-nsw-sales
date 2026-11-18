@@ -126,8 +126,10 @@ NODE_PATH=/home/user/cw-nsw-sales/node_modules node <script>.js   # playwright-c
 ```
 
 **Sandbox limits to know about:**
-- Chart.js loads from a CDN the sandbox blocks → stub `window.Chart` to capture
-  chart configs and assert on the data instead of the pixels.
+- Chart.js and xlsx are now served from `public/vendor/`, not a CDN, so charts
+  render in the sandbox and screenshots are meaningful. They are plain static
+  files — deliberately NOT npm dependencies. To update one, copy a new build in
+  and commit it.
 - `railway.app`, `t3.storageapi.dev` and `stonebridge.com.au` are all blocked by the
   egress proxy. The Stonebridge scraper has an `SB_FIXTURE` env hook to exercise the
   whole pipeline offline.

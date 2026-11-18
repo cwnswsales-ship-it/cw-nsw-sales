@@ -367,6 +367,7 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
 .analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media(max-width:900px){.analytics-grid{grid-column:1fr}}
 .chart-wrap{padding:14px;height:280px;position:relative}
+.chart-wrap.has-control{height:330px;padding-top:8px}
 .import-preview{max-height:360px;overflow-y:auto;border:1.5px solid var(--border);border-radius:7px}
 .import-preview table{width:100%;border-collapse:collapse}
 .import-preview th{background:var(--bg);padding:7px 10px;font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:600;white-space:nowrap;position:sticky;top:0;border-bottom:2px solid var(--border)}
@@ -893,6 +894,8 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
       <div class="filters-bar">
         <select class="filter-select" id="an-period" onchange="renderAnalytics()" title="Rolling windows use the sale date; a sale with no sale date falls back to its recorded year">
           <option value="">All Time</option>
+          <option value="3m">Last 3 Months</option>
+          <option value="6m">Last 6 Months</option>
           <option value="12m">Last 12 Months</option>
           <option value="24m">Last 24 Months</option>
           <option value="36m">Last 36 Months</option>
@@ -928,20 +931,20 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
             <div class="chart-wrap"><canvas id="chart-by-asset"></canvas></div>
           </div>
           <div class="dash-panel">
-            <div class="dash-panel-header">Avg Yield % by Asset Class</div>
-            <div class="chart-wrap"><canvas id="chart-yield"></canvas></div>
+            <div class="dash-panel-header">Avg Yield<span id="chart-yield-n" class="chart-n"></span></div>
+            <div class="chart-wrap has-control"><select class="filter-select" id="an-yield-by" onchange="renderAnalytics()" style="font-size:11px;padding:3px 8px;margin-bottom:6px"><option value="asset_class">By Asset Class</option><option value="region">By Region</option><option value="suburb">By Suburb</option></select><canvas id="chart-yield"></canvas></div>
           </div>
           <div class="dash-panel">
             <div class="dash-panel-header">Sale Process Mix</div>
             <div class="chart-wrap"><canvas id="chart-process"></canvas></div>
           </div>
           <div class="dash-panel">
-            <div class="dash-panel-header">Avg Land Rate $/m² by Asset Class<span id="chart-landrate-n" class="chart-n"></span></div>
-            <div class="chart-wrap"><canvas id="chart-landrate"></canvas></div>
+            <div class="dash-panel-header">Avg Land Rate $/m²<span id="chart-landrate-n" class="chart-n"></span></div>
+            <div class="chart-wrap has-control"><select class="filter-select" id="an-landrate-by" onchange="renderAnalytics()" style="font-size:11px;padding:3px 8px;margin-bottom:6px"><option value="asset_class">By Asset Class</option><option value="region">By Region</option><option value="suburb">By Suburb</option></select><canvas id="chart-landrate"></canvas></div>
           </div>
           <div class="dash-panel">
-            <div class="dash-panel-header">Avg Capital Value $/m² by Asset Class<span id="chart-capvalue-n" class="chart-n"></span></div>
-            <div class="chart-wrap"><canvas id="chart-capvalue"></canvas></div>
+            <div class="dash-panel-header">Avg Capital Value $/m²<span id="chart-capvalue-n" class="chart-n"></span></div>
+            <div class="chart-wrap has-control"><select class="filter-select" id="an-capvalue-by" onchange="renderAnalytics()" style="font-size:11px;padding:3px 8px;margin-bottom:6px"><option value="asset_class">By Asset Class</option><option value="region">By Region</option><option value="suburb">By Suburb</option></select><canvas id="chart-capvalue"></canvas></div>
           </div>
           <div class="dash-panel">
             <div class="dash-panel-header">Outgoings — Avg $/m² by Cost Item<span id="chart-outgoings-n" class="chart-n"></span></div>
@@ -949,8 +952,8 @@ tbody tr.row-selected{background:#fff7ed!important;box-shadow:inset 2px 0 0 var(
           </div>
           <div class="dash-panel">
             <div class="dash-panel-header">Avg Days on Market<span id="chart-dom-n" class="chart-n"></span></div>
-            <div class="chart-wrap">
-              <select class="filter-select" id="an-dom-by" onchange="renderChartDOM(getAnalyticsData())" style="font-size:11px;padding:3px 8px;margin-bottom:6px">
+            <div class="chart-wrap has-control">
+              <select class="filter-select" id="an-dom-by" onchange="renderAnalytics()" style="font-size:11px;padding:3px 8px;margin-bottom:6px">
                 <option value="asset_class">By Asset Class</option>
                 <option value="region">By Region</option>
                 <option value="suburb">By Suburb</option>
@@ -3751,7 +3754,11 @@ function clearAnalyticsSuburbs() {
 // and an average of ninety look identical on a bar chart otherwise.
 function setChartCount(id, n, noun = 'sale') {
   const el = document.getElementById(id);
-  if (el) el.textContent = n ? `${n} ${noun}${n === 1 ? '' : 's'}` : '';
+  if (!el) return;
+  // Pluralise the head noun: "sale with a yield" -> "sales with a yield".
+  const [head, ...rest] = noun.split(' ');
+  const label = n === 1 ? noun : [head + 's', ...rest].join(' ');
+  el.textContent = n ? `${n} ${label}` : '';
 }
 
 function showChartEmpty(canvasId, message) {
@@ -3806,7 +3813,9 @@ function barChart(canvasId, rows, { label, colour, fmtVal }) {
       },
       scales: {
         y: { beginAtZero: true, ticks: { callback: v => fmtVal(v), font: { size: 10 } } },
-        x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0 } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0,
+          callback(v, i) { const l = String(this.getLabelForValue(v));
+            return l.length > 20 ? l.slice(0, 19) + '…' : l; } } },
       },
     },
   });
@@ -3815,18 +3824,22 @@ function barChart(canvasId, rows, { label, colour, fmtVal }) {
 // ── a) Average land rate $/m² ────────────────────────────────────────────────
 function renderChartLandRate(data) {
   destroyChart('chart-landrate');
-  const rows = avgByGroup(data, 'asset_class', r => (r.price > 0 && r.land_area > 0) ? r.price / r.land_area : null);
+  const by = groupKeyFor('landrate');
+  const rows = avgByGroup(data, by, r => (r.price > 0 && r.land_area > 0) ? r.price / r.land_area : null).slice(0, 15);
   setChartCount('chart-landrate-n', rows.reduce((t, r) => t + r.n, 0));
-  if (!rows.length) return showChartEmpty('chart-landrate', 'No sales in this selection have both a price and a land area.');
+  if (!rows.length) return showChartEmpty('chart-landrate',
+    `No sales in this selection have both a price and a land area, grouped by ${groupLabel(by).toLowerCase()}.`);
   barChart('chart-landrate', rows, { label: 'Avg $/m² of site', colour: CW_PALETTE[1], fmtVal: v => '$' + fmt(v) });
 }
 
 // ── a) Average capital value $/m² ────────────────────────────────────────────
 function renderChartCapValue(data) {
   destroyChart('chart-capvalue');
-  const rows = avgByGroup(data, 'asset_class', r => (r.price > 0 && r.floor_area > 0) ? r.price / r.floor_area : null);
+  const by = groupKeyFor('capvalue');
+  const rows = avgByGroup(data, by, r => (r.price > 0 && r.floor_area > 0) ? r.price / r.floor_area : null).slice(0, 15);
   setChartCount('chart-capvalue-n', rows.reduce((t, r) => t + r.n, 0));
-  if (!rows.length) return showChartEmpty('chart-capvalue', 'No sales in this selection have both a price and a floor area.');
+  if (!rows.length) return showChartEmpty('chart-capvalue',
+    `No sales in this selection have both a price and a floor area, grouped by ${groupLabel(by).toLowerCase()}.`);
   barChart('chart-capvalue', rows, { label: 'Avg $/m² of building', colour: CW_PALETTE[0], fmtVal: v => '$' + fmt(v) });
 }
 
@@ -3889,7 +3902,7 @@ function renderChartOutgoings(data) {
 // ── c) Average days on market ────────────────────────────────────────────────
 function renderChartDOM(data) {
   destroyChart('chart-dom');
-  const by = document.getElementById('an-dom-by')?.value || 'asset_class';
+  const by = groupKeyFor('dom');
   const dom = r => {
     const start = Date.parse(r.listing_date || '');
     const end = Date.parse(r.exchange_date || '');
@@ -3909,14 +3922,17 @@ function renderChartDOM(data) {
 function renderAnalytics() {
   const data = getAnalyticsData();
   const vol = data.reduce((s,r) => s+(r.price||0), 0);
-  const yields = data.filter(r=>isNumYield(r.yield_percent));
-  const avgY = yields.length ? yields.reduce((s,r)=>s+r.yield_percent,0)/yields.length : 0;
+  // Same basis rule as the yield chart — gross for apartment blocks, net
+  // otherwise — so the headline figure and the chart cannot disagree.
+  const yields = data.map(yieldOf).filter(Boolean);
+  const avgY = yields.length ? yields.reduce((t,y)=>t+y.value,0)/yields.length : 0;
 
   document.getElementById('analytics-kpis').innerHTML = `
     <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-label">Sales</div></div>
     <div class="stat-card"><div class="stat-num">$${fmtVol(vol)}</div><div class="stat-label">Total Volume</div></div>
     <div class="stat-card green"><div class="stat-num">${avgY ? avgY.toFixed(2)+'%' : '–'}</div><div class="stat-label">Avg Yield</div></div>
     <div class="stat-card blue"><div class="stat-num">${yields.length}</div><div class="stat-label">With Yield Data</div></div>
+    <div class="stat-card purple"><div class="stat-num">${yields.filter(y=>y.basis==='gross').length}</div><div class="stat-label">On Gross (Apartments)</div></div>
   `;
 
   renderChartByYear(data);
@@ -3970,38 +3986,86 @@ function renderChartByAsset(data) {
   });
 }
 
+// ── Which yield an asset class trades on ─────────────────────────────────────
+// Apartment blocks are quoted and compared on GROSS yield — outgoings vary too
+// much between blocks for net to be the comparable figure. Everything else is
+// net. Mixing the two in one average would be meaningless, so the basis travels
+// with the record and the chart says which it used.
+const GROSS_BASIS_CLASSES = new Set(['Apartment Blocks']);
+
+function yieldOf(s) {
+  if (GROSS_BASIS_CLASSES.has(s.asset_class)) {
+    const g = s.gross_yield > 0 ? s.gross_yield
+            : (s.price > 0 && s.gross_rent > 0 ? s.gross_rent / s.price * 100 : null);
+    return g > 0 ? { value: g, basis: 'gross' } : null;   // no net fallback: it is not comparable
+  }
+  return isNumYield(s.yield_percent) ? { value: s.yield_percent, basis: 'net' } : null;
+}
+
+// The grouping each chart is set to. Defaults to asset class.
+function groupKeyFor(chart) {
+  return document.getElementById(`an-${chart}-by`)?.value || 'asset_class';
+}
+function groupLabel(key) {
+  return key === 'region' ? 'Region' : key === 'suburb' ? 'Suburb' : 'Asset Class';
+}
+
 function renderChartYield(data) {
-  destroyChart('yield');
-  const byAsset = {};
-  data.filter(s=>isNumYield(s.yield_percent)).forEach(s => {
-    if (!byAsset[s.asset_class]) byAsset[s.asset_class] = [];
-    byAsset[s.asset_class].push(s.yield_percent);
+  destroyChart('chart-yield');
+  destroyChart('yield');                       // older key, in case one is still live
+  const by = groupKeyFor('yield');
+  const groups = {};
+  data.forEach(s => {
+    const k = s[by];
+    const y = yieldOf(s);
+    if (!k || !y) return;
+    (groups[k] = groups[k] || { vals: [], net: 0, gross: 0 });
+    groups[k].vals.push(y.value);
+    groups[k][y.basis]++;
   });
-  const sorted = Object.entries(byAsset).map(([k,v]) => [k, v.reduce((a,b)=>a+b,0)/v.length]).sort((a,b)=>b[1]-a[1]);
-  const max = sorted.length ? sorted[0][1] : 10;
-  const ctx = document.getElementById('chart-yield').getContext('2d');
-  analyticsCharts['yield'] = new Chart(ctx, {
+  const rows = Object.entries(groups)
+    .map(([k, g]) => ({ k, avg: g.vals.reduce((a, b) => a + b, 0) / g.vals.length,
+                        n: g.vals.length, net: g.net, gross: g.gross }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 15);
+
+  setChartCount('chart-yield-n', rows.reduce((t, r) => t + r.n, 0), 'sale with a yield');
+  if (!rows.length) {
+    return showChartEmpty('chart-yield',
+      `No sales in this selection carry a yield. Apartment blocks need a gross yield; everything else needs a net yield.`);
+  }
+  const ctx = document.getElementById('chart-yield');
+  hideChartEmpty('chart-yield');
+  analyticsCharts['chart-yield'] = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: sorted.map(x=>x[0]),
+      labels: rows.map(r => r.gross && !r.net ? `${r.k} (gross)` : r.k),
       datasets: [{
-        label: 'Avg Yield %',
-        data: sorted.map(x=>x[1].toFixed(2)),
-        backgroundColor: sorted.map((_,i) => {
-          const t = i / Math.max(sorted.length - 1, 1);
-          const r = Math.round(13 + t * (232 - 13));
-          const g = Math.round(33 + t * (115 - 33));
-          const b = Math.round(55 + t * (42 - 55));
-          return `rgba(${r},${g},${b},0.85)`;
-        }),
-        borderRadius: 4
-      }]
+        label: 'Avg yield %',
+        data: rows.map(r => Math.round(r.avg * 100) / 100),
+        // Gross-basis bars in navy so they are not read as net at a glance.
+        backgroundColor: rows.map(r => (r.gross && !r.net) ? CW_PALETTE[1] : CW_PALETTE[0]),
+        borderRadius: 4,
+      }],
     },
     options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, max: Math.ceil(max * 1.2), ticks: { callback: v => v + '%' } } }
-    }
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => {
+          const r = rows[c.dataIndex];
+          const mix = r.net && r.gross ? `${r.net} net + ${r.gross} gross`
+                    : r.gross ? `${r.gross} gross` : `${r.net} net`;
+          return `${c.parsed.y.toFixed(2)}% · ${mix}`;
+        } } },
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => v + '%', font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0,
+          callback(v, i) { const l = String(this.getLabelForValue(v));
+            return l.length > 20 ? l.slice(0, 19) + '…' : l; } } },
+      },
+    },
   });
 }
 
@@ -5884,10 +5948,8 @@ async function showStonebridgeHistory() {
 
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js">
-
-</script>
+<script src="/vendor/chart.umd.js"></script>
+<script src="/vendor/xlsx.full.min.js"></script>
 
 <!-- ── Floating selection bar ──────────────────────────────────────── -->
 <div id="floating-bar" class="floating-bar hidden">
